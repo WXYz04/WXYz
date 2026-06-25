@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>四代天选嫂嫂模拟器 · 张桂源青梅线</title>
-    <style>
+   
+   <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         .app-container { max-width: 500px; margin: 0 auto; background: #FFFFFF; min-height: 100vh; position: relative; }
@@ -526,6 +527,7 @@
     gap: 12px;
     margin-top: 12px;
 }
+
 .save-slot-buttons button {
     padding: 6px 12px;
     border-radius: 20px;
@@ -607,6 +609,42 @@
     color: #999;
     margin-top: 4px;
 }
+    /* 竖排任务按钮 */
+.task-btn {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border-radius: 20px 0 0 20px;
+    padding: 16px 6px;
+    border: 1px solid rgba(255, 200, 200, 0.3);
+    border-right: none;
+    box-shadow: -4px 0 16px rgba(255, 150, 150, 0.08);
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    writing-mode: vertical-rl;
+    letter-spacing: 4px;
+}
+.task-btn span {
+    font-size: 15px;
+    font-weight: 600;
+    color: #E85D75;
+}
+
+/* 地标按钮统一样式 */
+.map-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.map-btn:active {
+    transform: scale(0.92);
+}
     </style>
 </head>
 <body>
@@ -643,90 +681,1632 @@
 </div>
     </div>
 
-    <div id="gameScreen">
-        <div class="bottom-nav">
-            <button class="nav-item" data-nav="story">📖<span>剧情</span></button>
-            <button class="nav-item" data-nav="chat">💬<span>微信</span></button>
-            <button class="nav-item" data-nav="moments">🌄<span>朋友圈</span></button>
-            <button class="nav-item" data-nav="weibo">🐦<span>微博</span></button>
-            <button class="nav-item" data-nav="my">👤<span>我的</span></button>
-        </div>
-        <div class="add-friend" id="addFriendBtn">👤+</div>
-        <div id="friendRedDot" class="friend-red-dot" style="display:none;"></div>
+   <div id="gameScreen">
+    <div class="bottom-nav">
+        <button class="nav-item" data-nav="story">📖<span>日程</span></button>
+        <button class="nav-item" data-nav="chat">💬<span>微信</span></button>
+        <button class="nav-item" data-nav="moments">🌄<span>朋友圈</span></button>
+        <button class="nav-item" data-nav="weibo">🐦<span>微博</span></button>
+        <button class="nav-item" data-nav="my">👤<span>我的</span></button>
+    </div>
 
-        <div id="storyPage" class="page active">
-           <!-- 章节选择页面 -->
-            <div id="chapterSelectPage">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div style="font-size: 18px; font-weight: 700; color: #1A1A1A;">📖 选择章节</div>
-                    <div id="chapterStatusHint" style="font-size: 12px; color: #999;"></div>
-                </div>
-                <div id="chapterList"></div>
+    <div class="add-friend" id="addFriendBtn">👤+</div>
+    <div id="friendRedDot" class="friend-red-dot" style="display:none;"></div>
+
+    <!-- 剧情页面 -->
+    <div id="storyPage" class="page active">
+        <!-- 切换按钮 -->
+        <div style="display:flex; gap:10px; margin-bottom:16px; background:#F8F8F8; border-radius:30px; padding:4px;">
+            <button id="switchToStoryBtn" style="flex:1; padding:10px; border:none; border-radius:26px; background:#E85D75; color:white; font-weight:600; cursor:pointer;">📖 剧情</button>
+            <button id="switchToMapBtn" style="flex:1; padding:10px; border:none; border-radius:26px; background:transparent; color:#999; font-weight:600; cursor:pointer;">📍 地图</button>
+        </div>
+
+        <!-- 章节选择页面 -->
+        <div id="chapterSelectPage">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="font-size: 18px; font-weight: 700; color: #1A1A1A;">📖 选择章节</div>
+                <div id="chapterStatusHint" style="font-size: 12px; color: #999;"></div>
             </div>
+            <div id="chapterList"></div>
+        </div>
+
+        <!-- 剧情详情页面 -->
+        <div id="storyDetailPage" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <button id="backToChapterListBtn" style="background: none; border: none; font-size: 24px; cursor: pointer;">←</button>
+                <div class="chapter-title" id="chapterTitle">第1章 · 重庆的夏天永远不会结束</div>
+            </div>
+            <div id="storyContent" class="story-content"></div>
+            <div id="branchArea"></div>
+            <button id="endChapterBtn" class="end-chapter-btn" style="display:none;">📖 结束本章剧情</button>
+            <button id="nextChapterBtn" class="next-btn" style="display:none;">📖 开启下一章</button>
+            <div id="nextHint" class="next-hint"></div>
+        </div>
+
+       <!-- 地图页面 -->
+<div id="storyMapPage" style="display: none; height: calc(100vh - 160px); padding:0; overflow:hidden; border-radius:20px; position:relative; background:#FFF5F5;">
             
-            <!-- 剧情详情页面 -->
-            <div id="storyDetailPage" style="display: none;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                    <button id="backToChapterListBtn" style="background: none; border: none; font-size: 24px; cursor: pointer;">←</button>
-                    <div class="chapter-title" id="chapterTitle">第1章 · 重庆的夏天永远不会结束</div>
-                </div>
-                <div id="storyContent" class="story-content"></div>
-                <div id="branchArea"></div>
-                <button id="endChapterBtn" class="end-chapter-btn" style="display:none;">📖 结束本章剧情</button>
-                <button id="nextChapterBtn" class="next-btn" style="display:none;">📖 开启下一章</button>
-                <div id="nextHint" class="next-hint"></div>
+           <!-- 背景地图图片 -->
+<img src="map.jpg" style="width:100%; height:100%; object-fit:cover; display:block; position:absolute; top:0; left:0; z-index:1;" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:14px;\'>⚠️ 地图加载失败</div>'">
+            <!-- 竖排任务按钮（半圆，紧贴右侧，浅色文字） -->
+    <div style="position:absolute; top:50%; right:0; transform:translateY(-50%); z-index:10; background:rgba(255,255,255,0.7); backdrop-filter:blur(12px); border-radius:20px 0 0 20px; padding:16px 6px; border:1px solid rgba(255,200,200,0.3); border-right:none; box-shadow:-4px 0 16px rgba(255,150,150,0.06); cursor:pointer; transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); writing-mode:vertical-rl; letter-spacing:4px;" onclick="alert('📋 第一章任务\n\n目标：完成小学学业，智慧值达到30以上\n当前智慧：' + (player.wise || 0))">
+        <span style="font-size:14px; font-weight:500; color:#B86A7A;">任 务</span>
+    </div>
+            <!-- 家 -->
+<div class="map-btn" data-location="home" style="position:absolute; bottom:44%; left:4%; z-index:10; background:rgba(255,255,255,0.7); backdrop-filter:blur(16px); border-radius:20px; padding:10px 14px; border:1px solid rgba(255,255,255,0.3); box-shadow:0 8px 32px rgba(255,150,150,0.12); display:flex; align-items:center; gap:8px; cursor:pointer; transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);" onclick="handleMapClick('home')">
+    <span style="font-size:20px;">🏠</span>
+    <span style="font-size:13px; font-weight:600; color:#B86A7A;">家</span>
+</div>
+
+<!-- 学校 -->
+<div class="map-btn" data-location="school" style="position:absolute; top:13%; left:22%; z-index:10; background:rgba(255,255,255,0.7); backdrop-filter:blur(16px); border-radius:20px; padding:10px 14px; border:1px solid rgba(255,255,255,0.3); box-shadow:0 8px 32px rgba(255,150,150,0.12); display:flex; align-items:center; gap:8px; cursor:pointer; transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);" onclick="handleMapClick('school')">
+    <span style="font-size:20px;">🏫</span>
+    <span style="font-size:13px; font-weight:600; color:#B86A7A;">学校</span>
+</div>
+
+<!-- 公司 -->
+<div class="map-btn" data-location="company" style="position:absolute; top:58%; left:40%; z-index:10; background:rgba(255,255,255,0.7); backdrop-filter:blur(16px); border-radius:20px; padding:10px 14px; border:1px solid rgba(255,255,255,0.3); box-shadow:0 8px 32px rgba(255,150,150,0.12); display:flex; align-items:center; gap:8px; cursor:pointer; transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);" onclick="handleMapClick('company')">
+    <span style="font-size:20px;">🏢</span>
+    <span style="font-size:13px; font-weight:600; color:#B86A7A;">公司</span>
+</div>
+
+<!-- 商业街 -->
+<div class="map-btn" data-location="street" style="position:absolute; bottom:18%; right:3%; z-index:10; background:rgba(255,255,255,0.7); backdrop-filter:blur(16px); border-radius:20px; padding:10px 14px; border:1px solid rgba(255,255,255,0.3); box-shadow:0 8px 32px rgba(255,150,150,0.12); display:flex; align-items:center; gap:8px; cursor:pointer; transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);" onclick="openStreetPage()">
+    <span style="font-size:20px;">🛍️</span>
+    <span style="font-size:13px; font-weight:600; color:#B86A7A;">商业街</span>
+</div>
+
+<!-- 公园 -->
+<div class="map-btn" data-location="out" style="position:absolute; top:8%; right:8%; z-index:10; background:rgba(255,255,255,0.7); backdrop-filter:blur(16px); border-radius:20px; padding:10px 14px; border:1px solid rgba(255,255,255,0.3); box-shadow:0 8px 32px rgba(255,150,150,0.12); display:flex; align-items:center; gap:8px; cursor:pointer; transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);" onclick="handleMapClick('out')">
+    <span style="font-size:20px;">🌳</span>
+    <span style="font-size:13px; font-weight:600; color:#B86A7A;">公园</span>
+</div>
+<!-- 外出 -->
+<div class="map-btn" data-location="goout" style="position:absolute; top:84%; right:60%; z-index:10; background:rgba(255,255,255,0.7); backdrop-filter:blur(16px); border-radius:20px; padding:10px 14px; border:1px solid rgba(255,255,255,0.3); box-shadow:0 8px 32px rgba(255,150,150,0.12); display:flex; align-items:center; gap:8px; cursor:pointer; transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);" onclick="handleMapClick('goout')">
+    <span style="font-size:20px;">🚗</span>
+    <span style="font-size:13px; font-weight:600; color:#B86A7A;">外出</span>
+</div>
+            <!-- 玩家位置标记 -->
+            <div id="playerMarker" style="position:absolute; bottom:20%; left:15%; width:16px; height:16px; background:#E85D75; border-radius:50%; border:2px solid white; box-shadow:0 0 20px rgba(232,93,117,0.4); z-index:5; transition:all 0.5s ease;"></div>
+        </div>
+    </div>
+
+    <!-- 微信页面 -->
+    <div id="chatPage" class="page">
+        <div id="chatListScreen"><div id="chatList"></div></div>
+        <div id="chatDetailScreen" style="display:none;">
+            <div class="chat-detail-header">
+                <button class="chat-back" id="chatBackBtn">←</button>
+                <span id="chatContactName"></span>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-area">
+                <div class="chat-input" id="chatInputBox">点击输入...</div>
             </div>
         </div>
-        
-        <div id="chatPage" class="page">
-            <div id="chatListScreen"><div id="chatList"></div></div>
-            <div id="chatDetailScreen" style="display:none;">
-                <div class="chat-detail-header"><button class="chat-back" id="chatBackBtn">←</button><span id="chatContactName"></span></div>
-                <div class="chat-messages" id="chatMessages"></div>
-                <div class="chat-input-area"><div class="chat-input" id="chatInputBox">点击输入...</div></div>
-            </div>
+    </div>
+
+    <!-- 朋友圈页面 -->
+    <div id="momentsPage" class="page">
+        <div class="moments-header">
+            <div class="plus-icon" id="addMomentBtn">➕</div>
         </div>
-        
-        <div id="momentsPage" class="page">
-            <div class="moments-header"><div class="plus-icon" id="addMomentBtn">➕</div></div>
-            <div class="moments-bg"><div class="my-avatar" id="myAvatar">🐰</div></div>
-            <div id="momentsFeed"></div>
+        <div class="moments-bg">
+            <div class="my-avatar" id="myAvatar">🐰</div>
         </div>
-        
-        <div id="weiboPage" class="page">
-            <div class="search-bar">🔍 猜你想搜 · 张桂源 练习室 直拍</div>
-            <div class="weibo-tabs" id="weiboTabs">
-                <span class="tab active" data-tab="hot">🔥 热搜</span>
-                <span class="tab" data-tab="big">⭐ 张桂源大号</span>
-                <span class="tab" data-tab="small">🔒张桂源小号</span>
-                <span class="tab" data-tab="myweibo">📝 我的微博</span>
-            </div>
-            <div id="weiboContent"></div>
+        <div id="momentsFeed"></div>
+    </div>
+
+    <!-- 微博页面 -->
+    <div id="weiboPage" class="page">
+        <div class="search-bar">🔍 猜你想搜 · 张桂源 练习室 直拍</div>
+        <div class="weibo-tabs" id="weiboTabs">
+            <span class="tab active" data-tab="hot">🔥 热搜</span>
+            <span class="tab" data-tab="big">⭐ 张桂源大号</span>
+            <span class="tab" data-tab="small">🔒张桂源小号</span>
+            <span class="tab" data-tab="myweibo">📝 我的微博</span>
         </div>
-        
-        <div id="myPage" class="page">
-            <div id="profileCard"></div>
-            <div class="feature-grid">
-                <div class="feature-btn" id="giftBtn">🎁 礼物橱窗</div>
-                <div class="feature-btn" id="diaryBtn">📖 恋爱日记</div>
-                <div class="feature-btn" id="scheduleBtn">📅 艺人行程</div>
-                <div class="feature-btn" id="letterBtn">💌 艺人来信</div>
-                 <div class="feature-btn" id="saveGameBtn" style="background:#E85D75; color:white;">💾 保存游戏</div>
-            </div>
-            <div class="diary-section">
-                <div><strong>📔 我的日记本</strong></div>
-                <textarea id="diaryInput" class="diary-input" rows="2" placeholder="写下今天的感受..."></textarea>
-                <button id="postDiaryBtn" class="diary-post-btn">发布日记</button>
-                <div id="diaryEntries"></div>
-            </div>
+        <div id="weiboContent"></div>
+    </div>
+
+    <!-- 我的页面 -->
+    <div id="myPage" class="page">
+        <div id="profileCard"></div>
+        <div class="feature-grid">
+            <div class="feature-btn" id="giftBtn">我的物品</div>
+            <div class="feature-btn" id="diaryBtn">恋爱日记</div>
+            <div class="feature-btn" id="scheduleBtn">艺人行程</div>
+            <div class="feature-btn" id="letterBtn">艺人来信</div>
+            <div class="feature-btn" id="saveGameBtn" style="background:#E85D75; color:white;">💾 保存游戏</div>
+            <div class="feature-btn" id="favorabilityBtn" style="background:#FFB347; color:white;">💕 好感查询</div>
+        </div>
+        <div class="diary-section">
+            <div><strong>📔 我的日记本</strong></div>
+            <textarea id="diaryInput" class="diary-input" rows="2" placeholder="写下今天的感受..."></textarea>
+            <button id="postDiaryBtn" class="diary-post-btn">发布日记</button>
+            <div id="diaryEntries"></div>
         </div>
     </div>
 </div>
 
 <script>
+    // ================= 商业街功能 =================
+function openStreetPage() {
+    // 检查地图是否解锁
+    if (localStorage.getItem("map_unlocked") !== "true") {
+        alert("🔒 地图未解锁\n\n完成第一章剧情后才能使用地图功能");
+        return;
+    }
+    
+    // 创建弹窗
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+    
+    modal.innerHTML = `
+        <div style="background:white;border-radius:28px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="text-align:center;margin-bottom:20px;">
+                <div style="font-size:36px;margin-bottom:8px;">🛍️</div>
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">商业街</div>
+                <div style="font-size:12px;color:#999;margin-top:4px;">你想做什么？</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <button class="street-option" data-action="shop" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">🛒</span>
+                    <span>购物</span>
+                </button>
+                <button class="street-option" data-action="eat" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">🍜</span>
+                    <span>就餐</span>
+                </button>
+                <button class="street-option" data-action="earn" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">💰</span>
+                    <span>挣钱</span>
+                </button>
+            </div>
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:16px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">关闭</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // ===== 点击选项的反馈 =====
+    modal.querySelectorAll(".street-option").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            var action = this.dataset.action;
+            modal.remove();
+            
+            if (action === 'earn') {
+                openEarnPage();
+            } else if (action === 'shop') {
+                openShopPage();
+            } else if (action === 'eat') {
+                alert('📍 商业街 - 🍜 就餐\n\n功能开发中，敬请期待~');
+            }
+        });
+    });
+    
+    // 点击背景关闭
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+// ================= 商店 =================
+function openShopPage() {
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+    
+    modal.innerHTML = `
+        <div style="background:white;border-radius:28px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="text-align:center;margin-bottom:20px;">
+                <div style="font-size:36px;margin-bottom:8px;">🛍️</div>
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">想做什么？</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <button class="shop-option" data-action="store" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">🏪</span>
+                    <span>商店</span>
+                </button>
+                <button class="shop-option" data-action="gacha" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">🎰</span>
+                    <span>扭蛋机</span>
+                </button>
+            </div>
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:16px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">关闭</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelectorAll(".shop-option").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            var action = this.dataset.action;
+            modal.remove();
+            if (action === 'store') {
+                alert('🏪 商店\n\n功能开发中，敬请期待~');
+            } else if (action === 'gacha') {
+                openGachaPage();
+            }
+        });
+    });
+    
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+// ================= 扭蛋机 =================
+let currentGachaMachine = 'gift'; // 'gift' 或 'card'
+let isSpinning = false;
+
+function openGachaPage() {
+    if (player.money < 10) {
+        alert("💰 余额不足！\n扭蛋需要 10 金钱，当前余额：" + player.money);
+        return;
+    }
+
+    currentGachaMachine = 'gift';
+
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,240,240,0.75);backdrop-filter:blur(8px);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:40px;padding:32px 24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(200,120,120,0.15);position:relative;text-align:center;">
+            <!-- 右上角设置按钮（仅小卡扭蛋机显示） -->
+            <div id="cardSettingsBtn" style="position:absolute;top:12px;right:16px;font-size:20px;cursor:pointer;color:#999;display:none;transition:all 0.2s;padding:4px 8px;border-radius:8px;z-index:10;" onclick="openCardSettings()" onmouseenter="this.style.background='#F0F0F0'" onmouseleave="this.style.background='transparent'">
+                ⚙️
+            </div>
+            <div style="font-size:14px;color:#999;margin-bottom:6px;">💰 余额：${player.money}</div>
+
+            <!-- 机器名称 + 切换箭头 -->
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px;">
+                <div class="gacha-arrow" id="gachaArrowLeft" style="font-size:20px;cursor:pointer;color:#555;user-select:none;padding:4px 10px;border-radius:50%;transition:all 0.2s;font-weight:700;">◀</div>
+                <div id="gachaMachineTitle" style="font-size:20px;font-weight:700;color:#E85D75;">🎁 礼物扭蛋机</div>
+                <div class="gacha-arrow" id="gachaArrowRight" style="font-size:20px;cursor:pointer;color:#555;user-select:none;padding:4px 10px;border-radius:50%;transition:all 0.2s;font-weight:700;">▶</div>
+            </div>
+            <div style="font-size:12px;color:#999;margin-bottom:12px;" id="gachaSubtitle">✨ 消耗 10💰 获得随机小礼物</div>
+
+            <!-- 扭蛋机主体 -->
+            <div style="display:flex;flex-direction:column;align-items:center;margin:8px 0;">
+                <div id="gachaMachine" style="position:relative;width:200px;height:220px;cursor:pointer;transition:transform 0.05s;" onclick="spinGacha()">
+                    <!-- 透明圆顶（淡色小球） -->
+                    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:140px;height:90px;background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,220,235,0.3));border-radius:50% 50% 30% 30%;border:3px solid #FFD9E8;overflow:hidden;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;padding:10px;z-index:3;">
+                        <div id="ballsContainer" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;transition:all 0.1s;">
+                            <!-- 淡色圆球 -->
+                            <span style="font-size:18px;">🔴</span>
+                            <span style="font-size:20px;">🔵</span>
+                            <span style="font-size:16px;">🟡</span>
+                            <span style="font-size:18px;">🟢</span>
+                            <span style="font-size:20px;">🟣</span>
+                            <span style="font-size:16px;">🟠</span>
+                            <span style="font-size:18px;">🔴</span>
+                            <span style="font-size:20px;">🔵</span>
+                            <span style="font-size:16px;">🟡</span>
+                            <span style="font-size:18px;">🟢</span>
+                        </div>
+                    </div>
+                    <!-- 扭蛋机身体 -->
+                    <div id="gachaBody" style="position:absolute;top:50px;left:50%;transform:translateX(-50%);width:160px;height:140px;background:linear-gradient(180deg, #FFE8F0, #FFD9E8);border-radius:40px 40px 20px 20px;border:3px solid #FFB7C5;box-shadow:inset 0 -10px 30px rgba(255,180,200,0.2);z-index:2;">
+                        <div style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:40px;height:20px;background:#FFB7C5;border-radius:0 0 20px 20px;border:3px solid #FFB7C5;border-top:none;z-index:1;"></div>
+                        <!-- 不写字，留空 -->
+                    </div>
+                    <!-- 旋钮 -->
+                    <div id="gachaKnob" style="position:absolute;bottom:20px;right:10px;width:34px;height:34px;background:linear-gradient(145deg, #FFD9E8, #FFB7C5);border-radius:50%;border:3px solid #FF9EB3;box-shadow:0 4px 12px rgba(255,180,200,0.3),inset -2px -2px 8px rgba(200,100,120,0.15),inset 2px 2px 8px rgba(255,255,255,0.5);z-index:5;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.1s;" onclick="spinGacha()">
+                        <span style="font-size:16px;text-shadow:0 1px 2px rgba(255,255,255,0.5);">🔘</span>
+                    </div>
+                    <!-- 装饰小点 -->
+                    <div style="position:absolute;top:70px;left:30px;width:10px;height:10px;background:rgba(255,255,255,0.4);border-radius:50%;z-index:4;"></div>
+                    <div style="position:absolute;top:90px;right:35px;width:7px;height:7px;background:rgba(255,255,255,0.3);border-radius:50%;z-index:4;"></div>
+                </div>
+                <!-- 掉落区 -->
+                <div id="gachaDropZone" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;margin-top:2px;">
+                    <div id="droppedEgg" style="font-size:0px;transition:all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);transform:scale(0);"></div>
+                </div>
+            </div>
+
+            <div id="gachaHint" style="font-size:12px;color:#C99B88;margin-top:2px;">💡 点击旋钮或扭蛋机 ｜ 📱 摇一摇手机</div>
+
+            <div style="display:flex;gap:12px;margin-top:12px;">
+                <button onclick="this.closest('.full-modal').remove()" style="flex:1;padding:10px;background:#F5F5F5;border:none;border-radius:30px;font-size:13px;color:#999;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">关闭</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // ===== 切换箭头事件 =====
+    document.getElementById("gachaArrowLeft").addEventListener("click", function(e) {
+        e.stopPropagation();
+        switchGachaMachine('left');
+    });
+    document.getElementById("gachaArrowRight").addEventListener("click", function(e) {
+        e.stopPropagation();
+        switchGachaMachine('right');
+    });
+
+    // 箭头悬停效果
+    document.querySelectorAll(".gacha-arrow").forEach(el => {
+        el.addEventListener("mouseenter", function() {
+            this.style.background = "#F0EEEE";
+        });
+        el.addEventListener("mouseleave", function() {
+            this.style.background = "transparent";
+            // ===== 加载选中的卡套并更新标签 =====
+loadSelectedCardSet();
+        });
+    });
+
+    // ===== 手机摇晃检测 =====
+    var shakeCount = 0;
+    var lastShakeTime = 0;
+    var shakeThreshold = 15;
+
+    function handleShake(acceleration) {
+        var now = Date.now();
+        if (now - lastShakeTime < 300) return;
+
+        var x = acceleration.x || 0;
+        var y = acceleration.y || 0;
+        var z = acceleration.z || 0;
+        var magnitude = Math.sqrt(x * x + y * y + z * z);
+
+        if (magnitude > shakeThreshold) {
+            shakeCount++;
+            lastShakeTime = now;
+
+            // 摇晃3次触发扭蛋
+            if (shakeCount >= 3) {
+                shakeCount = 0;
+                if (!isSpinning) {
+                    spinGacha();
+                }
+            }
+        }
+    }
+
+    // 检查是否支持 DeviceMotion API
+    if (window.DeviceMotionEvent) {
+        // 针对 iOS 13+ 需要请求权限
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+            DeviceMotionEvent.requestPermission().then(function(state) {
+                if (state === 'granted') {
+                    window.addEventListener('devicemotion', handleShake);
+                }
+            }).catch(function(err) {
+                console.log('摇一摇权限被拒绝:', err);
+            });
+        } else {
+            window.addEventListener('devicemotion', handleShake);
+        }
+    }
+
+    // ===== 扭蛋机抽奖 =====
+    window.spinGacha = function() {
+        if (isSpinning) return;
+        isSpinning = true;
+
+        var machine = document.getElementById("gachaMachine");
+        var knob = document.getElementById("gachaKnob");
+        var balls = document.getElementById("ballsContainer");
+        var droppedEgg = document.getElementById("droppedEgg");
+        var hint = document.getElementById("gachaHint");
+
+        if (!machine) return;
+
+        machine.style.pointerEvents = "none";
+        if (knob) knob.style.pointerEvents = "none";
+        if (hint) hint.innerText = "🔄 扭蛋机转动中...";
+
+        // 旋钮旋转
+        if (knob) {
+            knob.style.transition = "transform 0.1s";
+            var rotateCount = 0;
+            var rotateInterval = setInterval(function() {
+                rotateCount += 30;
+                knob.style.transform = "rotate(" + rotateCount + "deg) scale(0.9)";
+                if (rotateCount >= 360) {
+                    clearInterval(rotateInterval);
+                    knob.style.transform = "rotate(0deg) scale(1)";
+                }
+            }, 60);
+        }
+
+        // 摇晃动画
+        var shakeCount2 = 0;
+        var shakeInterval = setInterval(function() {
+            var offset = Math.sin(shakeCount2 * 0.8) * 3;
+            machine.style.transform = "rotate(" + offset + "deg)";
+            if (balls) {
+                balls.style.transform = "translateX(" + (Math.random() * 8 - 4) + "px) translateY(" + (Math.random() * 6 - 3) + "px)";
+            }
+            shakeCount2++;
+            if (shakeCount2 > 20) {
+                clearInterval(shakeInterval);
+                machine.style.transform = "rotate(0deg)";
+                if (balls) balls.style.transform = "translateX(0) translateY(0)";
+                dropEgg();
+            }
+        }, 80);
+
+        function dropEgg() {
+            // 掉落的蛋随机颜色
+            var eggEmojis = ["🔴", "🔵", "🟡", "🟢", "🟣", "🟠"];
+            var eggEmoji = eggEmojis[Math.floor(Math.random() * eggEmojis.length)];
+            droppedEgg.style.fontSize = "0px";
+            droppedEgg.style.transform = "scale(0) translateY(-30px)";
+            droppedEgg.innerText = eggEmoji;
+
+            setTimeout(function() {
+                droppedEgg.style.fontSize = "44px";
+                droppedEgg.style.transform = "scale(1) translateY(0px)";
+                if (hint) hint.innerText = "🎉 扭蛋出来了！";
+
+                setTimeout(function() {
+                    showGachaResultModal();
+                }, 500);
+            }, 300);
+        }
+    };
+
+    // ===== 关闭弹窗时移除摇晃监听 =====
+    var closeBtn = modal.querySelector('button');
+    if (closeBtn) {
+        closeBtn.onclick = function() {
+            if (window.DeviceMotionEvent) {
+                window.removeEventListener('devicemotion', handleShake);
+            }
+            modal.remove();
+        };
+    }
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) {
+            if (window.DeviceMotionEvent) {
+                window.removeEventListener('devicemotion', handleShake);
+            }
+            modal.remove();
+        }
+    });
+}
+
+// ================= 切换扭蛋机 =================
+function switchGachaMachine(direction) {
+    var title = document.getElementById("gachaMachineTitle");
+    var subtitle = document.getElementById("gachaSubtitle");
+    var body = document.getElementById("gachaBody");
+    var balls = document.getElementById("ballsContainer");
+    var hint = document.getElementById("gachaHint");
+    var droppedEgg = document.getElementById("droppedEgg");
+    var settingsBtn = document.getElementById("cardSettingsBtn");
+
+    if (direction === 'left') {
+        if (currentGachaMachine === 'gift') {
+            currentGachaMachine = 'card';
+        } else {
+            currentGachaMachine = 'gift';
+        }
+    } else {
+        if (currentGachaMachine === 'gift') {
+            currentGachaMachine = 'card';
+        } else {
+            currentGachaMachine = 'gift';
+        }
+    }
+
+    if (currentGachaMachine === 'gift') {
+        title.innerText = '🎁 礼物扭蛋机';
+        subtitle.innerText = '✨ 消耗 10💰 获得随机小礼物';
+        if (body) {
+            body.style.background = 'linear-gradient(180deg, #FFE8F0, #FFD9E8)';
+            body.style.borderColor = '#FFB7C5';
+        }
+        if (balls) {
+            balls.innerHTML = `
+                <span style="font-size:18px;">🔴</span>
+                <span style="font-size:20px;">🔵</span>
+                <span style="font-size:16px;">🟡</span>
+                <span style="font-size:18px;">🟢</span>
+                <span style="font-size:20px;">🟣</span>
+                <span style="font-size:16px;">🟠</span>
+                <span style="font-size:18px;">🔴</span>
+                <span style="font-size:20px;">🔵</span>
+                <span style="font-size:16px;">🟡</span>
+                <span style="font-size:18px;">🟢</span>
+            `;
+        }
+        if (hint) hint.innerText = '💡 点击旋钮或扭蛋机 ｜ 📱 摇一摇手机';
+        // 隐藏设置按钮
+        if (settingsBtn) settingsBtn.style.display = 'none';
+    } else {
+        title.innerText = '小卡扭蛋机';
+        subtitle.innerText = '消耗 ￥10获得随机小卡';
+        if (body) {
+            body.style.background = 'linear-gradient(180deg, #E8F0FF, #D9E8FF)';
+            body.style.borderColor = '#B7C5FF';
+        }
+        if (balls) {
+            balls.innerHTML = `
+                <span style="font-size:18px;">🟦</span>
+                <span style="font-size:20px;">🟪</span>
+                <span style="font-size:16px;">🟧</span>
+                <span style="font-size:18px;">🟥</span>
+                <span style="font-size:20px;">🟩</span>
+                <span style="font-size:16px;">🟨</span>
+                <span style="font-size:18px;">🟦</span>
+                <span style="font-size:20px;">🟪</span>
+                <span style="font-size:16px;">🟧</span>
+                <span style="font-size:18px;">🟥</span>
+            `;
+        }
+        if (hint) hint.innerText = '💡 小卡扭蛋机 ｜ 📱 摇一摇手机';
+        // 显示设置按钮
+        if (settingsBtn) settingsBtn.style.display = 'block';
+        // ✅ 显示当前选中的卡套名称
+    if (currentSelectedCardSet) {
+        updateGachaMachineLabel(currentSelectedCardSet.name || '未命名卡套');
+    } else {
+        // 尝试加载
+        loadSelectedCardSet();
+    }
+
+    }
+
+    // 重置掉落区
+    if (droppedEgg) {
+        droppedEgg.style.fontSize = "0px";
+        droppedEgg.style.transform = "scale(0)";
+        droppedEgg.innerText = "";
+    }
+}
+// ================= 小卡设置入口（显示所有卡套） =================
+function openCardSettings() {
+    // ✅ 先重新加载数据
+    loadCardSets();
+
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1001;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    // ✅ 再次确保 cardSets 是最新的
+    console.log('显示卡套列表，当前 cardSets 数量:', cardSets.length);
+
+    var cardSetsHtml = '';
+    if (cardSets.length === 0) {
+        cardSetsHtml = `
+            <div style="text-align:center;padding:40px 20px;">
+                <div style="font-size:48px;margin-bottom:12px;">🃏</div>
+                <div style="font-size:15px;color:#666;margin-bottom:20px;">还没有小卡套哦～<br>点击下方按钮创建你的第一套小卡吧！</div>
+                <button onclick="this.closest('.full-modal').remove();openCardSetEditor(null)" style="padding:12px 32px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:15px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+                    创建新卡套
+                </button>
+            </div>
+        `;
+    } else {
+        var setsHtml = cardSets.map(function(set, index) {
+            // 统计卡套内有多少张卡
+            var totalCards = 0;
+            var types = ['n', 'r', 'sr', 'ssr', 'sp'];
+            types.forEach(function(type) {
+                if (set.cards && set.cards[type]) {
+                    set.cards[type].forEach(function(card) {
+                        if (card && card !== '') totalCards++;
+                    });
+                }
+            });
+
+            return `
+                <div style="background:#F8F8F8;border-radius:16px;padding:14px 16px;margin-bottom:12px;border:1px solid #EFEFEF;cursor:pointer;transition:all 0.2s;" onclick="this.closest('.full-modal').remove();openCardSetEditor('${set.id}')" onmouseenter="this.style.background='#F0EEEE'" onmouseleave="this.style.background='#F8F8F8'">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <div style="font-weight:600;font-size:16px;color:#1A1A1A;">${set.name || '未命名卡套'}</div>
+                            <div style="font-size:12px;color:#999;margin-top:2px;">小卡 ${totalCards} 张 ｜ ${set.createdAt || ''}</div>
+                        </div>
+                        <div style="font-size:12px;color:#999;">点击编辑 →</div>
+                    </div>
+                    <button onclick="event.stopPropagation();selectCardSet('${set.id}')" style="margin-top:10px;padding:6px 20px;background:#E85D75;color:white;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.2s;width:100%;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+                        抽这套
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        cardSetsHtml = `
+            <div style="margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <div style="font-size:14px;color:#666;">共 ${cardSets.length} 套卡</div>
+                    <button onclick="this.closest('.full-modal').remove();openCardSetEditor(null)" style="padding:6px 16px;background:#E85D75;color:white;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+                        新建卡套
+                    </button>
+                </div>
+                ${setsHtml}
+            </div>
+        `;
+    }
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:32px;padding:24px 20px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">我的小卡套</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+            ${cardSetsHtml}
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+// ================= 小卡套编辑器 =================
+function openCardSetEditor(setId) {
+    // 如果是编辑已有卡套
+    if (setId) {
+        currentCardSet = cardSets.find(function(s) { return s.id === setId; });
+        if (!currentCardSet) {
+            alert("卡套不存在");
+            return;
+        }
+        currentCardSetId = setId;
+    } else {
+        // 创建新卡套
+        currentCardSet = {
+            id: "set_" + Date.now(),
+            name: "",
+            cards: {
+                n: ["", "", "", ""],
+                r: ["", "", "", ""],
+                sr: ["", "", "", ""],
+                ssr: ["", "", "", ""],
+                sp: ["", ""]
+            },
+            createdAt: new Date().toLocaleString()
+        };
+        currentCardSetId = null;
+    }
+
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1002;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    var cards = currentCardSet.cards;
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:32px;padding:24px 20px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">${setId ? '📝 编辑卡套' : '✨ 新建卡套'}</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+
+            <!-- 卡套名称 -->
+            <div style="margin-bottom:16px;">
+                <div style="font-size:13px;font-weight:600;color:#666;margin-bottom:6px;">📛 卡套名称</div>
+                <input id="cardSetNameInput" type="text" placeholder="输入卡套名称..." value="${currentCardSet.name || ''}" style="width:100%;padding:10px 14px;border:2px solid #EFEFEF;border-radius:12px;font-size:14px;outline:none;transition:border 0.2s;" onfocus="this.style.borderColor='#E85D75'" onblur="this.style.borderColor='#EFEFEF'">
+            </div>
+
+            <!-- N款 -->
+            <div style="margin-bottom:14px;">
+                <div style="font-size:13px;font-weight:600;color:#666;margin-bottom:6px;">🟢 N款（4张）</div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+                    ${[0,1,2,3].map(i => `
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                            <div id="card_n_${i}" style="width:100%;aspect-ratio:64/88;background:${cards.n[i] ? 'transparent' : '#F5F5F5'};border:2px dashed #DDD;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:all 0.2s;position:relative;" onclick="uploadCardImage('n',${i})" onmouseenter="this.style.borderColor='#4CAF50'" onmouseleave="this.style.borderColor='#DDD'">
+                                ${cards.n[i] ? `<img src="${cards.n[i]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : `<span style="font-size:18px;color:#CCC;">➕</span>`}
+                            </div>
+                            <div style="font-size:9px;color:#999;">N${i+1}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- R款 -->
+            <div style="margin-bottom:14px;">
+                <div style="font-size:13px;font-weight:600;color:#666;margin-bottom:6px;">🔵 R款（4张）</div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+                    ${[0,1,2,3].map(i => `
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                            <div id="card_r_${i}" style="width:100%;aspect-ratio:64/88;background:${cards.r[i] ? 'transparent' : '#F5F5F5'};border:2px dashed #DDD;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:all 0.2s;position:relative;" onclick="uploadCardImage('r',${i})" onmouseenter="this.style.borderColor='#4A90E2'" onmouseleave="this.style.borderColor='#DDD'">
+                                ${cards.r[i] ? `<img src="${cards.r[i]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : `<span style="font-size:18px;color:#CCC;">➕</span>`}
+                            </div>
+                            <div style="font-size:9px;color:#999;">R${i+1}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- SR + SSR -->
+            <div style="margin-bottom:14px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:#666;margin-bottom:6px;">🟣 SR（3张）</div>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;">
+                            ${[0,1,2].map(i => `
+                                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                                    <div id="card_sr_${i}" style="width:100%;aspect-ratio:64/88;background:${cards.sr[i] ? 'transparent' : '#F5F5F5'};border:2px dashed #DDD;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:all 0.2s;position:relative;" onclick="uploadCardImage('sr',${i})" onmouseenter="this.style.borderColor='#9B59B6'" onmouseleave="this.style.borderColor='#DDD'">
+                                        ${cards.sr[i] ? `<img src="${cards.sr[i]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : `<span style="font-size:16px;color:#CCC;">➕</span>`}
+                                    </div>
+                                    <div style="font-size:9px;color:#999;">SR${i+1}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:#666;margin-bottom:6px;">🟡 SSR（3张）</div>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;">
+                            ${[0,1,2].map(i => `
+                                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                                    <div id="card_ssr_${i}" style="width:100%;aspect-ratio:64/88;background:${cards.ssr[i] ? 'transparent' : '#F5F5F5'};border:2px dashed #DDD;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:all 0.2s;position:relative;" onclick="uploadCardImage('ssr',${i})" onmouseenter="this.style.borderColor='#F39C12'" onmouseleave="this.style.borderColor='#DDD'">
+                                        ${cards.ssr[i] ? `<img src="${cards.ssr[i]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : `<span style="font-size:16px;color:#CCC;">➕</span>`}
+                                    </div>
+                                    <div style="font-size:9px;color:#999;">SSR${i+1}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SP -->
+            <div style="margin-bottom:16px;">
+                <div style="font-size:13px;font-weight:600;color:#666;margin-bottom:6px;">💎 SP款</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div>
+                        <div style="font-size:11px;color:#999;margin-bottom:4px;">✨ 显示款</div>
+                        <div id="card_sp_0" style="width:100%;aspect-ratio:64/88;background:${cards.sp[0] ? 'transparent' : '#F5F5F5'};border:2px dashed #DDD;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:all 0.2s;position:relative;" onclick="uploadCardImage('sp',0)" onmouseenter="this.style.borderColor='#E85D75'" onmouseleave="this.style.borderColor='#DDD'">
+                            ${cards.sp[0] ? `<img src="${cards.sp[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : `<span style="font-size:18px;color:#CCC;">➕</span>`}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size:11px;color:#999;margin-bottom:4px;">🔒 隐藏款</div>
+                        <div id="card_sp_1" style="width:100%;aspect-ratio:64/88;background:${cards.sp[1] ? 'transparent' : '#F5F5F5'};border:2px dashed #DDD;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:all 0.2s;position:relative;" onclick="uploadCardImage('sp',1)" onmouseenter="this.style.borderColor='#E85D75'" onmouseleave="this.style.borderColor='#DDD'">
+                            ${cards.sp[1] ? `<img src="${cards.sp[1]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : `<span style="font-size:18px;color:#CCC;">➕</span>`}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 按钮 -->
+            <div style="display:flex;gap:10px;">
+                <button onclick="deleteCardSet()" style="flex:1;padding:12px;background:#FF6B6B;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#E55555'" onmouseleave="this.style.background='#FF6B6B'">
+                    🗑️ 删除
+                </button>
+                <button onclick="saveCardSet()" style="flex:2;padding:12px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+                    💾 保存卡套
+                </button>
+            </div>
+            <div style="font-size:11px;color:#999;text-align:center;margin-top:8px;">点击加号上传图片，支持 JPG / PNG</div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+// ================= 上传小卡图片 =================
+function uploadCardImage(type, index) {
+    var fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+    fileInput.style.display = "none";
+    document.body.appendChild(fileInput);
+
+    fileInput.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert("⚠️ 图片太大了，请选择小于5MB的图片");
+            fileInput.remove();
+            return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            var imageData = ev.target.result;
+
+            // ✅ 修复：使用 currentCardSet 而不是 cardCollection
+            if (currentCardSet && currentCardSet.cards) {
+                currentCardSet.cards[type][index] = imageData;
+                console.log('✅ 图片已保存到 currentCardSet.cards.' + type + '[' + index + ']');
+            } else {
+                console.error('❌ currentCardSet 未初始化或没有 cards 属性');
+                alert('⚠️ 系统错误：请先打开一个卡套再上传图片');
+                fileInput.remove();
+                return;
+            }
+
+            // 更新界面
+            var targetDiv = document.getElementById('card_' + type + '_' + index);
+            if (targetDiv) {
+                targetDiv.innerHTML = '<img src="' + imageData + '" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">';
+                targetDiv.style.background = "transparent";
+                console.log('✅ 界面已更新');
+            } else {
+                console.error('❌ 找不到元素: card_' + type + '_' + index);
+            }
+
+            fileInput.remove();
+        };
+
+        reader.onerror = function(err) {
+            console.error('❌ 文件读取失败:', err);
+            alert('⚠️ 图片读取失败，请重试');
+            fileInput.remove();
+        };
+
+        reader.readAsDataURL(file);
+    };
+
+    fileInput.oncancel = function() {
+        fileInput.remove();
+    };
+
+    fileInput.click();
+}
+
+// ================= 保存小卡设置 =================
+function saveCardSettings() {
+    // 获取名称
+    var nameInput = document.getElementById("cardSetNameInput");
+    if (nameInput) {
+        cardCollection.name = nameInput.value.trim();
+    }
+
+    saveCardSettingsToLocal();
+    alert("✅ 小卡套已保存！");
+    // 关闭弹窗
+    var modal = document.querySelector(".full-modal");
+    if (modal) modal.remove();
+}
+// ================= 保存卡套 =================
+// ================= 保存卡套 =================
+function saveCardSet() {
+    // 获取名称
+    var nameInput = document.getElementById("cardSetNameInput");
+    if (nameInput) {
+        currentCardSet.name = nameInput.value.trim() || "未命名卡套";
+    }
+
+    // 检查是否有任何图片
+    var hasCard = false;
+    var types = ['n', 'r', 'sr', 'ssr', 'sp'];
+    types.forEach(function(type) {
+        if (currentCardSet.cards && currentCardSet.cards[type]) {
+            currentCardSet.cards[type].forEach(function(card) {
+                if (card && card !== '') hasCard = true;
+            });
+        }
+    });
+
+    if (!hasCard) {
+        if (!confirm("当前卡套没有任何图片，确定要保存吗？")) {
+            return;
+        }
+    }
+
+    // 先加载最新的数据，防止覆盖
+    loadCardSets();
+
+    // 如果是新建（没有 id 或者不在数组中）
+    if (!currentCardSetId || !cardSets.find(function(s) { return s.id === currentCardSetId; })) {
+        // 生成新 id
+        if (!currentCardSet.id) {
+            currentCardSet.id = "set_" + Date.now();
+        }
+        currentCardSet.createdAt = new Date().toLocaleString();
+        // 添加到数组
+        cardSets.push(currentCardSet);
+        currentCardSetId = currentCardSet.id;
+    } else {
+        // 更新已有卡套
+        var index = cardSets.findIndex(function(s) { return s.id === currentCardSetId; });
+        if (index !== -1) {
+            cardSets[index] = currentCardSet;
+        } else {
+            // 如果找不到，作为新卡套添加
+            cardSets.push(currentCardSet);
+            currentCardSetId = currentCardSet.id;
+        }
+    }
+
+    saveCardSets();
+
+    // 调试：打印保存后的数据
+    console.log('保存后 cardSets 数量:', cardSets.length);
+    console.log('保存后 cardSets 数据:', cardSets);
+
+    alert("卡套已保存！");
+
+    // 关闭弹窗
+    var modal = document.querySelector(".full-modal");
+    if (modal) modal.remove();
+
+    // 重新打开设置列表
+    setTimeout(function() {
+        openCardSettings();
+    }, 300);
+}
+// ================= 删除卡套 =================
+function deleteCardSet() {
+    if (!currentCardSetId) {
+        // 新建的卡套，直接关闭
+        var modal = document.querySelector(".full-modal");
+        if (modal) modal.remove();
+        return;
+    }
+
+    if (!confirm(`确定要删除「${currentCardSet.name || '未命名卡套'}」吗？`)) {
+        return;
+    }
+
+    cardSets = cardSets.filter(function(s) { return s.id !== currentCardSetId; });
+    saveCardSets();
+    
+    var modal = document.querySelector(".full-modal");
+    if (modal) modal.remove();
+    
+    setTimeout(function() {
+        openCardSettings();
+    }, 300);
+}
+// ================= 保存到本地存储 =================
+function saveCardSettingsToLocal() {
+    try {
+        localStorage.setItem("cardCollection", JSON.stringify(cardCollection));
+    } catch(e) {
+        console.log("保存小卡数据失败:", e);
+    }
+}
+
+// ================= 加载小卡数据 =================
+function loadCardSettings() {
+    try {
+        var saved = localStorage.getItem("cardCollection");
+        if (saved) {
+            var parsed = JSON.parse(saved);
+            // 合并数据，保留结构
+            if (parsed.name !== undefined) cardCollection.name = parsed.name;
+            if (parsed.n) cardCollection.n = parsed.n;
+            if (parsed.r) cardCollection.r = parsed.r;
+            if (parsed.sr) cardCollection.sr = parsed.sr;
+            if (parsed.ssr) cardCollection.ssr = parsed.ssr;
+            if (parsed.sp) cardCollection.sp = parsed.sp;
+        }
+    } catch(e) {
+        console.log("加载小卡数据失败:", e);
+    }
+}
+// ================= 选择卡套作为抽奖池 =================
+function selectCardSet(setId) {
+    var set = cardSets.find(function(s) { return s.id === setId; });
+    if (!set) {
+        alert("卡套不存在");
+        return;
+    }
+
+    // 检查卡套是否有卡片
+    var hasCard = false;
+    var types = ['n','r','sr','ssr','sp'];
+    types.forEach(function(type) {
+        if (set.cards && set.cards[type]) {
+            set.cards[type].forEach(function(card) {
+                if (card && card !== '') hasCard = true;
+            });
+        }
+    });
+
+    if (!hasCard) {
+        alert("⚠️ 这套卡还没有任何图片，请先上传小卡图片！");
+        return;
+    }
+
+    currentSelectedCardSet = set;
+    localStorage.setItem("currentSelectedCardSetId", set.id);
+    
+    alert(`✅ 已选择「${set.name || '未命名卡套'}」作为抽奖池！\n\n🎰 现在去小卡扭蛋机抽卡吧！`);
+
+    // ✅ 更新扭蛋机身上的卡套名称
+    updateGachaMachineLabel(set.name || '未命名卡套');
+
+    // 关闭设置弹窗
+    var modal = document.querySelector(".full-modal");
+    if (modal) modal.remove();
+}
+
+// ================= 更新扭蛋机身上的卡套名称 =================
+function updateGachaMachineLabel(name) {
+    // 查找扭蛋机身上的标签元素（我们之前留空的那个位置）
+    var machineBody = document.getElementById('gachaBody');
+    if (machineBody) {
+        // 移除旧的标签
+        var oldLabel = machineBody.querySelector('.gacha-set-label');
+        if (oldLabel) oldLabel.remove();
+
+        // 创建新的标签
+        var label = document.createElement('div');
+        label.className = 'gacha-set-label';
+        label.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;font-weight:600;color:#B86A7A;background:rgba(255,255,255,0.75);padding:4px 14px;border-radius:14px;z-index:3;letter-spacing:1px;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        label.innerText = name;
+        machineBody.appendChild(label);
+    }
+}
+
+// ================= 加载当前选中的卡套并更新标签 =================
+function loadSelectedCardSet() {
+    var savedId = localStorage.getItem("currentSelectedCardSetId");
+    if (savedId) {
+        var set = cardSets.find(function(s) { return s.id === savedId; });
+        if (set) {
+            currentSelectedCardSet = set;
+            // ✅ 更新扭蛋机身上的标签
+            setTimeout(function() {
+                updateGachaMachineLabel(set.name || '未命名卡套');
+            }, 100);
+            return set;
+        }
+    }
+    return null;
+}
+
+// ================= 加载当前选中的卡套 =================
+function loadSelectedCardSet() {
+    var savedId = localStorage.getItem("currentSelectedCardSetId");
+    if (savedId) {
+        var set = cardSets.find(function(s) { return s.id === savedId; });
+        if (set) {
+            currentSelectedCardSet = set;
+            return set;
+        }
+    }
+    return null;
+}
+
+// 全局变量
+let currentSelectedCardSet = null;
+// ================= 显示扭蛋结果弹窗 =================
+function showGachaResultModal() {
+    // 扣钱
+    player.money = Math.max(0, player.money - 10);
+    renderMyPage();
+
+    var result = getGachaResult();
+
+    // 礼物扭蛋机才存入物品栏
+    if (currentGachaMachine === 'gift') {
+        gifts.push({
+            name: result.emoji + " " + result.name,
+            desc: result.desc + "（扭蛋机获得）"
+        });
+    }
+
+    // ✅ 如果是小卡，存入 myCards
+    if (result.isCard === true && result.imageData) {
+        addMyCard({
+            imageData: result.imageData,
+            setName: currentSelectedCardSet ? currentSelectedCardSet.name : '未命名卡套',
+            rarity: result.rarity || 'N',
+            rarityLabel: result.rarityLabel || 'N',
+            cardLabel: result.cardLabel || '',
+            isHidden: result.isHidden || false
+        });
+    }
+
+    var resultModal = document.createElement("div");
+    resultModal.className = "full-modal";
+    resultModal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    // 判断是否是卡片
+    var isCard = result.isCard === true;
+
+    // 卡片展示区域
+    var cardImageHtml = '';
+    if (isCard && result.imageData) {
+        cardImageHtml = `
+            <div style="width:160px;height:220px;margin:8px auto;border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.15);border:3px solid #F0F0F0;">
+                <img src="${result.imageData}" style="width:100%;height:100%;object-fit:cover;">
+            </div>
+        `;
+    } else if (!isCard && result.emoji) {
+        cardImageHtml = `
+            <div style="font-size:52px;margin-bottom:4px;">${result.emoji}</div>
+        `;
+    }
+
+    // 稀有度标签颜色
+    var rarityColor = '#333333'; 
+    var rarityMap = {
+        'n': 'N',
+        'r': 'R',
+        'sr': 'SR',
+        'ssr': 'SSR',
+        'sp': 'SP'
+    };
+    rarityColor = '#333333';
+
+    var rarityTag = '';
+    if (isCard && result.rarity && rarityMap[result.rarity]) {
+        rarityTag = `<div style="font-size:15px;font-weight:700;color:${rarityColor};margin-bottom:2px;">${rarityMap[result.rarity]}</div>`;
+    }
+
+    var displayName = '';
+    if (isCard) {
+        var setName = currentSelectedCardSet ? (currentSelectedCardSet.name || '未命名卡套') : '未命名卡套';
+        displayName = setName;
+    } else {
+        displayName = result.name || '';
+    }
+
+    var hiddenTag = '';
+    if (isCard && result.isHidden === true) {
+        hiddenTag = `<div style="font-size:14px;color:#E85D75;font-weight:600;margin-top:4px;">隐藏款！超级稀有！</div>`;
+    }
+
+    resultModal.innerHTML = `
+        <div style="background:white;border-radius:32px;padding:24px 20px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.12);animation:popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <div style="font-size:18px;font-weight:700;color:#E85D75;margin-bottom:4px;">恭喜你！抽到了</div>
+            ${rarityTag}
+            ${cardImageHtml}
+            <div style="font-size:17px;font-weight:700;color:#1A1A1A;margin-top:4px;">${displayName}</div>
+            ${hiddenTag}
+            <div style="font-size:12px;color:#E85D75;margin-top:8px;">-10 金钱</div>
+            <button onclick="this.closest('.full-modal').remove();" style="margin-top:12px;padding:8px 36px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+                开心收下
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(resultModal);
+
+    resultModal.addEventListener("click", function(e) {
+        if (e.target === resultModal) resultModal.remove();
+    });
+
+    setTimeout(function() {
+        var machine = document.getElementById("gachaMachine");
+        var knob = document.getElementById("gachaKnob");
+        if (machine) machine.style.pointerEvents = "auto";
+        if (knob) knob.style.pointerEvents = "auto";
+        isSpinning = false;
+    }, 500);
+}
+// ================= 获取扭蛋结果（小卡扭蛋机） =================
+function getGachaResult() {
+    if (currentGachaMachine === 'gift') {
+        var giftItems = [
+            { name: "星星贴纸", emoji: "⭐", desc: "✨ 一张闪闪发光的星星贴纸" },
+            { name: "四叶草挂件", emoji: "🍀", desc: "🍀 能带来好运的四叶草挂件" },
+            { name: "蝴蝶结发卡", emoji: "🎀", desc: "🎀 粉色蝴蝶结发卡，超可爱" },
+            { name: "猫咪玩偶", emoji: "🐱", desc: "🐱 毛茸茸的小猫咪玩偶" },
+            { name: "水晶钥匙扣", emoji: "💎", desc: "💎 闪闪发光的水晶钥匙扣" },
+            { name: "彩虹手链", emoji: "🌈", desc: "🌈 彩色编织手链，软乎乎的" },
+            { name: "小熊挂件", emoji: "🧸", desc: "🧸 棕色小熊挂件，捏起来软软的" },
+            { name: "樱花书签", emoji: "🌸", desc: "🌸 粉色樱花书签，很精致" }
+        ];
+        return giftItems[Math.floor(Math.random() * giftItems.length)];
+    } else {
+        // ===== 小卡扭蛋机 =====
+        if (!currentSelectedCardSet) {
+            loadSelectedCardSet();
+            if (!currentSelectedCardSet) {
+                return { name: "未选择卡套", emoji: "🃏", desc: "⚠️ 请先在设置中选择一套卡！", isCard: false };
+            }
+        }
+
+        var cards = currentSelectedCardSet.cards;
+        
+        var availableCards = {
+            n: [],
+            r: [],
+            sr: [],
+            ssr: [],
+            sp: []
+        };
+
+        if (cards.n) {
+            cards.n.forEach(function(card, idx) {
+                if (card && card !== '') {
+                    availableCards.n.push({ data: card, label: 'N' + (idx + 1), type: 'n' });
+                }
+            });
+        }
+        if (cards.r) {
+            cards.r.forEach(function(card, idx) {
+                if (card && card !== '') {
+                    availableCards.r.push({ data: card, label: 'R' + (idx + 1), type: 'r' });
+                }
+            });
+        }
+        if (cards.sr) {
+            cards.sr.forEach(function(card, idx) {
+                if (card && card !== '') {
+                    availableCards.sr.push({ data: card, label: 'SR' + (idx + 1), type: 'sr' });
+                }
+            });
+        }
+        if (cards.ssr) {
+            cards.ssr.forEach(function(card, idx) {
+                if (card && card !== '') {
+                    availableCards.ssr.push({ data: card, label: 'SSR' + (idx + 1), type: 'ssr' });
+                }
+            });
+        }
+        if (cards.sp) {
+            cards.sp.forEach(function(card, idx) {
+                if (card && card !== '') {
+                    availableCards.sp.push({ data: card, label: idx === 0 ? 'SP' : '隐藏款', type: 'sp', isHidden: idx === 1 });
+                }
+            });
+        }
+
+        var totalN = availableCards.n.length;
+        var totalR = availableCards.r.length;
+        var totalSR = availableCards.sr.length;
+        var totalSSR = availableCards.ssr.length;
+        var totalSP = availableCards.sp.length;
+
+        if (totalN === 0 && totalR === 0 && totalSR === 0 && totalSSR === 0 && totalSP === 0) {
+            return { name: "卡套为空", emoji: "🃏", desc: "⚠️ 这套卡还没有任何图片，请先上传！", isCard: false };
+        }
+
+        var rand = Math.random() * 100;
+        var selectedCard = null;
+        var rarityLabel = '';
+        var isHidden = false;
+
+        // 隐藏款 0.8%
+        var hiddenCard = null;
+        if (cards.sp && cards.sp[1] && cards.sp[1] !== '') {
+            hiddenCard = { data: cards.sp[1], label: '🌟 隐藏款', type: 'sp', isHidden: true };
+        }
+
+        if (rand < 0.8 && hiddenCard) {
+            selectedCard = hiddenCard;
+            rarityLabel = '🌟 SP 隐藏款';
+            isHidden = true;
+        } else if (rand < 10 && totalSP > 0) {
+            // SP 10%
+            var spList = availableCards.sp.filter(function(c) { return !c.isHidden; });
+            if (spList.length > 0) {
+                var spIndex = Math.floor(Math.random() * spList.length);
+                selectedCard = spList[spIndex];
+                rarityLabel = '💎 SP';
+            }
+        }
+
+        if (!selectedCard) {
+            if (rand < 30 && totalN > 0) {
+                var nIndex = Math.floor(Math.random() * availableCards.n.length);
+                selectedCard = availableCards.n[nIndex];
+                rarityLabel = 'N';
+            } else if (rand < 55 && totalR > 0) {
+                var rIndex = Math.floor(Math.random() * availableCards.r.length);
+                selectedCard = availableCards.r[rIndex];
+                rarityLabel = 'R';
+            } else if (rand < 75 && totalSR > 0) {
+                var srIndex = Math.floor(Math.random() * availableCards.sr.length);
+                selectedCard = availableCards.sr[srIndex];
+                rarityLabel = 'SR';
+            } else if (rand < 90 && totalSSR > 0) {
+                var ssrIndex = Math.floor(Math.random() * availableCards.ssr.length);
+                selectedCard = availableCards.ssr[ssrIndex];
+                rarityLabel = 'SSR';
+            } else if (totalSP > 0) {
+                var spList2 = availableCards.sp.filter(function(c) { return !c.isHidden; });
+                if (spList2.length > 0) {
+                    var spIndex2 = Math.floor(Math.random() * spList2.length);
+                    selectedCard = spList2[spIndex2];
+                    rarityLabel = 'SP';
+                } else {
+                    // 降级
+                    if (totalSSR > 0) {
+                        var ssrIndex2 = Math.floor(Math.random() * availableCards.ssr.length);
+                        selectedCard = availableCards.ssr[ssrIndex2];
+                        rarityLabel = 'SSR';
+                    } else if (totalSR > 0) {
+                        var srIndex2 = Math.floor(Math.random() * availableCards.sr.length);
+                        selectedCard = availableCards.sr[srIndex2];
+                        rarityLabel = 'SR';
+                    } else if (totalR > 0) {
+                        var rIndex2 = Math.floor(Math.random() * availableCards.r.length);
+                        selectedCard = availableCards.r[rIndex2];
+                        rarityLabel = 'R';
+                    } else if (totalN > 0) {
+                        var nIndex2 = Math.floor(Math.random() * availableCards.n.length);
+                        selectedCard = availableCards.n[nIndex2];
+                        rarityLabel = 'N';
+                    }
+                }
+            } else {
+                // 保底
+                var allCards = [];
+                ['n','r','sr','ssr','sp'].forEach(function(type) {
+                    if (availableCards[type]) {
+                        availableCards[type].forEach(function(c) {
+                            if (!c.isHidden) allCards.push(c);
+                        });
+                    }
+                });
+                if (allCards.length > 0) {
+                    selectedCard = allCards[Math.floor(Math.random() * allCards.length)];
+                    var labelMap = { n: '🟢 N', r: '🔵 R', sr: '🟣 SR', ssr: '🟡 SSR', sp: '💎 SP' };
+                    rarityLabel = labelMap[selectedCard.type] || '🃏';
+                }
+            }
+        }
+
+        if (!selectedCard) {
+            return { name: "抽卡失败", emoji: "😅", desc: "请重新尝试", isCard: false };
+        }
+
+        var cardSetName = currentSelectedCardSet.name || '未命名卡套';
+        var hiddenText = isHidden ? ' 🌟✨' : '';
+
+        // ✅ 返回小卡图片数据
+        return {
+            name: cardSetName + ' - ' + rarityLabel + hiddenText,
+            emoji: "🃏",
+            desc: '✨ 抽到了「' + rarityLabel + '」' + selectedCard.label + '！',
+            imageData: selectedCard.data,  // 小卡图片数据
+            isCard: true,
+            rarity: selectedCard.type,
+            isHidden: isHidden,
+            cardLabel: selectedCard.label
+        };
+    }
+}
+// ================= 小卡系统数据 =================
+let cardSets = []; // 所有卡套的数组
+let currentCardSetId = null; // 当前选中的卡套ID
+let currentCardSet = null; // 当前正在编辑的卡套
+
+// 卡套数据结构
+// {
+//   id: "set_1234567890",
+//   name: "我的第一套小卡",
+//   cards: {
+//     n: ["", "", "", ""],
+//     r: ["", "", "", ""],
+//     sr: ["", "", "", ""],
+//     ssr: ["", "", "", ""],
+//     sp: ["", ""]
+//   },
+//   createdAt: "2024-01-01 12:00:00"
+// }
+
+// ================= 加载小卡数据 =================
+function loadCardSets() {
+    try {
+        var saved = localStorage.getItem("cardSets");
+        if (saved) {
+            var parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) {
+                cardSets = parsed;
+            } else {
+                // 如果数据不是数组，重置为空数组
+                console.warn('cardSets 数据格式错误，重置为空数组');
+                cardSets = [];
+                saveCardSets();
+            }
+        } else {
+            cardSets = [];
+        }
+    } catch(e) {
+        console.error('加载 cardSets 失败:', e);
+        cardSets = [];
+    }
+    console.log('loadCardSets 完成，数量:', cardSets.length);
+    return cardSets;
+}
+
+// ================= 保存小卡数据 =================
+function saveCardSets() {
+    try {
+        localStorage.setItem("cardSets", JSON.stringify(cardSets));
+    } catch(e) {
+        console.log("保存卡套数据失败:", e);
+    }
+}
+// ================= 挣钱功能 =================
+function openEarnPage() {
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+    
+    modal.innerHTML = `
+        <div style="background:white;border-radius:28px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="text-align:center;margin-bottom:20px;">
+                <div style="font-size:36px;margin-bottom:8px;">💰</div>
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">想通过什么方式挣钱？</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <button class="earn-option" data-action="beg" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">🙏</span>
+                    <span>乞讨</span>
+                </button>
+                <button class="earn-option" data-action="talent" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">🎨</span>
+                    <span>才艺（智慧＞30可选）</span>
+                </button>
+                <button class="earn-option" data-action="work" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">🔧</span>
+                    <span>打工</span>
+                </button>
+            </div>
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:16px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">关闭</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelectorAll(".earn-option").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            var action = this.dataset.action;
+            modal.remove();
+            
+            if (action === 'beg') {
+                doBeg();
+            } else if (action === 'talent') {
+                doTalent();
+            } else if (action === 'work') {
+                doWork();
+            }
+        });
+    });
+    
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+// ================= 乞讨 =================
+function doBeg() {
+    var results = [
+        { text: "周围的人用异样的眼神看着你，你赶紧溜了", wiseChange: -2, loveChange: 0, moneyChange: 10 },
+        { text: "在街边蹲了一天，发现钱包掉了", wiseChange: 0, loveChange: 0, moneyChange: -30 },
+        { text: "并没有收获，空手而归", wiseChange: 0, loveChange: 0, moneyChange: 0 },
+        { text: "被路过的张桂源看到，他加入了你的乞讨队伍！", wiseChange: 0, loveChange: 3, moneyChange: 30 },
+        { text: "被路过的父母看到并接回了家，获得了零花钱", wiseChange: 0, loveChange: 0, moneyChange: 50 }
+    ];
+
+    var result = results[Math.floor(Math.random() * results.length)];
+
+    // 更新智慧
+    if (result.wiseChange !== 0) {
+        player.wise = Math.min(100, Math.max(0, player.wise + result.wiseChange));
+    }
+
+    // 更新好感（张桂源好感）
+    if (result.loveChange !== 0) {
+        player.love = Math.min(100, Math.max(0, player.love + result.loveChange));
+    }
+
+    // ✅ 修复：使用 player.money 而不是 player.danger
+    if (result.moneyChange !== 0) {
+        player.money = Math.max(0, player.money + result.moneyChange);
+    }
+
+    renderMyPage();
+
+    var infoLines = [];
+    if (result.wiseChange !== 0) infoLines.push("智慧 " + (result.wiseChange > 0 ? "+" : "") + result.wiseChange);
+    if (result.loveChange !== 0) infoLines.push("好感 " + (result.loveChange > 0 ? "+" : "") + result.loveChange);
+    if (result.moneyChange !== 0) infoLines.push("金钱 " + (result.moneyChange > 0 ? "+" : "") + result.moneyChange);
+
+    showResultModal("乞讨结果", result.text, infoLines);
+}
+// ================= 才艺 =================
+function doTalent() {
+    if (player.love < 30) {
+        alert("❌ 智慧不够哦，好好学习，daydayup！\n（当前智慧：" + player.love + "/30）");
+        return;
+    }
+    
+    var results = [
+        { text: "在街边诗兴大发，吟诵一首，周围连连叫好！", moneyChange: 20 },
+        { text: "为低年级的同学辅导作业，赚了辅导费", moneyChange: 15 }
+    ];
+    
+    var result = results[Math.floor(Math.random() * results.length)];
+    player.danger = Math.max(0, player.danger + result.moneyChange);
+    renderMyPage();
+    
+    showResultModal(
+        "🎨 才艺展示",
+        result.text,
+        ["💰 金钱 +" + result.moneyChange]
+    );
+}
+
+// ================= 打工 =================
+function doWork() {
+    showResultModal(
+        "🔧 打工",
+        "还未满18岁不能打工哦~",
+        []
+    );
+}
+
+// ================= 结果弹窗 =================
+// ================= 显示结果弹窗 =================
+function showResultModal(title, content, onClose) {
+    // 移除已存在的弹窗
+    var existing = document.querySelector('.result-modal-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.className = 'result-modal-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.35);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    var isSuccess = title === '出售成功';
+
+    overlay.innerHTML = `
+        <div style="background:white;border-radius:32px;padding:28px 24px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);animation:popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <div style="font-size:22px;font-weight:700;color:${isSuccess ? '#4CAF50' : '#E85D75'};margin-bottom:8px;">
+                ${isSuccess ? '✅' : '❌'} ${title}
+            </div>
+            <div style="font-size:15px;color:#333;line-height:1.6;white-space:pre-line;margin-bottom:16px;">
+                ${content}
+            </div>
+            <button onclick="closeResultModal('${onClose ? 'true' : 'false'}')" style="padding:10px 40px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+                知道了
+            </button>
+        </div>
+    `;
+
+    // 存储回调
+    overlay._onClose = onClose || null;
+
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            closeResultModal('true');
+        }
+    });
+}
+
+
+// ================= 关闭结果弹窗 =================
+function closeResultModal(hasCallback) {
+    var overlay = document.querySelector('.result-modal-overlay');
+    if (overlay) {
+        var callback = overlay._onClose;
+        overlay.remove();
+        if (typeof callback === 'function') {
+            callback();
+        }
+    }
+}
     // ================= 玩家数据 =================
-    let player = { name: "", nickname: "", wechatName: "", weiboName: "", love: 30, expose: 0, dark: 0, danger: 0, fans: 500 };
+    let player = { 
+    name: "", 
+    nickname: "", 
+    wechatName: "", 
+    weiboName: "", 
+    love: 30,      // 好感（张桂源初始好感30）
+    wise: 10,      // 智慧（初始10）
+    expose: 0, 
+    dark: 0, 
+    money: 100,    // 金钱/余额（初始100）
+    fans: 500 
+};
       let acceptedFriendCount = 0;  // 记录已接受的好友数量
+      let unlockedFavorability = {
+    "陈太帅": false,
+    "哈哈哈": false,
+    "zhang憨蜹": false
+};
     // ================= 多存档系统 =================
     const MAX_SAVES = 5;
         let savedOptions = null;      // 保存当前选项
@@ -775,9 +2355,9 @@
                     messages: (chatData["张桂源"] && chatData["张桂源"].messages) ? chatData["张桂源"].messages : [],
                     roundCompleted: (chatData["张桂源"] && chatData["张桂源"].roundCompleted) ? chatData["张桂源"].roundCompleted : false
                 },
-                "小冉": {
-                    messages: (chatData["小冉"] && chatData["小冉"].messages) ? chatData["小冉"].messages : [],
-                    roundCompleted: (chatData["小冉"] && chatData["小冉"].roundCompleted) ? chatData["小冉"].roundCompleted : false
+                "WXYz": {
+                    messages: (chatData["WXYz"] && chatData["WXYz"].messages) ? chatData["WXYz"].messages : [],
+                    roundCompleted: (chatData["WXYz"] && chatData["WXYz"].roundCompleted) ? chatData["WXYz"].roundCompleted : false
                 }
             },
             // ========== 朋友圈 ==========
@@ -850,9 +2430,9 @@
                     chatData["张桂源"].messages = data.chatData["张桂源"].messages;
                     chatData["张桂源"].roundCompleted = data.chatData["张桂源"].roundCompleted;
                 }
-                if (data.chatData["小冉"]) {
-                    chatData["小冉"].messages = data.chatData["小冉"].messages;
-                    chatData["小冉"].roundCompleted = data.chatData["小冉"].roundCompleted;
+                if (data.chatData["WXYz"]) {
+                    chatData["WXYz"].messages = data.chatData["WXYz"].messages;
+                    chatData["WXYz"].roundCompleted = data.chatData["WXYz"].roundCompleted;
                 }
             }
             // 恢复朋友圈
@@ -1064,7 +2644,7 @@
     let viewingChapter = 0;
     let meetCount = 0;
     let maxMeet = 3;
-    let friends = ["张桂源", "小冉", "陈太帅", "哈哈哈", "zhang憨蜹"];
+    let friends = ["张桂源", "WXYz"];
     let friendRequests = [];
     let diaryList = [];
     let hasNewFriendRequest = false; // 是否有新来信
@@ -1101,7 +2681,7 @@
     // 聊天数据
     let chatData = {
         "张桂源": { messages: [], newMsg: false, roundCompleted: false },
-        "小冉": { messages: [], newMsg: false, roundCompleted: false },
+        "WXYz": { messages: [], newMsg: false, roundCompleted: false },
         "陈太帅": { messages: [], newMsg: false, roundCompleted: false },
     "哈哈哈": { messages: [], newMsg: false, roundCompleted: false },
     "zhang憨蜹": { messages: [], newMsg: false, roundCompleted: false }
@@ -1144,7 +2724,7 @@
         let avatar = "";
         if (friend === "张桂源") {
             avatar = `<img src="zgyweixin.png" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">`;
-        } else if (friend === "小冉") {
+        } else if (friend === "WXYz") {
             avatar = `<img src="xiaoran.jpg.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">`;
         } else if (friend === "陈太帅") {
             avatar = `<img src="cjmwx.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">`;
@@ -1276,7 +2856,7 @@
                // 对方的头像
             if (currentChatContact === "张桂源") {
                 avatar = `<img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;">`;
-            } else if (currentChatContact === "小冉") {
+            } else if (currentChatContact === "WXYz") {
                 avatar = `<img src="xiaoran.jpg.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;">`;
             } else if (currentChatContact === "陈太帅") {
                 avatar = `<img src="cjmwx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;">`;
@@ -1344,11 +2924,11 @@ function openChat(contact) {
             };
         }
     } 
-    // ========== 小冉 ==========
-    else if (contact === "小冉") {
-        if (!chatData["小冉"].roundCompleted) {
-            if (chatData["小冉"].messages.length === 1 && chatData["小冉"].messages[0].text === "你刚才是不是在跟张桂源聊天") {
-                chatData["小冉"].messages = [];
+    // ========== WXYz ==========
+    else if (contact === "WXYz") {
+        if (!chatData["WXYz"].roundCompleted) {
+            if (chatData["WXYz"].messages.length === 1 && chatData["WXYz"].messages[0].text === "你刚才是不是在跟张桂源聊天") {
+                chatData["WXYz"].messages = [];
                 startBestieChat();
             }
             inputBox.innerText = "输入内容";
@@ -1637,7 +3217,7 @@ function showFriendChatOptions(contact) {
         { type: "other", time: "21:40", text: "你今天跟谁一起走的", from: "张桂源" },
         { type: "player_option", time: "21:40", options: ["说了一个人"], loveAdd: [0], nextOthers: [] },
         { type: "other", time: "21:41", text: "那你那个朋友呢 就是上次跟你一起买奶茶那个", from: "张桂源" },
-        { type: "player_option", time: "21:41", options: ["小冉啊 她今天值日"], loveAdd: [0], nextOthers: [] },
+        { type: "player_option", time: "21:41", options: ["WXYz啊 她今天值日"], loveAdd: [0], nextOthers: [] },
         { type: "other", time: "21:42", text: "哦", from: "张桂源" },
         { type: "other", time: "21:42", text: "那你没有跟别的男生一起走吧", from: "张桂源" },
         
@@ -2030,13 +3610,13 @@ if (selected.branch3) {
         chatData["张桂源"].roundCompleted = true;
                 // 张桂源聊天完成后，延迟3秒显示闺蜜消息弹窗
         setTimeout(() => {
-            if (chatData["小冉"] && chatData["小冉"].messages.length > 0) {
-                let lastMsg = chatData["小冉"].messages[chatData["小冉"].messages.length - 1];
+            if (chatData["WXYz"] && chatData["WXYz"].messages.length > 0) {
+                let lastMsg = chatData["WXYz"].messages[chatData["WXYz"].messages.length - 1];
                 let previewText = lastMsg.text.length > 30 ? lastMsg.text.substring(0, 30) + "..." : lastMsg.text;
                 showMessageNotification(
-                    "小冉",
+                    "WXYz",
                     `<img src="xiaoran.jpg.jpg" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">`,
-                    "小冉",
+                    "WXYz",
                     previewText,
                     null
                 );
@@ -2058,61 +3638,61 @@ if (selected.branch3) {
     
     // ================= 闺蜜聊天 =================
     const bestieFlow = [
-        { type: "other", time: "22:30", text: "你刚才是不是在跟张桂源聊天", from: "小冉" },
-        { type: "other", time: "22:30", text: "我看你半天没回我", from: "小冉" },
+        { type: "other", time: "22:30", text: "你刚才是不是在跟张桂源聊天", from: "WXYz" },
+        { type: "other", time: "22:30", text: "我看你半天没回我", from: "WXYz" },
         { type: "player_option", time: "22:31", options: ["嗯"], loveAdd: [0], nextOthers: [] },
-        { type: "other", time: "22:31", text: "聊啥子了", from: "小冉" },
-        { type: "other", time: "22:31", text: "快说快说", from: "小冉" },
+        { type: "other", time: "22:31", text: "聊啥子了", from: "WXYz" },
+        { type: "other", time: "22:31", text: "快说快说", from: "WXYz" },
         { type: "bestie_branch_start", time: "22:32" },
         { type: "bestie_branch", text: "「他问我放学跟谁走的」", loveAdd: 0,
           replies: [
-              { from: "小冉", text: "？？？？", time: "22:33" },
-              { from: "小冉", text: "他问这个干嘛", time: "22:34" },
+              { from: "WXYz", text: "？？？？", time: "22:33" },
+              { from: "WXYz", text: "他问这个干嘛", time: "22:34" },
               { type: "player_reply", text: "我哪晓得", time: "22:34", loveAdd: 0 },
-              { from: "小冉", text: "他是不是怕你跟别人耍去了", time: "22:35" },
+              { from: "WXYz", text: "他是不是怕你跟别人耍去了", time: "22:35" },
               { type: "player_reply", text: "他啥子都要管", time: "22:35", loveAdd: 0 },
-              { from: "小冉", text: "哈哈哈哈哈哈", time: "22:36" },
-              { from: "小冉", text: "但是你心里其实挺高兴的吧", time: "22:36" },
+              { from: "WXYz", text: "哈哈哈哈哈哈", time: "22:36" },
+              { from: "WXYz", text: "但是你心里其实挺高兴的吧", time: "22:36" },
               { type: "player_reply", text: "我没有", time: "22:37", loveAdd: 0 },
-              { from: "小冉", text: "你有", time: "22:37" },
-              { from: "小冉", text: "你嘴角都翘到天上去了", time: "22:37" },
+              { from: "WXYz", text: "你有", time: "22:37" },
+              { from: "WXYz", text: "你嘴角都翘到天上去了", time: "22:37" },
               { type: "player_reply", text: "你看不到我的脸", time: "22:38", loveAdd: 0 },
-              { from: "小冉", text: "我看不到也晓得", time: "22:38" }
+              { from: "WXYz", text: "我看不到也晓得", time: "22:38" }
           ] },
         { type: "bestie_branch", text: "「没聊啥子 就随便聊聊」", loveAdd: 0,
           replies: [
-              { from: "小冉", text: "切", time: "22:34" },
-              { from: "小冉", text: "你每次说随便聊聊的时候 就是聊了很多", time: "22:34" },
+              { from: "WXYz", text: "切", time: "22:34" },
+              { from: "WXYz", text: "你每次说随便聊聊的时候 就是聊了很多", time: "22:34" },
               { type: "player_reply", text: "哪有", time: "22:35", loveAdd: 0 },
-              { from: "小冉", text: "有", time: "22:36" },
-              { from: "小冉", text: "而且你每次跟他聊完 心情就会变好", time: "22:36" },
+              { from: "WXYz", text: "有", time: "22:36" },
+              { from: "WXYz", text: "而且你每次跟他聊完 心情就会变好", time: "22:36" },
               { type: "player_reply", text: "我心情一直都好", time: "22:36", loveAdd: 0 },
-              { from: "小冉", text: "少来", time: "22:37" },
-              { from: "小冉", text: "前两天他不在 你都不咋个说话", time: "22:37" },
+              { from: "WXYz", text: "少来", time: "22:37" },
+              { from: "WXYz", text: "前两天他不在 你都不咋个说话", time: "22:37" },
               { type: "player_reply", text: "那是因为天热", time: "22:38", loveAdd: 0 },
-              { from: "小冉", text: "哈哈哈哈哈哈", time: "22:38" },
-              { from: "小冉", text: "行 天热", time: "22:39" },
-              { from: "小冉", text: "那你现在凉快了吧", time: "22:39" },
+              { from: "WXYz", text: "哈哈哈哈哈哈", time: "22:38" },
+              { from: "WXYz", text: "行 天热", time: "22:39" },
+              { from: "WXYz", text: "那你现在凉快了吧", time: "22:39" },
               { type: "player_reply", text: "你好烦哦", time: "22:40", loveAdd: 0 }
           ] },
         { type: "bestie_branch", text: "「他发了个跳舞视频给我看」", loveAdd: 0,
           replies: [
-              { from: "小冉", text: "！！！", time: "22:34" },
-              { from: "小冉", text: "真的假的", time: "22:34" },
-              { from: "小冉", text: "给我看看", time: "22:34" },
+              { from: "WXYz", text: "！！！", time: "22:34" },
+              { from: "WXYz", text: "真的假的", time: "22:34" },
+              { from: "WXYz", text: "给我看看", time: "22:34" },
               { type: "player_reply", text: "不行", time: "22:35", loveAdd: 0 },
               { type: "player_reply", text: "他发给我个人的", time: "22:35", loveAdd: 0 },
-              { from: "小冉", text: "哦～～～", time: "22:36" },
-              { from: "小冉", text: "个人的哦～～～", time: "22:36" },
+              { from: "WXYz", text: "哦～～～", time: "22:36" },
+              { from: "WXYz", text: "个人的哦～～～", time: "22:36" },
               { type: "player_reply", text: "你那个语气是啥子意思", time: "22:37", loveAdd: 0 },
-              { from: "小冉", text: "没啥子意思啊", time: "22:37" },
-              { from: "小冉", text: "就是觉得 他对你还挺好的", time: "22:38" },
+              { from: "WXYz", text: "没啥子意思啊", time: "22:37" },
+              { from: "WXYz", text: "就是觉得 他对你还挺好的", time: "22:38" },
               { type: "player_reply", text: "从小一起长大的 当然好", time: "22:38", loveAdd: 0 },
-              { from: "小冉", text: "我又没说不好", time: "22:39" },
-              { from: "小冉", text: "我就是觉得......算了不说了", time: "22:39" },
+              { from: "WXYz", text: "我又没说不好", time: "22:39" },
+              { from: "WXYz", text: "我就是觉得......算了不说了", time: "22:39" },
               { type: "player_reply", text: "你说清楚", time: "22:40", loveAdd: 0 },
-              { from: "小冉", text: "不说不说", time: "22:40" },
-              { from: "小冉", text: "你自己想", time: "22:41" }
+              { from: "WXYz", text: "不说不说", time: "22:40" },
+              { from: "WXYz", text: "你自己想", time: "22:41" }
           ] },
         { type: "bestie_branch_end" },
         { type: "end" }
@@ -2129,16 +3709,16 @@ if (selected.branch3) {
             let step = bestieFlow[bestieFlowIndex];
             
             if (step.type === "other") {
-                await sendChatMessage(step.text, step.time, step.from, "小冉", "👯");
+                await sendChatMessage(step.text, step.time, step.from, "WXYz", "👯");
                 bestieFlowIndex++;
             }
             else if (step.type === "player_option") {
                 await new Promise((resolve) => {
                     showOptionsModal(step.options, "选择回复", async (choice) => {
-                        await sendChatMessage(step.options[choice], step.time, "玩家", "小冉", "🐰");
+                        await sendChatMessage(step.options[choice], step.time, "玩家", "WXYz", "🐰");
                         if (step.nextOthers && step.nextOthers.length > 0) {
                             for (let reply of step.nextOthers) {
-                                await sendChatMessage(reply.text, reply.time, reply.from, "小冉", "👯");
+                                await sendChatMessage(reply.text, reply.time, reply.from, "WXYz", "👯");
                             }
                         }
                         bestieFlowIndex++;
@@ -2157,8 +3737,8 @@ if (selected.branch3) {
                     let optionTexts = branchOptions.map(opt => opt.text);
                     showOptionsModal(optionTexts, "选择回复", async (choice) => {
                         let selected = branchOptions[choice];
-                        await sendChatMessage(selected.text, "22:32", "玩家", "小冉", "🐰");
-                        await sendReplySequence(selected.replies, "小冉");
+                        await sendChatMessage(selected.text, "22:32", "玩家", "WXYz", "🐰");
+                        await sendReplySequence(selected.replies, "WXYz");
                         while (bestieFlow[bestieFlowIndex] && bestieFlow[bestieFlowIndex].type !== "bestie_branch_end") {
                             bestieFlowIndex++;
                         }
@@ -2178,30 +3758,30 @@ if (selected.branch3) {
             }
         }
         
-        chatData["小冉"].roundCompleted = true;
+        chatData["WXYz"].roundCompleted = true;
         bestieActive = false;
     }
     
     function startBestieChat() {
         if (bestieActive) return;
-        chatData["小冉"].messages = [];
-        chatData["小冉"].roundCompleted = false;
+        chatData["WXYz"].messages = [];
+        chatData["WXYz"].roundCompleted = false;
         renderChatMessages();
         runBestieChat();
     }
     
     function startBestieChat() {
         if (bestieActive) return;
-        chatData["小冉"].messages = [];
-        chatData["小冉"].roundCompleted = false;
+        chatData["WXYz"].messages = [];
+        chatData["WXYz"].roundCompleted = false;
         renderChatMessages();
         runBestieChat();
     }
     
     function startBestieChat() {
         if (bestieActive) return;
-        chatData["小冉"].messages = [];
-        chatData["小冉"].roundCompleted = false;
+        chatData["WXYz"].messages = [];
+        chatData["WXYz"].roundCompleted = false;
         renderChatMessages();
         runBestieChat();
     }
@@ -2802,11 +4382,11 @@ function changeMomentsBg() {
                 <span>粉丝 ${player.fans}</span>
             </div>
             <div class="attr-grid">
-                <div class="attr-item"><div>❤️ 爱意</div><div class="attr-value">${player.love}</div></div>
-                <div class="attr-item"><div>⚠️ 暴露</div><div class="attr-value">${player.expose}</div></div>
-                <div class="attr-item"><div>🖤 黑化</div><div class="attr-value">${player.dark}</div></div>
-                <div class="attr-item"><div>💀 危险</div><div class="attr-value">${player.danger}</div></div>
-            </div>
+    <div class="attr-item"><div>智慧</div><div class="attr-value">${player.wise}</div></div>
+    <div class="attr-item"><div>好感</div><div class="attr-value">${player.love}</div></div>
+    <div class="attr-item"><div>黑化</div><div class="attr-value">${player.dark}</div></div>
+    <div class="attr-item"><div>余额</div><div class="attr-value">${player.money}</div></div>
+</div>
         </div>
     `;
     
@@ -2871,12 +4451,165 @@ function getPlayerAvatar() {
     return "🐰";
 }
     function showGifts() {
-        let modal = document.createElement("div"); modal.className = "full-modal";
-        modal.innerHTML = `<div class="modal-header"><h3>🎁 礼物橱窗</h3><button class="close-modal">×</button></div><div>${gifts.map(g => `<div style="margin-bottom:12px;">🎁 ${g.name}<br><small>💝 ${g.desc}</small></div>`).join('')}</div>`;
-        document.body.appendChild(modal);
-        modal.querySelector(".close-modal").onclick = () => modal.remove();
+    let modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.innerHTML = `
+        <div class="modal-header">
+            <h3>我的物品</h3>
+            <button class="close-modal">×</button>
+        </div>
+        <div>
+            ${gifts.length > 0 ? gifts.map(g => `
+                <div style="margin-bottom:12px; padding:12px; background:#F8F8F8; border-radius:16px;">
+                    <div style="font-weight:600;">${g.name}</div>
+                    <div style="font-size:13px; color:#666;">💝 ${g.desc}</div>
+                </div>
+            `).join('') : '<div style="text-align:center; padding:40px; color:#999;">暂无物品</div>'}
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector(".close-modal").onclick = () => modal.remove();
+}
+// ================= 好感查询 =================
+// ================= 好感查询 =================
+function showFavorability() {
+    // 动态获取好感人物列表
+    let favorabilityData = [];
+    
+    // 张桂源（始终显示）
+    favorabilityData.push({ 
+        name: "张桂源", 
+        value: player.love, 
+        avatar: "zgyhg.jpg",
+        barColor: "#FFD700"  // 黄色
+    });
+    
+    // ===== 根据是否点击接受按钮来解锁 =====
+    if (unlockedFavorability["陈太帅"]) {
+        favorabilityData.push({ 
+            name: "陈浚铭", 
+            value: 15, 
+            avatar: "cjmhg.jpg",
+            barColor: "#E85D75"  // 红色
+        });
     }
+    if (unlockedFavorability["哈哈哈"]) {
+        favorabilityData.push({ 
+            name: "左奇函", 
+            value: 10, 
+            avatar: "zqhhg.jpg",
+            barColor: "#4A90E2"  // 蓝色
+        });
+    }
+    if (unlockedFavorability["zhang憨蜹"]) {
+        favorabilityData.push({ 
+            name: "张函瑞", 
+            value: 10, 
+            avatar: "zhrhg.jpg",
+            barColor: "#4CAF50"  // 绿色
+        });
+    }
+    
+    let modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.innerHTML = `
+        <div class="modal-header">
+            <h3>💕 好感查询</h3>
+            <button class="close-modal">×</button>
+        </div>
+        <div id="favorabilityList"></div>
+    `;
+    document.body.appendChild(modal);
+    
+    let container = modal.querySelector("#favorabilityList");
+    
+    container.innerHTML = favorabilityData.map(f => {
+        let percent = Math.min(100, (f.value / 100) * 100);
+        let color = f.barColor || '#E85D75';
+        
+        return `
+        <div style="display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid #EFEFEF;">
+            <div style="width:65px; height:65px; border-radius:50%; overflow:hidden; background:#F0F0F0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <img src="${f.avatar}" style="width:65px; height:65px; object-fit:cover; border-radius:50%;" onerror="this.style.display='none';this.parentElement.innerHTML='👤'">
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-weight:600; font-size:16px;">${f.name}</div>
+                <div style="display:flex; align-items:center; gap:12px; margin-top:6px;">
+                    <div style="flex:1; height:8px; background:#F0F0F0; border-radius:10px; overflow:hidden;">
+                        <div style="width:${percent}%; height:100%; background:${color}; border-radius:10px; transition:width 0.3s;"></div>
+                    </div>
+                    <div style="font-size:14px; font-weight:700; color:#E85D75; flex-shrink:0; min-width:30px; text-align:right;">${f.value}</div>
+                </div>
+            </div>
+        </div>
+    `}).join("");
+    
+    modal.querySelector(".close-modal").onclick = () => modal.remove();
+}
 
+// ================= 送礼选项 =================
+function showGiftOptions(name) {
+    let modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.innerHTML = `
+        <div class="modal-header">
+            <h3>🎁 送给 ${name}</h3>
+            <button class="close-modal">×</button>
+        </div>
+        <div id="giftOptionsList"></div>
+    `;
+    document.body.appendChild(modal);
+    
+    let container = modal.querySelector("#giftOptionsList");
+    
+    const giftOptions = [
+        { name: "鲜花", desc: "一束漂亮的鲜花", loveAdd: 5, cost: 10 },
+        { name: "巧克力", desc: "手工巧克力礼盒", loveAdd: 8, cost: 15 },
+        { name: "小熊玩偶", desc: "超大毛绒小熊", loveAdd: 12, cost: 25 },
+        { name: "定制手链", desc: "刻名字的银手链", loveAdd: 15, cost: 30 }
+    ];
+    
+    container.innerHTML = giftOptions.map(g => `
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #EFEFEF;">
+            <div>
+                <div style="font-weight:600;">${g.name}</div>
+                <div style="font-size:12px; color:#666;">${g.desc}</div>
+                <div style="font-size:11px; color:#999;">💰 ${g.cost} 余额 | ❤️ +${g.loveAdd}</div>
+            </div>
+            <button class="send-gift-btn" data-gift-name="${g.name}" data-love-add="${g.loveAdd}" data-cost="${g.cost}" style="background:#4CAF50; color:white; border:none; padding:6px 16px; border-radius:20px; cursor:pointer;">赠送</button>
+        </div>
+    `).join("");
+    
+    document.querySelectorAll(".send-gift-btn").forEach(btn => {
+        btn.addEventListener("click", function() {
+            let giftName = this.dataset.giftName;
+            let loveAdd = parseInt(this.dataset.loveAdd);
+            let cost = parseInt(this.dataset.cost);
+            
+            if (player.danger < cost) {
+                alert(`余额不足！需要 ${cost} 余额，当前只有 ${player.danger}`);
+                return;
+            }
+            
+            // 扣余额
+            player.danger -= cost;
+            // 加好感（这里加的是智慧值，因为爱意已改名为智慧）
+            player.love += loveAdd;
+            
+            // 记录送礼记录到礼物系统
+            gifts.push({
+                name: `送给 ${name} 的${giftName}`,
+                desc: `${name} 收到礼物后好感度 +${loveAdd}`
+            });
+            
+            renderMyPage();
+            modal.remove();
+            alert(`✅ 成功送给 ${name} ${giftName}！\n❤️ 好感度 +${loveAdd}\n💰 余额 -${cost}`);
+        });
+    });
+    
+    modal.querySelector(".close-modal").onclick = () => modal.remove();
+}
     function showDiaryDetail() {
         let modal = document.createElement("div"); modal.className = "full-modal";
         modal.innerHTML = `<div class="modal-header"><h3>📖 恋爱日记</h3><button class="close-modal">×</button></div><div>${diaryEntries.map(d => `<div style="margin-bottom:12px; padding:8px; background:#F8F8F8; border-radius:12px;">${d}</div>`).join('')}</div>`;
@@ -3275,7 +5008,16 @@ function getPlayerAvatar() {
                     chatStep: 0
                 };
             }
-            
+            // 在 showFriendRequests 中，接受好友时，添加好友到 friends 列表后，好感度查询会自动显示
+// 不需要额外代码，因为 showFavorability 中通过 friends.includes() 判断
+            // ===== 解锁对应好感 =====
+if (name === "陈太帅") {
+    unlockedFavorability["陈太帅"] = true;
+} else if (name === "哈哈哈") {
+    unlockedFavorability["哈哈哈"] = true;
+} else if (name === "zhang憨蜹") {
+    unlockedFavorability["zhang憨蜹"] = true;
+}
             // 从申请列表中移除
             friendRequests = friendRequests.filter(f => f.name !== name);
             hasNewFriendRequest = friendRequests.length > 0;
@@ -4431,11 +6173,11 @@ localStorage.setItem("chapter1_story", document.getElementById("storyContent").i
         chatData["张桂源"].newMsg = true;
         chatData["张桂源"].roundCompleted = false;
         
-        chatData["小冉"].messages = [
+        chatData["WXYz"].messages = [
             { from: "other", text: "你刚才是不是在跟张桂源聊天", time: "22:30", avatar: "👯", date: date, read: false }
         ];
-        chatData["小冉"].newMsg = true;
-        chatData["小冉"].roundCompleted = false;
+        chatData["WXYz"].newMsg = true;
+        chatData["WXYz"].roundCompleted = false;
         
         renderChatList();
         
@@ -4506,11 +6248,19 @@ localStorage.setItem("chapter1_story", document.getElementById("storyContent").i
         if (pageId === "moments") renderMoments();
         if (pageId === "weibo") renderWeibo();
         if (pageId === "my") renderMyPage();
-                if (pageId === "story") {
+                        if (pageId === "story") {
+            // 切换到剧情页面时，默认显示剧情视图
+            if (isMapView) {
+                isMapView = false;
+                document.getElementById("switchToStoryBtn").style.background = "#E85D75";
+                document.getElementById("switchToStoryBtn").style.color = "white";
+                document.getElementById("switchToMapBtn").style.background = "transparent";
+                document.getElementById("switchToMapBtn").style.color = "#999";
+            }
             document.getElementById("chapterSelectPage").style.display = "block";
             document.getElementById("storyDetailPage").style.display = "none";
+            document.getElementById("storyMapPage").style.display = "none";
             renderChapterList();
-            
         }
     }
     function showNextChapterButton() {
@@ -6623,9 +8373,9 @@ localStorage.setItem("chapter1_story", document.getElementById("storyContent").i
                     messages: chatData["张桂源"]?.messages || [],
                     roundCompleted: chatData["张桂源"]?.roundCompleted || false
                 },
-                "小冉": {
-                    messages: chatData["小冉"]?.messages || [],
-                    roundCompleted: chatData["小冉"]?.roundCompleted || false
+                "WXYz": {
+                    messages: chatData["WXYz"]?.messages || [],
+                    roundCompleted: chatData["WXYz"]?.roundCompleted || false
                 }
             },
             // 保存玩家数据
@@ -7586,7 +9336,564 @@ function showFriendRequestsPopup() {
         
     }, 4000);
 }
+// ================= 显示物品（小卡 + 礼物分页） =================
+function showGifts() {
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    // 获取小卡数据（从抽到的记录中读取）
+    var myCards = getMyCards();
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:32px;padding:20px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">我的物品</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+
+            <!-- 上半：小卡区域 -->
+            <div style="margin-bottom:8px;">
+                <div style="font-size:14px;font-weight:600;color:#666;margin-bottom:8px;">🃏 小卡（${myCards.length}张）</div>
+                ${myCards.length > 0 ? `
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                        ${myCards.map(function(card, index) {
+                            return `
+                                <div style="background:#F8F8F8;border-radius:12px;padding:8px;text-align:center;border:1px solid #EFEFEF;position:relative;">
+                                    <div style="width:100%;aspect-ratio:64/88;border-radius:8px;overflow:hidden;background:#F0F0F0;margin-bottom:4px;">
+                                        <img src="${card.imageData}" style="width:100%;height:100%;object-fit:cover;">
+                                    </div>
+                                    <div style="font-size:11px;font-weight:600;color:#333;">${card.rarityLabel || 'N'}</div>
+                                    <div style="font-size:10px;color:#999;margin-bottom:4px;">${card.setName || '未命名'}</div>
+                                    <div style="display:flex;gap:4px;justify-content:center;">
+                                        <button onclick="event.stopPropagation();giftCard(${index})" style="padding:2px 10px;background:#E85D75;color:white;border:none;border-radius:12px;font-size:10px;cursor:pointer;">赠送</button>
+                                        <button onclick="event.stopPropagation();sellCard(${index})" style="padding:2px 10px;background:#FF6B6B;color:white;border:none;border-radius:12px;font-size:10px;cursor:pointer;">出售</button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                ` : `
+                    <div style="text-align:center;padding:20px;color:#999;font-size:13px;background:#F8F8F8;border-radius:12px;">
+                        还没有小卡，去扭蛋机抽卡吧！
+                    </div>
+                `}
+            </div>
+
+            <!-- 隔板 -->
+            <div style="border-top:2px dashed #EFEFEF;margin:12px 0;"></div>
+
+            <!-- 下半：物品区域 -->
+            <div>
+                <div style="font-size:14px;font-weight:600;color:#666;margin-bottom:8px;">🎁 物品（${gifts.length}件）</div>
+                ${gifts.length > 0 ? `
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                        ${gifts.map(function(gift, index) {
+                            return `
+                                <div style="background:#F8F8F8;border-radius:12px;padding:10px;text-align:center;border:1px solid #EFEFEF;">
+                                    <div style="font-size:28px;margin-bottom:4px;">${gift.name ? gift.name.charAt(0) : '🎁'}</div>
+                                    <div style="font-size:11px;font-weight:600;color:#333;word-break:break-all;">${gift.name || '未知物品'}</div>
+                                    <div style="font-size:10px;color:#999;margin-top:2px;">${gift.desc || ''}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                ` : `
+                    <div style="text-align:center;padding:20px;color:#999;font-size:13px;background:#F8F8F8;border-radius:12px;">
+                        还没有物品，去扭蛋机抽礼物吧！
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+// ================= 小卡存储系统 =================
+// 存储抽到的小卡
+let myCards = [];
+
+// 加载小卡数据
+function loadMyCards() {
+    try {
+        var saved = localStorage.getItem("myCards");
+        if (saved) {
+            myCards = JSON.parse(saved);
+        } else {
+            myCards = [];
+        }
+    } catch(e) {
+        myCards = [];
+    }
+}
+
+// 保存小卡数据
+function saveMyCards() {
+    try {
+        localStorage.setItem("myCards", JSON.stringify(myCards));
+    } catch(e) {
+        console.log("保存小卡数据失败:", e);
+    }
+}
+
+// 获取我的小卡
+function getMyCards() {
+    loadMyCards();
+    return myCards;
+}
+
+// 添加小卡
+function addMyCard(cardData) {
+    loadMyCards();
+    myCards.push({
+        id: "card_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+        imageData: cardData.imageData,
+        setName: cardData.setName || '未命名卡套',
+        rarity: cardData.rarity || 'N',
+        rarityLabel: cardData.rarityLabel || 'N',
+        cardLabel: cardData.cardLabel || '',
+        isHidden: cardData.isHidden || false,
+        obtainedAt: new Date().toLocaleString()
+    });
+    saveMyCards();
+}
+
+// 删除小卡（出售或赠送后移除）
+function removeMyCard(index) {
+    loadMyCards();
+    if (index >= 0 && index < myCards.length) {
+        myCards.splice(index, 1);
+        saveMyCards();
+        return true;
+    }
+    return false;
+}
+// ================= 赠送小卡 =================
+function giftCard(index) {
+    loadMyCards();
+    if (index < 0 || index >= myCards.length) {
+        showResultModal("提示", "小卡不存在", null);
+        return;
+    }
+
+    var card = myCards[index];
+
+    // 弹出赠送对象选择
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1001;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:32px;padding:24px 20px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:17px;font-weight:700;color:#1A1A1A;">选择赠送对象</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+            <div style="font-size:13px;color:#666;margin-bottom:12px;text-align:center;">
+                ${card.setName} - ${card.rarityLabel} ${card.isHidden ? '（隐藏款）' : ''}
+            </div>
+
+            <!-- 人名按钮 -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '左奇函')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    左奇函
+                </button>
+                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '张桂源')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    张桂源
+                </button>
+                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '陈浚铭')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    陈浚铭
+                </button>
+                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '张函瑞')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    张函瑞
+                </button>
+                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, 'WXYz')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    WXYz
+                </button>
+            </div>
+
+            <!-- 隔板 -->
+            <div style="border-top:1px solid #EFEFEF;margin:8px 0 12px 0;"></div>
+
+            <!-- 两个选项按钮 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '路人')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    送给路人
+                </button>
+                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '李飞')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    邮寄给李飞
+                </button>
+            </div>
+
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:12px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">取消</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+// ================= 执行赠送 =================
+function executeGift(index, target) {
+    loadMyCards();
+    if (index < 0 || index >= myCards.length) {
+        showResultModal("提示", "小卡不存在", function() {
+            refreshGiftsContent();
+        });
+        return;
+    }
+
+    var card = myCards[index];
+
+    // 检查目标是否在黑名单中（不能赠送给自己）
+    if (target === '路人') {
+        // 送给路人：随机事件
+        var random = Math.random();
+        var resultMsg = '';
+        var loveAdd = 0;
+        var success = true;
+
+        if (random < 0.3) {
+            resultMsg = '路人：这是什么？看起来像一张废纸，随手丢掉了。';
+            loveAdd = 0;
+            success = false;
+        } else if (random < 0.6) {
+            resultMsg = '路人：哇！好漂亮的小卡！谢谢你！（路人非常开心）';
+            loveAdd = 1;
+            success = true;
+        } else if (random < 0.9) {
+            resultMsg = '路人：谢谢！我会好好珍藏的！';
+            loveAdd = 2;
+            success = true;
+        } else {
+            resultMsg = '路人：你人真好！这张卡我会一直保存的！';
+            loveAdd = 3;
+            success = true;
+        }
+
+        if (success) {
+            myCards.splice(index, 1);
+            saveMyCards();
+            player.love = Math.min(100, (player.love || 0) + loveAdd);
+            renderMyPage();
+            showResultModal('赠送成功', resultMsg + '\n好感度 +' + loveAdd, function() {
+                refreshGiftsContent();
+            });
+        } else {
+            // 路人丢掉了，小卡损失，但没有好感度
+            myCards.splice(index, 1);
+            saveMyCards();
+            renderMyPage();
+            showResultModal('赠送失败', resultMsg, function() {
+                refreshGiftsContent();
+            });
+        }
+        return;
+    }
+
+    if (target === '李飞') {
+        // 邮寄给李飞：特殊事件
+        var random = Math.random();
+        var resultMsg = '';
+        var loveAdd = 0;
+
+        if (random < 0.2) {
+            resultMsg = '李飞：已收到，放在仓库积灰了。';
+            loveAdd = 0;
+        } else if (random < 0.5) {
+            resultMsg = '李飞：不错，有点意思。';
+            loveAdd = 3;
+        } else if (random < 0.8) {
+            resultMsg = '李飞：很有心意，加油练习！';
+            loveAdd = 5;
+        } else {
+            resultMsg = '李飞：这张卡很稀有！我会好好收藏的！';
+            loveAdd = 8;
+        }
+
+        myCards.splice(index, 1);
+        saveMyCards();
+        player.love = Math.min(100, (player.love || 0) + loveAdd);
+        renderMyPage();
+        showResultModal('邮寄成功', '已邮寄给李飞\n' + resultMsg + '\n好感度 +' + loveAdd, function() {
+            refreshGiftsContent();
+        });
+        return;
+    }
+
+    // 送给指定人物（左奇函、张桂源、陈浚铭、张函瑞、WXYz）
+    // 不同人物有不同的好感度加成
+    var loveMap = {
+        '左奇函': 5,
+        '张桂源': 10,
+        '陈浚铭': 6,
+        '张函瑞': 6,
+        'WXYz': 4
+    };
+
+    var baseLove = loveMap[target] || 5;
+
+    // 根据稀有度增加额外好感
+    var rarityBonus = {
+        'N': 0,
+        'R': 2,
+        'SR': 5,
+        'SSR': 8,
+        'SP': 12
+    };
+    var bonus = rarityBonus[card.rarity] || 0;
+
+    // 隐藏款额外加成
+    if (card.isHidden === true) {
+        bonus += 15;
+    }
+
+    var totalLove = baseLove + bonus;
+
+    // 随机小事件
+    var eventMessages = [
+        target + '：哇！这张卡好棒！谢谢你！',
+        target + '：你从哪里弄到的？太喜欢了！',
+        target + '：我会好好保存的！',
+        target + '：谢谢你，我很开心！',
+        target + '：这张卡太帅了吧！爱了爱了！'
+    ];
+    var eventMsg = eventMessages[Math.floor(Math.random() * eventMessages.length)];
+
+    myCards.splice(index, 1);
+    saveMyCards();
+    player.love = Math.min(100, (player.love || 0) + totalLove);
+    renderMyPage();
+
+    showResultModal('赠送成功', '送给 ' + target + '\n' + eventMsg + '\n好感度 +' + totalLove, function() {
+        refreshGiftsContent();
+    });
+}
+// ================= 出售小卡 =================
+// ================= 出售小卡 =================
+function sellCard(index) {
+    loadMyCards();
+    if (index < 0 || index >= myCards.length) {
+        alert("小卡不存在");
+        return;
+    }
+
+    var card = myCards[index];
+
+    // 根据稀有度定价
+    var priceMap = {
+        'N': 5,
+        'R': 8,
+        'SR': 20,
+        'SSR': 30,
+        'SP': 40
+    };
+    var basePrice = priceMap[card.rarity] || 5;
+    
+    // 隐藏款特殊价格
+    if (card.isHidden === true) {
+        basePrice = 1000;
+    }
+
+    // 弹出出售方式选择
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1001;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:32px;padding:24px 20px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:17px;font-weight:700;color:#1A1A1A;">选择出售方式</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+            <div style="font-size:13px;color:#666;margin-bottom:12px;text-align:center;">
+                ${card.setName} - ${card.rarityLabel} ${card.isHidden ? '（隐藏款）' : ''}
+                <br>基础售价：${basePrice} 金钱
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button onclick="this.closest('.full-modal').remove();sellCardByMethod(${index}, 'zhongzhuan', ${basePrice})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    中转站
+                </button>
+                <button onclick="this.closest('.full-modal').remove();sellCardByMethod(${index}, 'lvpaopao', ${basePrice})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    绿泡泡
+                </button>
+                <button onclick="this.closest('.full-modal').remove();sellCardByMethod(${index}, 'xiaohuangyu', ${basePrice})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    小黄鱼
+                </button>
+            </div>
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:12px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">取消</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+// ================= 按方式出售 =================
+// ================= 按方式出售 =================
+function sellCardByMethod(index, method, basePrice) {
+    loadMyCards();
+    if (index < 0 || index >= myCards.length) {
+        showResultModal("提示", "小卡不存在", null);
+        return;
+    }
+
+    var card = myCards[index];
+    var resultMsg = '';
+    var earnedMoney = 0;
+    var success = false;
+    var title = '';
+
+    // 随机生成事件
+    var random = Math.random();
+
+    if (method === 'zhongzhuan') {
+        if (random < 0.33) {
+            resultMsg = '你被买家放鸽子了，出售失败';
+            earnedMoney = 0;
+            success = false;
+            title = '出售失败';
+        } else if (random < 0.66) {
+            resultMsg = '点击了诈骗链接，损失50元';
+            earnedMoney = -50;
+            success = false;
+            title = '出售失败';
+        } else {
+            earnedMoney = basePrice;
+            resultMsg = '与买家顺利完成交易';
+            success = true;
+            title = '出售成功';
+        }
+    } else if (method === 'lvpaopao') {
+        if (random < 0.5) {
+            resultMsg = '与买家交谈甚欢，第二天收到了红色感叹号，出售失败';
+            earnedMoney = 0;
+            success = false;
+            title = '出售失败';
+        } else {
+            earnedMoney = basePrice;
+            resultMsg = '与买家顺利完成交易';
+            success = true;
+            title = '出售成功';
+        }
+    } else if (method === 'xiaohuangyu') {
+        if (random < 0.2) {
+            earnedMoney = Math.floor(basePrice * 0.5);
+            resultMsg = '遭遇了大刀特刀，以售价的50%成交';
+            success = true;
+            title = '出售成功';
+        } else if (random < 0.4) {
+            earnedMoney = Math.floor(basePrice * 0.8);
+            resultMsg = '遭到了小刀，以售价的80%成交';
+            success = true;
+            title = '出售成功';
+        } else if (random < 0.6) {
+            earnedMoney = Math.floor(basePrice * 0.9);
+            resultMsg = '与买家相谈甚欢，给了对方优惠，以售价的90%成交';
+            success = true;
+            title = '出售成功';
+        } else if (random < 0.8) {
+            earnedMoney = Math.floor(basePrice * 1.2);
+            resultMsg = '遇到了富婆，以售价的120%成交';
+            success = true;
+            title = '出售成功';
+        } else {
+            earnedMoney = 0;
+            resultMsg = '遇到了ysg，小卡被白嫖了';
+            success = false;
+            title = '出售失败';
+        }
+    }
+
+    // ✅ 关键：执行出售结果
+    var detailMsg = '';
+
+    if (success) {
+        // ✅ 1. 移除小卡
+        myCards.splice(index, 1);
+        saveMyCards();
+
+        // ✅ 2. 增加金钱到余额
+        player.money = (player.money || 0) + earnedMoney;
+        renderMyPage();
+
+        detailMsg = '获得金钱：' + earnedMoney;
+        showResultModal(title, resultMsg + '\n' + detailMsg, function() {
+            refreshGiftsContent();
+        });
+    } else {
+        if (earnedMoney < 0) {
+            // 损失金钱（从余额扣除）
+            player.money = Math.max(0, (player.money || 0) + earnedMoney);
+            renderMyPage();
+            detailMsg = '损失金钱：' + Math.abs(earnedMoney);
+            showResultModal(title, resultMsg + '\n' + detailMsg, function() {
+                refreshGiftsContent();
+            });
+        } else if (earnedMoney === 0 && resultMsg.includes('ysg')) {
+            // ✅ ysg 只损失小卡，不扣钱（移除小卡）
+            myCards.splice(index, 1);
+            saveMyCards();
+            renderMyPage();
+            showResultModal(title, resultMsg, function() {
+                refreshGiftsContent();
+            });
+        } else {
+            // 出售失败，小卡保留
+            showResultModal(title, resultMsg, function() {
+                refreshGiftsContent();
+            });
+        }
+    }
+}
+
+// ================= 显示结果弹窗 =================
+// ================= 显示结果弹窗（乞讨/才艺/打工使用） =================
+function showResultModal(title, content, infoLines) {
+    // 移除已存在的弹窗
+    var existing = document.querySelector('.result-modal-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.className = 'result-modal-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.35);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    // 处理 infoLines - 全部黑色
+    var infoHtml = '';
+    if (infoLines && infoLines.length > 0) {
+        infoHtml = infoLines.map(function(line) {
+            return '<div style="font-size:15px;font-weight:600;color:#333333;margin-top:4px;">' + line + '</div>';
+        }).join('');
+    }
+
+    overlay.innerHTML = `
+        <div style="background:white;border-radius:32px;padding:28px 24px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);animation:popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <div style="font-size:20px;font-weight:700;color:#1A1A1A;margin-bottom:8px;">${title}</div>
+            <div style="font-size:15px;color:#333333;line-height:1.6;white-space:pre-line;margin-bottom:8px;">${content}</div>
+            ${infoHtml}
+            <button onclick="this.closest('.result-modal-overlay').remove()" style="margin-top:16px;padding:10px 40px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+                知道了
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.remove();
+    });
+}
     // ================= 事件绑定 =================
+    document.getElementById("favorabilityBtn")?.addEventListener("click", showFavorability);
     document.getElementById("startBtn").onclick = () => {
          // ========== 清除所有章节相关数据 ==========
         localStorage.removeItem("chapter1_ended");
@@ -7713,6 +10020,42 @@ function showFriendRequestsPopup() {
             return;
         }
     };
+        // ===== 剧情/地图切换 =====
+    let isMapView = false;
+
+    document.getElementById("switchToStoryBtn")?.addEventListener("click", function() {
+        if (isMapView === false) return;
+        isMapView = false;
+
+        this.style.background = "#E85D75";
+        this.style.color = "white";
+        document.getElementById("switchToMapBtn").style.background = "transparent";
+        document.getElementById("switchToMapBtn").style.color = "#999";
+
+        document.getElementById("chapterSelectPage").style.display = "block";
+        document.getElementById("storyDetailPage").style.display = "none";
+        document.getElementById("storyMapPage").style.display = "none";
+    });
+
+    document.getElementById("switchToMapBtn")?.addEventListener("click", function() {
+        if (isMapView === true) return;
+        isMapView = true;
+
+        this.style.background = "#E85D75";
+        this.style.color = "white";
+        document.getElementById("switchToStoryBtn").style.background = "transparent";
+        document.getElementById("switchToStoryBtn").style.color = "#999";
+
+        document.getElementById("chapterSelectPage").style.display = "none";
+        document.getElementById("storyDetailPage").style.display = "none";
+        document.getElementById("storyMapPage").style.display = "block";
+    });
+    // ================= 初始化加载小卡数据 =================
+loadCardSettings();
+// ================= 初始化加载小卡数据 =================
+loadMyCards();
+loadCardSets();
+loadSelectedCardSet();
 </script>
 </body>
 </html>
