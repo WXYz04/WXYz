@@ -832,11 +832,7 @@
 <script>
     // ================= 商业街功能 =================
 function openStreetPage() {
-    // 检查地图是否解锁
-    if (localStorage.getItem("map_unlocked") !== "true") {
-        alert("🔒 地图未解锁\n\n完成第一章剧情后才能使用地图功能");
-        return;
-    }
+
     
     // 创建弹窗
     var modal = document.createElement("div");
