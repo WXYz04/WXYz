@@ -775,10 +775,12 @@
     <div id="chatPage" class="page">
         <div id="chatListScreen"><div id="chatList"></div></div>
         <div id="chatDetailScreen" style="display:none;">
-            <div class="chat-detail-header">
-                <button class="chat-back" id="chatBackBtn">←</button>
-                <span id="chatContactName"></span>
-            </div>
+           <!-- 找到 chat-detail-header 部分，修改为以下内容 -->
+<div class="chat-detail-header" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#1A1A1A;color:white;min-height:52px;">
+    <button class="chat-back" id="chatBackBtn" style="background:none;border:none;color:white;font-size:24px;cursor:pointer;padding:0;width:40px;flex-shrink:0;text-align:left;">←</button>
+    <span id="chatContactName" style="font-size:16px;font-weight:600;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px;color:white;">三点水的yuan</span>
+    <button id="chatMoreBtn" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:0;width:40px;flex-shrink:0;text-align:right;">⋮</button>
+</div>
             <div class="chat-messages" id="chatMessages"></div>
             <div class="chat-input-area">
                 <div class="chat-input" id="chatInputBox">点击输入...</div>
@@ -1950,28 +1952,31 @@ function showGachaResultModal() {
             name: result.emoji + " " + result.name,
             desc: result.desc + "（扭蛋机获得）"
         });
+        saveGiftsToLocal();
     }
 
-    // ✅ 如果是小卡，存入 myCards
-    if (result.isCard === true && result.imageData) {
-        addMyCard({
-            imageData: result.imageData,
-            setName: currentSelectedCardSet ? currentSelectedCardSet.name : '未命名卡套',
-            rarity: result.rarity || 'N',
-            rarityLabel: result.rarityLabel || 'N',
-            cardLabel: result.cardLabel || '',
-            isHidden: result.isHidden || false
-        });
-    }
+    // 如果是小卡，先存储到 tempCardData
+var tempCardData = null;
+if (result.isCard === true && result.imageData) {
+    // ✅ 确保 rarityLabel 正确传递
+    var rarityLabel = result.rarityLabel || result.rarity || 'N';
+    tempCardData = {
+        imageData: result.imageData,
+        setName: currentSelectedCardSet ? currentSelectedCardSet.name : '未命名卡套',
+        rarity: result.rarity || 'N',
+        rarityLabel: rarityLabel.toUpperCase(),
+        cardLabel: result.cardLabel || '',
+        isHidden: result.isHidden || false
+    };
+    console.log('小卡待保存:', tempCardData);
+}
 
     var resultModal = document.createElement("div");
     resultModal.className = "full-modal";
     resultModal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;";
 
-    // 判断是否是卡片
     var isCard = result.isCard === true;
 
-    // 卡片展示区域
     var cardImageHtml = '';
     if (isCard && result.imageData) {
         cardImageHtml = `
@@ -1985,8 +1990,6 @@ function showGachaResultModal() {
         `;
     }
 
-    // 稀有度标签颜色
-    var rarityColor = '#333333'; 
     var rarityMap = {
         'n': 'N',
         'r': 'R',
@@ -1994,7 +1997,7 @@ function showGachaResultModal() {
         'ssr': 'SSR',
         'sp': 'SP'
     };
-    rarityColor = '#333333';
+    var rarityColor = '#333333';
 
     var rarityTag = '';
     if (isCard && result.rarity && rarityMap[result.rarity]) {
@@ -2022,7 +2025,7 @@ function showGachaResultModal() {
             <div style="font-size:17px;font-weight:700;color:#1A1A1A;margin-top:4px;">${displayName}</div>
             ${hiddenTag}
             <div style="font-size:12px;color:#E85D75;margin-top:8px;">-10 金钱</div>
-            <button onclick="this.closest('.full-modal').remove();" style="margin-top:12px;padding:8px 36px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+            <button id="gachaCollectBtn" style="margin-top:12px;padding:8px 36px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
                 开心收下
             </button>
         </div>
@@ -2030,8 +2033,33 @@ function showGachaResultModal() {
 
     document.body.appendChild(resultModal);
 
-    resultModal.addEventListener("click", function(e) {
-        if (e.target === resultModal) resultModal.remove();
+    // ===== 修复：使用正确的 ID 绑定点击事件 =====
+    var collectBtn = document.getElementById('gachaCollectBtn');
+    if (collectBtn) {
+        collectBtn.addEventListener('click', function() {
+            console.log('开心收下按钮被点击');
+            // 如果是小卡，保存到 myCards
+            if (tempCardData) {
+                addMyCard(tempCardData);
+                console.log('小卡已保存，当前数量:', myCards.length);
+            }
+            resultModal.remove();
+            refreshGiftsContent();
+        });
+    } else {
+        console.error('找不到 gachaCollectBtn 按钮');
+    }
+
+    // 点击背景关闭
+    resultModal.addEventListener('click', function(e) {
+        if (e.target === resultModal) {
+            if (tempCardData) {
+                addMyCard(tempCardData);
+                console.log('小卡已保存（点击背景），当前数量:', myCards.length);
+            }
+            resultModal.remove();
+            refreshGiftsContent();
+        }
     });
 
     setTimeout(function() {
@@ -2041,6 +2069,26 @@ function showGachaResultModal() {
         if (knob) knob.style.pointerEvents = "auto";
         isSpinning = false;
     }, 500);
+}
+// ================= 保存礼物到本地 =================
+function saveGiftsToLocal() {
+    try {
+        localStorage.setItem('giftsData', JSON.stringify(gifts));
+    } catch(e) {
+        console.log('保存礼物失败:', e);
+    }
+}
+
+// ================= 加载礼物数据 =================
+function loadGiftsFromLocal() {
+    try {
+        var saved = localStorage.getItem('giftsData');
+        if (saved) {
+            gifts = JSON.parse(saved);
+        }
+    } catch(e) {
+        console.log('加载礼物失败:', e);
+    }
 }
 // ================= 获取扭蛋结果（小卡扭蛋机） =================
 function getGachaResult() {
@@ -2404,9 +2452,8 @@ function doWork() {
     );
 }
 
-// ================= 结果弹窗 =================
 // ================= 显示结果弹窗 =================
-function showResultModal(title, content, onClose) {
+function showResultModal(title, content, infoLines) {
     // 移除已存在的弹窗
     var existing = document.querySelector('.result-modal-overlay');
     if (existing) existing.remove();
@@ -2415,34 +2462,33 @@ function showResultModal(title, content, onClose) {
     overlay.className = 'result-modal-overlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.35);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
 
-    var isSuccess = title === '出售成功';
+    // 处理 infoLines - 加成用淡红色，损失用灰色
+    var infoHtml = '';
+    if (infoLines && infoLines.length > 0) {
+        infoHtml = infoLines.map(function(line) {
+            var isPositive = line.includes('+');
+            var color = isPositive ? '#E85D75' : '#999';
+            return '<div style="font-size:13px;font-weight:600;color:' + color + ';margin-top:3px;">' + line + '</div>';
+        }).join('');
+    }
 
     overlay.innerHTML = `
         <div style="background:white;border-radius:32px;padding:28px 24px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);animation:popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
-            <div style="font-size:22px;font-weight:700;color:${isSuccess ? '#4CAF50' : '#E85D75'};margin-bottom:8px;">
-                ${isSuccess ? '✅' : '❌'} ${title}
-            </div>
-            <div style="font-size:15px;color:#333;line-height:1.6;white-space:pre-line;margin-bottom:16px;">
-                ${content}
-            </div>
-            <button onclick="closeResultModal('${onClose ? 'true' : 'false'}')" style="padding:10px 40px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+            <div style="font-size:20px;font-weight:700;color:#1A1A1A;margin-bottom:8px;">${title}</div>
+            <div style="font-size:15px;color:#333333;line-height:1.6;white-space:pre-line;margin-bottom:8px;">${content}</div>
+            ${infoHtml}
+            <button onclick="this.closest('.result-modal-overlay').remove()" style="margin-top:16px;padding:10px 40px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
                 知道了
             </button>
         </div>
     `;
 
-    // 存储回调
-    overlay._onClose = onClose || null;
-
     document.body.appendChild(overlay);
 
     overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) {
-            closeResultModal('true');
-        }
+        if (e.target === overlay) overlay.remove();
     });
 }
-
 
 // ================= 关闭结果弹窗 =================
 function closeResultModal(hasCallback) {
@@ -2542,6 +2588,7 @@ function closeResultModal(hasCallback) {
         friendRequests: friendRequests,
         hasNewFriendRequest: hasNewFriendRequest,
         friends: friends,
+         contactRemarks: contactRemarks || {},
             // ========== 剧情内容 ==========
             savedAt: new Date().toLocaleString(),
             chapterTitle: currentChapter === 1 ? "重庆的夏天永远不会结束" : (currentChapter === 2 ? "生日和新的名字" : "心动"),
@@ -2554,155 +2601,109 @@ function closeResultModal(hasCallback) {
         renderSaveManagerModal();
     }
     
-       // 从指定存档位读取
-    function loadFromSlot(slotId) {
-        const saveData = localStorage.getItem(`sisterSimulatorSave_${slotId}`);
-        if (!saveData) {
-            alert("该存档位为空");
-            return false;
+       function loadFromSlot(slotId) {
+    const saveData = localStorage.getItem(`sisterSimulatorSave_${slotId}`);
+    if (!saveData) {
+        alert("该存档位为空");
+        return false;
+    }
+
+    try {
+        const data = JSON.parse(saveData);
+
+        // 恢复玩家数据
+        player.name = data.player.name;
+        player.nickname = data.player.nickname;
+        player.wechatName = data.player.wechatName;
+        player.weiboName = data.player.weiboName;
+        player.love = data.player.love;
+        player.expose = data.player.expose;
+        player.dark = data.player.dark;
+        player.danger = data.player.danger;
+        player.fans = data.player.fans;
+
+        // 恢复进度
+        currentChapter = data.currentChapter;
+        chapterCompleted = data.chapterCompleted;
+        meetCount = data.meetCount || 0;
+        usedMeetIndices = data.usedMeetIndices || [];
+
+        // 恢复章节状态
+        if (data.unlockedChapters) unlockedChapters = data.unlockedChapters;
+        if (data.completedChapters) completedChapters = data.completedChapters;
+
+        // 恢复聊天
+        if (data.chatData) {
+            if (data.chatData["张桂源"]) {
+                chatData["张桂源"].messages = data.chatData["张桂源"].messages;
+                chatData["张桂源"].roundCompleted = data.chatData["张桂源"].roundCompleted;
+            }
+            if (data.chatData["WXYz"]) {
+                chatData["WXYz"].messages = data.chatData["WXYz"].messages;
+                chatData["WXYz"].roundCompleted = data.chatData["WXYz"].roundCompleted;
+            }
         }
-        try {
-            const data = JSON.parse(saveData);
-            // 恢复玩家数据
-            player.name = data.player.name;
-            player.nickname = data.player.nickname;
-            player.wechatName = data.player.wechatName;
-            player.weiboName = data.player.weiboName;
-            player.love = data.player.love;
-            player.expose = data.player.expose;
-            player.dark = data.player.dark;
-            player.danger = data.player.danger;
-            player.fans = data.player.fans;
-            // 恢复进度
-            currentChapter = data.currentChapter;
-            chapterCompleted = data.chapterCompleted;
-            meetCount = data.meetCount || 0;
-            usedMeetIndices = data.usedMeetIndices || [];
-            // ========== 新增：恢复章节状态 ==========
-            if (data.unlockedChapters) {
-                unlockedChapters = data.unlockedChapters;
-            }
-            if (data.completedChapters) {
-                completedChapters = data.completedChapters;
-            }
-            if (data.unlockedChapters) {
-                unlockedChapters = data.unlockedChapters;
-            }
-            if (data.completedChapters) {
-                completedChapters = data.completedChapters;
-            }
-            // 恢复聊天
-            if (data.chatData) {
-                if (data.chatData["张桂源"]) {
-                    chatData["张桂源"].messages = data.chatData["张桂源"].messages;
-                    chatData["张桂源"].roundCompleted = data.chatData["张桂源"].roundCompleted;
-                }
-                if (data.chatData["WXYz"]) {
-                    chatData["WXYz"].messages = data.chatData["WXYz"].messages;
-                    chatData["WXYz"].roundCompleted = data.chatData["WXYz"].roundCompleted;
-                }
-            }
-            // 恢复朋友圈
-            if (data.allMoments) allMoments = data.allMoments;
-            if (data.myMoments) myMoments = data.myMoments;
-            if (data.momentsData) momentsData = data.momentsData;
-            // 恢复微博
-            if (data.allArtistWeibo) allArtistWeibo = data.allArtistWeibo;
-            if (data.allMyWeibo) allMyWeibo = data.allMyWeibo;
-            // 恢复礼物日记来信
-            if (data.gifts) gifts = data.gifts;
-            if (data.diaryEntries) diaryEntries = data.diaryEntries;
-            if (data.letters) letters = data.letters;
-            
-                        // ========== 恢复剧情页面内容 ==========
-            let storyDiv = document.getElementById("storyContent");
-            let chapterTitleDiv = document.getElementById("chapterTitle");
-            let branchDiv = document.getElementById("branchArea");
-            let endBtn = document.getElementById("endChapterBtn");
-             // ========== 新增：恢复步骤状态 ==========
-            if (data.chapterStep) {
-                if (data.chapterStep.chapter1) {
-                    currentChapter1Step = data.chapterStep.chapter1.step;
-                    currentBranchStep = data.chapterStep.chapter1.branchStep || 0;
-                }
-                if (data.chapterStep.chapter2) {
-                    currentChapter2Step = data.chapterStep.chapter2.step;
-                    currentGiftStep = data.chapterStep.chapter2.giftStep || 0;
-                }
-            }
-            // 恢复当前选项
-            if (data.currentOptions) {
-                currentOptions = data.currentOptions;
-            }
-            // ========== 新增结束 ==========
-            // 更新章节标题
-            let chapterName = data.chapterTitle || (currentChapter === 1 ? "重庆的夏天永远不会结束" : "心动");
-            if (chapterTitleDiv) {
-                chapterTitleDiv.innerText = `第${currentChapter}章 · ${chapterName}`;
-            }
-            
-            // 恢复剧情内容（如果有存档的内容就用存档的，否则用默认）
-            if (data.storyContent && data.storyContent.trim() !== "") {
-                storyDiv.innerHTML = data.storyContent;
-            } else if (chapterCompleted && currentChapter === 1) {
-                storyDiv.innerHTML = `✅ 第一章已完成！`;
-            } else if (!chapterCompleted && currentChapter === 1) {
-                loadChapter1();
-            }
-            
-            // 恢复分支区域
-            if (data.branchArea && data.branchArea.trim() !== "") {
-                branchDiv.innerHTML = data.branchArea;
-            }
-            
-            // 恢复结束按钮状态
-            if (endBtn) {
-                if (chapterCompleted) {
-                    endBtn.style.display = "none";
-                } else {
-                    endBtn.style.display = "block";
-                }
-            }
-            // 恢复好友申请状态
-    if (data.friendRequests) {
-        friendRequests = data.friendRequests;
-    }
-    if (data.hasNewFriendRequest !== undefined) {
-        hasNewFriendRequest = data.hasNewFriendRequest;
-    }
-    if (data.friends) {
-        friends = data.friends;
-    }
-            // ========== 新增结束 ==========
-           
-            
-            // 刷新界面
-            renderChatList();
-            renderMoments();
-            renderWeibo();
-            renderMyPage();
-            updateLetterRedDot();
-            
-            // 切换到游戏界面
-            document.getElementById("startScreen").style.display = "none";
-            document.getElementById("gameScreen").style.display = "flex";
-            
-            // 刷新聊天消息显示
-            if (currentChatContact && chatData[currentChatContact]) {
-                renderChatMessages();
-            }
-             // 刷新章节列表
-            renderChapterList();
-            // 更新章节状态提示
-            updateChapterStatusHint();
-            alert(`✅ 读取存档 ${slotId} 成功！\n📖 当前进度：第${currentChapter}章\n❤️ 当前爱意值：${player.love}`);
-            return true;
-        } catch(e) {
-            console.error("读取存档失败:", e);
-            alert("读取存档失败，存档文件可能已损坏");
-            return false;
+
+        // 恢复朋友圈
+        if (data.allMoments) allMoments = data.allMoments;
+        if (data.myMoments) myMoments = data.myMoments;
+        if (data.momentsData) momentsData = data.momentsData;
+
+        // 恢复微博
+        if (data.allArtistWeibo) allArtistWeibo = data.allArtistWeibo;
+        if (data.allMyWeibo) allMyWeibo = data.allMyWeibo;
+
+        // 恢复礼物日记来信
+        if (data.gifts) gifts = data.gifts;
+        if (data.diaryEntries) diaryEntries = data.diaryEntries;
+        if (data.letters) letters = data.letters;
+
+        // ✅ 恢复备注数据（从存档读取，覆盖全局）
+        if (data.contactRemarks) {
+            contactRemarks = data.contactRemarks;
+        } else {
+            contactRemarks = {};
         }
+        // 同步保存到 localStorage（但只作为缓存，实际数据在存档中）
+        saveRemarks();
+
+        // 恢复好友申请
+        if (data.friendRequests) friendRequests = data.friendRequests;
+        if (data.hasNewFriendRequest !== undefined) hasNewFriendRequest = data.hasNewFriendRequest;
+        if (data.friends) friends = data.friends;
+
+        // ... 后续恢复剧情代码保持不变 ...
+
+        // 刷新界面
+        renderChatList();
+        renderMoments();
+        renderWeibo();
+        renderMyPage();
+        updateLetterRedDot();
+
+        // 切换到游戏界面
+        document.getElementById("startScreen").style.display = "none";
+        document.getElementById("gameScreen").style.display = "flex";
+
+        // 刷新聊天消息显示
+        if (currentChatContact && chatData[currentChatContact]) {
+            renderChatMessages();
+        }
+
+        // 刷新章节列表
+        renderChapterList();
+        updateChapterStatusHint();
+
+        alert(`✅ 读取存档 ${slotId} 成功！\n📖 当前进度：第${currentChapter}章\n❤️ 当前爱意值：${player.love}`);
+
+        return true;
+
+    } catch(e) {
+        console.error("读取存档失败:", e);
+        alert("读取存档失败，存档文件可能已损坏");
+        return false;
     }
+}
     
     // 删除指定存档位
     function deleteSlot(slotId) {
@@ -2858,75 +2859,301 @@ function closeResultModal(hasCallback) {
 
     function getTime() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
     
-               function renderChatList() {
-    let container = document.getElementById("chatList");
+              function renderChatList() {
+    var container = document.getElementById("chatList");
     if (!container) return;
-    let html = "";
-    for (let friend of friends) {
-        let data = chatData[friend] || { messages: [], newMsg: false };
-        let lastMsg = "";
-        // 获取对方发送的最后一条消息
+
+    var html = "";
+
+    for (var i = 0; i < friends.length; i++) {
+        var friend = friends[i];
+        var data = chatData[friend] || { messages: [], newMsg: false };
+
+        var lastMsg = "";
         if (data.messages && data.messages.length > 0) {
-            for (let i = data.messages.length - 1; i >= 0; i--) {
-                if (data.messages[i].from === "other") {
-                    lastMsg = data.messages[i].text;
+            for (var j = data.messages.length - 1; j >= 0; j--) {
+                if (data.messages[j].from === "other") {
+                    lastMsg = data.messages[j].text;
                     break;
                 }
             }
         } else {
             lastMsg = "暂无消息";
         }
-        
-        // 计算未读消息数量
-        let unreadCount = 0;
+
+        var unreadCount = 0;
         if (data.messages && data.messages.length > 0) {
-            for (let msg of data.messages) {
-                if (msg.from === "other" && !msg.read) {
+            for (var k = 0; k < data.messages.length; k++) {
+                if (data.messages[k].from === "other" && !data.messages[k].read) {
                     unreadCount++;
                 }
             }
         }
-        
-        // ===== 头像设置 =====
-        let avatar = "";
+
+        var avatar = "";
         if (friend === "张桂源") {
-            avatar = `<img src="zgyweixin.png" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">`;
+            avatar = '<img src="zgyweixin.png" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">';
+        } else if (friend === "左奇函") {
+            avatar = '<img src="zqhwx.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">';
+        } else if (friend === "陈浚铭") {
+            avatar = '<img src="cjmwx.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">';
+        } else if (friend === "张函瑞") {
+            avatar = '<img src="zhrwx.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">';
         } else if (friend === "WXYz") {
-            avatar = `<img src="xiaoran.jpg.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">`;
-        } else if (friend === "陈太帅") {
-            avatar = `<img src="cjmwx.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">`;
-        } else if (friend === "哈哈哈") {
-            avatar = `<img src="zqhwx.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">`;
-        } else if (friend === "zhang憨蜹") {
-            avatar = `<img src="zhrwx.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">`;
-        } else {
-            avatar = "🎤";
+    avatar = '<img src="WXYz.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;">';
         }
-        
-        // 红点显示未读数量
-        let redDotHtml = "";
+
+        var redDotHtml = "";
         if (unreadCount > 0) {
-            let digitClass = unreadCount < 10 ? "single-digit" : "";
-            redDotHtml = `<div class="red-dot ${digitClass}">${unreadCount > 99 ? '99+' : unreadCount}</div>`;
+            var digitClass = unreadCount < 10 ? "single-digit" : "";
+            redDotHtml = '<div class="red-dot ' + digitClass + '">' + (unreadCount > 99 ? '99+' : unreadCount) + '</div>';
         }
-        
-        html += `<div class="chat-contact" data-contact="${friend}">
-            <div class="chat-avatar">${avatar}</div>
-            <div class="chat-info">
-                <div class="chat-name">${friend}</div>
-                <div class="chat-preview">${lastMsg}</div>
-            </div>
-            ${redDotHtml}
-        </div>`;
+
+        // ✅ 使用 getContactDisplayName 显示名称
+        var displayName = getContactDisplayName(friend);
+
+        html += '<div class="chat-contact" data-contact="' + friend + '">';
+        html += '<div class="chat-avatar">' + avatar + '</div>';
+        html += '<div class="chat-info">';
+        html += '<div class="chat-name">' + displayName + '</div>';
+        html += '<div class="chat-preview">' + lastMsg + '</div>';
+        html += '</div>';
+        html += redDotHtml;
+        html += '</div>';
     }
+
     container.innerHTML = html;
-    document.querySelectorAll(".chat-contact").forEach(el => {
-        el.addEventListener("click", () => openChat(el.dataset.contact));
+
+    document.querySelectorAll(".chat-contact").forEach(function(el) {
+        el.addEventListener("click", function() {
+            openChat(el.dataset.contact);
+        });
     });
-    
+
     if (chapterCompleted) {
         updateNextChapterButton();
     }
+}
+// ================= 备注和拉黑功能 =================
+
+// 初始化备注数据
+var contactRemarks = {};
+
+// ================= 加载备注数据 =================
+function loadRemarks() {
+    try {
+        // 优先从 localStorage 缓存读取
+        var saved = localStorage.getItem('contactRemarks');
+        if (saved) {
+            contactRemarks = JSON.parse(saved);
+        } else {
+            contactRemarks = {};
+        }
+    } catch(e) {
+        contactRemarks = {};
+    }
+}
+
+// ================= 保存备注数据 =================
+function saveRemarks() {
+    try {
+        // 保存到 localStorage 作为缓存（方便快速读取）
+        localStorage.setItem('contactRemarks', JSON.stringify(contactRemarks));
+    } catch(e) {
+        console.log('保存备注缓存失败:', e);
+    }
+}
+
+// ================= 联系人初始显示名映射 =================
+// ================= 联系人初始显示名映射 =================
+var contactDisplayMap = {
+    '张桂源': '三点水的yuan',
+    '陈浚铭': '陈太帅',
+    '左奇函': '哈哈哈',
+    '张函瑞': 'zhang憨蜹'
+};
+
+// ================= 获取联系人显示名称 =================
+function getContactDisplayName(contact) {
+    // 1. 如果有备注，优先显示备注
+    if (contactRemarks && contactRemarks[contact]) {
+        return contactRemarks[contact];
+    }
+    // 2. 如果有初始显示名映射，显示映射名
+    if (contactDisplayMap && contactDisplayMap[contact]) {
+        return contactDisplayMap[contact];
+    }
+    // 3. 否则返回原始名称
+    return contact;
+}
+
+// 显示聊天更多菜单
+function showChatMoreMenu(contact) {
+    // 移除已存在的菜单
+    var existing = document.querySelector('.chat-more-menu');
+    if (existing) existing.remove();
+
+    var menu = document.createElement('div');
+    menu.className = 'chat-more-menu';
+    menu.style.cssText = 'position:fixed;top:60px;right:10px;background:white;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:500;min-width:140px;overflow:hidden;border:1px solid #EFEFEF;';
+
+    var currentName = getContactDisplayName(contact);
+
+    menu.innerHTML = `
+        <div style="padding:12px 16px;font-size:14px;font-weight:600;color:#333;border-bottom:1px solid #EFEFEF;background:#F8F8F8;">
+            ${contact}
+        </div>
+        <div onclick="showEditRemark('${contact}')" style="padding:12px 16px;font-size:14px;color:#333;cursor:pointer;transition:background 0.2s;display:flex;align-items:center;gap:8px;" onmouseenter="this.style.background='#F5F5F5'" onmouseleave="this.style.background='transparent'">
+            <span style="font-size:16px;"></span> 修改备注
+            <span style="font-size:11px;color:#999;margin-left:auto;">${currentName !== contact ? currentName : '无'}</span>
+        </div>
+        <div onclick="showBlockConfirm('${contact}')" style="padding:12px 16px;font-size:14px;color:#E85D75;cursor:pointer;transition:background 0.2s;border-top:1px solid #EFEFEF;display:flex;align-items:center;gap:8px;" onmouseenter="this.style.background='#F5F5F5'" onmouseleave="this.style.background='transparent'">
+            <span style="font-size:16px;"></span> 拉黑好友
+        </div>
+    `;
+
+    document.body.appendChild(menu);
+
+    // 点击其他地方关闭菜单
+    setTimeout(function() {
+        document.addEventListener('click', function closeMenu(e) {
+            if (!menu.contains(e.target) && e.target.id !== 'chatMoreBtn') {
+                if (menu.parentNode) menu.remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }, 10);
+}
+
+// 显示修改备注弹窗
+function showEditRemark(contact) {
+    // 关闭菜单
+    var menu = document.querySelector('.chat-more-menu');
+    if (menu) menu.remove();
+
+    var currentRemark = contactRemarks[contact] || '';
+
+    var modal = document.createElement('div');
+    modal.className = 'full-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:24px;padding:24px 20px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:17px;font-weight:700;color:#1A1A1A;">修改备注</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+            <div style="font-size:13px;color:#666;margin-bottom:8px;">为「${contact}」设置备注名</div>
+            <input id="remarkInput" type="text" placeholder="输入备注名..." value="${currentRemark}" style="width:100%;padding:10px 14px;border:2px solid #EFEFEF;border-radius:12px;font-size:14px;outline:none;transition:border 0.2s;margin-bottom:12px;" onfocus="this.style.borderColor='#E85D75'" onblur="this.style.borderColor='#EFEFEF'">
+            <div style="display:flex;gap:10px;">
+                <button onclick="this.closest('.full-modal').remove()" style="flex:1;padding:10px;background:#F0F0F0;color:#333;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;">取消</button>
+                <button onclick="saveRemark('${contact}')" style="flex:2;padding:10px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+                    保存
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 自动聚焦输入框
+    setTimeout(function() {
+        var input = document.getElementById('remarkInput');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 100);
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+// 保存备注
+function saveRemark(contact) {
+    var input = document.getElementById('remarkInput');
+    if (!input) return;
+
+    var remark = input.value.trim();
+
+    if (remark === '') {
+        // 如果为空，删除备注
+        delete contactRemarks[contact];
+    } else {
+        contactRemarks[contact] = remark;
+    }
+
+    saveRemarks();
+
+    // 关闭弹窗
+    var modal = document.querySelector('.full-modal');
+    if (modal) modal.remove();
+
+    // 更新聊天界面显示
+    var displayName = getContactDisplayName(contact);
+    document.getElementById("chatContactName").innerText = displayName;
+
+    // 刷新聊天列表
+    renderChatList();
+
+    // 刷新朋友圈（如果有打开）
+    renderMoments();
+
+    // 刷新微博（如果有打开）
+    renderWeibo();
+
+    alert(remark ? '✅ 备注已修改为：' + remark : '✅ 已清除备注');
+}
+
+// 拉黑确认
+function showBlockConfirm(contact) {
+    // 关闭菜单
+    var menu = document.querySelector('.chat-more-menu');
+    if (menu) menu.remove();
+
+    var modal = document.createElement('div');
+    modal.className = 'full-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:24px;padding:24px 20px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="font-size:48px;margin-bottom:12px;">🚫</div>
+            <div style="font-size:17px;font-weight:700;color:#1A1A1A;margin-bottom:8px;">拉黑好友</div>
+            <div style="font-size:14px;color:#666;margin-bottom:16px;line-height:1.6;">
+                确定要拉黑「${contact}」吗？<br>
+                <span style="font-size:12px;color:#999;">拉黑后将不再接收对方消息（功能开发中）</span>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button onclick="this.closest('.full-modal').remove()" style="flex:1;padding:10px;background:#F0F0F0;color:#333;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;">取消</button>
+                <button onclick="blockContact('${contact}')" style="flex:1;padding:10px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+                    确定拉黑
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+// 拉黑好友（目前只做样式，显示提示）
+function blockContact(contact) {
+    var modal = document.querySelector('.full-modal');
+    if (modal) modal.remove();
+
+    // 关闭聊天详情，返回列表
+    document.getElementById("chatListScreen").style.display = "block";
+    document.getElementById("chatDetailScreen").style.display = "none";
+
+    // 显示提示
+    showResultModal('提示', '已拉黑「' + contact + '」\n功能开发中，后续将不再接收对方消息', null);
+
+    // 刷新聊天列表
+    renderChatList();
 }
         function updateNextChapterButton() {
         let btn = document.getElementById("nextChapterBtn");
@@ -3024,7 +3251,7 @@ function closeResultModal(hasCallback) {
             if (currentChatContact === "张桂源") {
                 avatar = `<img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;">`;
             } else if (currentChatContact === "WXYz") {
-                avatar = `<img src="xiaoran.jpg.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;">`;
+                avatar = `<img src="WXYz.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;">`;
             } else if (currentChatContact === "陈太帅") {
                 avatar = `<img src="cjmwx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;">`;
             } else if (currentChatContact === "哈哈哈") {
@@ -3067,6 +3294,12 @@ function openChat(contact) {
     document.getElementById("chatContactName").innerText = contact;
     renderChatMessages();
     
+    // ✅ 显示联系人名称（优先显示备注）
+     var displayName = getContactDisplayName(contact);
+    document.getElementById("chatContactName").innerText = displayName;
+// ✅ 每次打开聊天时重新应用头部布局
+    fixChatHeaderLayout();
+    renderChatMessages();
     let inputBox = document.getElementById("chatInputBox");
     
     // ========== 张桂源 ==========
@@ -3091,6 +3324,17 @@ function openChat(contact) {
             };
         }
     } 
+     // ✅ 绑定三个点按钮
+    var moreBtn = document.getElementById('chatMoreBtn');
+    if (moreBtn) {
+        // 移除旧的事件
+        var newMoreBtn = moreBtn.cloneNode(true);
+        moreBtn.parentNode.replaceChild(newMoreBtn, moreBtn);
+        newMoreBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            showChatMoreMenu(contact);
+        });
+    }
     // ========== WXYz ==========
     else if (contact === "WXYz") {
         if (!chatData["WXYz"].roundCompleted) {
@@ -3163,6 +3407,35 @@ function openChat(contact) {
             alert("暂无新对话");
         };
     }
+    // ================= 修复聊天头部布局 =================
+function fixChatHeaderLayout() {
+    var header = document.querySelector('.chat-detail-header');
+    if (!header) return;
+    
+    header.style.display = 'flex';
+    header.style.alignItems = 'center';
+    header.style.justifyContent = 'space-between';
+    header.style.padding = '14px 16px';
+    header.style.position = 'relative';
+    header.style.minHeight = '52px';
+    
+    var backBtn = header.querySelector('.chat-back');
+    var nameSpan = document.getElementById('chatContactName');
+    var moreBtn = document.getElementById('chatMoreBtn');
+    
+    if (backBtn) {
+        backBtn.style.cssText = 'background:none;border:none;color:white;font-size:24px;cursor:pointer;padding:0;width:40px;flex-shrink:0;text-align:left;position:relative;z-index:2;';
+    }
+    
+    if (nameSpan) {
+        nameSpan.style.cssText = 'font-size:16px;font-weight:600;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px;color:white;';
+    }
+    
+    if (moreBtn) {
+        moreBtn.style.cssText = 'background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:0;width:40px;flex-shrink:0;text-align:right;position:relative;z-index:2;';
+    }
+}
+
 }
 function showFriendChatOptions(contact) {
     let data = chatData[contact];
@@ -3782,7 +4055,7 @@ if (selected.branch3) {
                 let previewText = lastMsg.text.length > 30 ? lastMsg.text.substring(0, 30) + "..." : lastMsg.text;
                 showMessageNotification(
                     "WXYz",
-                    `<img src="xiaoran.jpg.jpg" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">`,
+                    `<img src="WXYz.jpg" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">`,
                     "WXYz",
                     previewText,
                     null
@@ -4020,7 +4293,8 @@ function renderMoments() {
             <div class="moment-header">
                 <div class="moment-avatar">${m.avatar}</div>
                 <div>
-                    <div class="moment-name">${m.author}</div>
+                    <div class="moment-name">${getContactDisplayName(m.author)
+}</div>
                     <div class="moment-time">${m.time}</div>
                 </div>
             </div>
@@ -4044,13 +4318,14 @@ function renderMoments() {
                     let displayText = c.text || "";
                     let authorName = "";
                     if (displayText.includes(" 回复 ")) {
-                        authorName = displayText.split(" 回复 ")[0];
+                        getContactDisplayName(authorName) = displayText.split(" 回复 ")[0];
                     } else if (displayText.includes("：")) {
-                        authorName = displayText.split("：")[0];
+                        getContactDisplayName(authorName) = displayText.split("：")[0];
                     } else {
-                        authorName = m.author;
+                        getContactDisplayName(authorName) = getContactDisplayName(m.author)
+;
                     }
-                    let avatarSrc = getAvatarSrc(authorName, c.avatar || "");
+                    let avatarSrc = getAvatarSrc(getContactDisplayName(authorName), c.avatar || "");
                     let avatarHtml = "";
                     if (avatarSrc === "🐰") {
                         avatarHtml = `<span style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; font-size:20px; background:#F0F0F0; border-radius:8px; flex-shrink:0;">🐰</span>`;
@@ -4085,7 +4360,8 @@ function renderMoments() {
             m.likes.push(player.name);
             renderMoments();
             // 点赞左奇函的朋友圈触发张桂源弹窗
-            if (m.author === "哈哈哈（左奇函）") {
+            if (getContactDisplayName(m.author)
+ === "哈哈哈（左奇函）") {
     console.log("点赞左奇函，触发弹窗");
     // 每次都清除标记，确保弹窗能触发
     localStorage.removeItem("zqh_like_triggered");
@@ -4155,7 +4431,28 @@ function renderMoments() {
                 }
             }
         });
-    });
+    });// 更新朋友圈签名
+updateMomentsSignature();
+}
+// ================= 更新朋友圈签名 =================
+function updateMomentsSignature() {
+    // ✅ 自己查找 bgDiv，不依赖外部变量
+    var bgDiv = document.querySelector('.moments-bg');
+    if (!bgDiv) return;
+
+    // 移除旧的签名
+    var oldSig = bgDiv.querySelector('.moments-signature');
+    if (oldSig) oldSig.remove();
+
+    // 获取签名
+    var signature = localStorage.getItem("user_signature") || "";
+    if (signature) {
+        var sigDiv = document.createElement('div');
+        sigDiv.className = 'moments-signature';
+        sigDiv.style.cssText = 'position:absolute;bottom:-60px;right:20px;font-size:12px;color:#999;max-width:150px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        sigDiv.textContent = signature;
+        bgDiv.appendChild(sigDiv);
+    }
 }
 // 获取玩家头像（判断是否更换过）
 function getPlayerAvatar() {
@@ -4535,25 +4832,27 @@ function changeMomentsBg() {
         avatarHtml = `<div style="width:70px; height:70px; background:#F0F0F0; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:40px; border:3px solid #E85D75; cursor:pointer;">🐰</div>`;
     }
     
+     // ✅ 获取签名
+    var signature = localStorage.getItem("user_signature") || "";
+
     document.getElementById("profileCard").innerHTML = `
         <div class="profile-container" style="text-align:center; position:relative;">
             <div id="avatarContainer" style="display:inline-block; margin-bottom:8px;">
                 ${avatarHtml}
             </div>
-            <div style="font-size:11px; color:#999; margin-top:4px;">👆 点击更换头像</div>
+            <div style="font-size:11px; color:#999; margin-top:4px;">点击更换头像</div>
             <div class="profile-name" style="margin-top:8px;">${player.name}</div>
             <div class="profile-nick">${player.nickname}</div>
-            <div style="margin:12px 0;">
-                <span>微信 ${player.wechatName}</span> | 
-                <span>微博 ${player.weiboName}</span> | 
-                <span>粉丝 ${player.fans}</span>
+            <!-- ✅ 自定义签名 -->
+            <div id="signatureDisplay" style="margin-top:8px; font-size:14px; color:#999; cursor:pointer; padding:4px 0; border-bottom:1px dashed #EFEFEF; display:inline-block;" onclick="editSignature()">
+                ${signature || '点击添加签名...'}
             </div>
-            <div class="attr-grid">
-    <div class="attr-item"><div>智慧</div><div class="attr-value">${player.wise}</div></div>
-    <div class="attr-item"><div>好感</div><div class="attr-value">${player.love}</div></div>
-    <div class="attr-item"><div>黑化</div><div class="attr-value">${player.dark}</div></div>
-    <div class="attr-item"><div>余额</div><div class="attr-value">${player.money}</div></div>
-</div>
+            <div class="attr-grid" style="margin-top:12px;">
+                <div class="attr-item"><div>智慧</div><div class="attr-value">${player.wise}</div></div>
+                <div class="attr-item"><div>好感</div><div class="attr-value">${player.love}</div></div>
+                <div class="attr-item"><div>黑化</div><div class="attr-value">${player.dark}</div></div>
+                <div class="attr-item"><div>余额</div><div class="attr-value">${player.money}</div></div>
+            </div>
         </div>
     `;
     
@@ -4637,7 +4936,70 @@ function getPlayerAvatar() {
     document.body.appendChild(modal);
     modal.querySelector(".close-modal").onclick = () => modal.remove();
 }
-// ================= 好感查询 =================
+// ================= 编辑签名 =================
+function editSignature() {
+    var currentSignature = localStorage.getItem("user_signature") || "";
+
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:24px;padding:24px 20px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:17px;font-weight:700;color:#1A1A1A;">编辑签名</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+            <div style="font-size:13px;color:#666;margin-bottom:8px;">输入你的个性签名</div>
+            <input id="signatureInput" type="text" placeholder="写点什么..." value="${currentSignature}" maxlength="50" style="width:100%;padding:10px 14px;border:2px solid #EFEFEF;border-radius:12px;font-size:14px;outline:none;transition:border 0.2s;margin-bottom:12px;" onfocus="this.style.borderColor='#E85D75'" onblur="this.style.borderColor='#EFEFEF'">
+            <div style="display:flex;gap:10px;">
+                <button onclick="this.closest('.full-modal').remove()" style="flex:1;padding:10px;background:#F0F0F0;color:#333;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;">取消</button>
+                <button onclick="saveSignature()" style="flex:2;padding:10px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+                    保存
+                </button>
+            </div>
+            <div style="font-size:11px;color:#999;text-align:center;margin-top:8px;">最多50个字</div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 自动聚焦
+    setTimeout(function() {
+        var input = document.getElementById('signatureInput');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 100);
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+function saveSignature() {
+    var input = document.getElementById('signatureInput');
+    if (!input) return;
+
+    var signature = input.value.trim();
+    if (signature.length > 50) {
+        alert('签名不能超过50个字');
+        return;
+    }
+
+    localStorage.setItem('user_signature', signature);
+    
+    // ✅ 刷新我的页面
+    renderMyPage();
+    
+    // ✅ 刷新朋友圈签名（只更新签名，不重新渲染整个朋友圈）
+    updateMomentsSignature();
+
+    var modal = document.querySelector('.full-modal');
+    if (modal) modal.remove();
+}
+
 // ================= 好感查询 =================
 function showFavorability() {
     // 动态获取好感人物列表
@@ -6368,22 +6730,23 @@ localStorage.setItem("chapter1_story", document.getElementById("storyContent").i
         document.getElementById("nextHint").innerHTML = "⚠️ 还需完成：阅读所有聊天消息 偶遇(0/3)";
         document.getElementById("nextHint").style.display = "block";
         
-        // 弹出张桂源消息弹窗
-        setTimeout(() => {
-            showMessageNotification(
-                "张桂源",
-                `<img src="zgyweixin.png" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">`,
-                "张桂源",
-                "在不在在不在在不在",
-                function() {
-                    switchPage("chat");
-                    setTimeout(() => {
-                        openChat("张桂源");
-                    }, 100);
-                }
-            );
-        }, 1000);
-        
+       // 弹出张桂源消息弹窗
+setTimeout(() => {
+    // ✅ 使用 getContactDisplayName 获取显示名称
+    var displayName = getContactDisplayName("张桂源");
+    showMessageNotification(
+        "张桂源",
+        `<img src="zgyweixin.png" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">`,
+        displayName,
+        "在不在在不在在不在",
+        function() {
+            switchPage("chat");
+            setTimeout(() => {
+                openChat("张桂源");
+            }, 100);
+        }
+    );
+}, 1000);
         // 解锁艺人来信
         if (letters.length > 0) {
             letters[0].hasNew = true;
@@ -9504,72 +9867,55 @@ function showFriendRequestsPopup() {
     }, 4000);
 }
 // ================= 显示物品（小卡 + 礼物分页） =================
+let currentGiftTab = 'cards';
+let batchMode = false; // 是否处于批量模式
+let selectedCards = []; // 选中的小卡索引
+
 function showGifts() {
     var modal = document.createElement("div");
     modal.className = "full-modal";
     modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
 
-    // 获取小卡数据（从抽到的记录中读取）
+    // 退出批量模式
+    batchMode = false;
+    selectedCards = [];
+
     var myCards = getMyCards();
 
     modal.innerHTML = `
         <div style="background:white;border-radius:32px;padding:20px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                 <div style="font-size:18px;font-weight:700;color:#1A1A1A;">我的物品</div>
-                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button id="batchBtn" onclick="toggleBatchMode()" style="padding:4px 12px;background:#FFB347;color:white;border:none;border-radius:16px;font-size:12px;font-weight:600;cursor:pointer;">
+                        批量操作
+                    </button>
+                    <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+                </div>
             </div>
 
-            <!-- 上半：小卡区域 -->
-            <div style="margin-bottom:8px;">
-                <div style="font-size:14px;font-weight:600;color:#666;margin-bottom:8px;">🃏 小卡（${myCards.length}张）</div>
-                ${myCards.length > 0 ? `
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-                        ${myCards.map(function(card, index) {
-                            return `
-                                <div style="background:#F8F8F8;border-radius:12px;padding:8px;text-align:center;border:1px solid #EFEFEF;position:relative;">
-                                    <div style="width:100%;aspect-ratio:64/88;border-radius:8px;overflow:hidden;background:#F0F0F0;margin-bottom:4px;">
-                                        <img src="${card.imageData}" style="width:100%;height:100%;object-fit:cover;">
-                                    </div>
-                                    <div style="font-size:11px;font-weight:600;color:#333;">${card.rarityLabel || 'N'}</div>
-                                    <div style="font-size:10px;color:#999;margin-bottom:4px;">${card.setName || '未命名'}</div>
-                                    <div style="display:flex;gap:4px;justify-content:center;">
-                                        <button onclick="event.stopPropagation();giftCard(${index})" style="padding:2px 10px;background:#E85D75;color:white;border:none;border-radius:12px;font-size:10px;cursor:pointer;">赠送</button>
-                                        <button onclick="event.stopPropagation();sellCard(${index})" style="padding:2px 10px;background:#FF6B6B;color:white;border:none;border-radius:12px;font-size:10px;cursor:pointer;">出售</button>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                ` : `
-                    <div style="text-align:center;padding:20px;color:#999;font-size:13px;background:#F8F8F8;border-radius:12px;">
-                        还没有小卡，去扭蛋机抽卡吧！
-                    </div>
-                `}
+            <!-- 顶部切换键 -->
+            <div style="display:flex;background:#F5F5F5;border-radius:30px;padding:4px;margin-bottom:14px;">
+                <button id="giftTabCards" onclick="switchGiftTab('cards')" style="flex:1;padding:8px 0;border:none;border-radius:26px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;background:#E85D75;color:white;">
+                    小卡 (${myCards.length})
+                </button>
+                <button id="giftTabItems" onclick="switchGiftTab('items')" style="flex:1;padding:8px 0;border:none;border-radius:26px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;background:transparent;color:#999;">
+                    物品 (${gifts.length})
+                </button>
             </div>
 
-            <!-- 隔板 -->
-            <div style="border-top:2px dashed #EFEFEF;margin:12px 0;"></div>
+            <!-- 批量操作提示栏 -->
+            <div id="batchBar" style="display:none;background:#FFF3E0;border-radius:12px;padding:8px 12px;margin-bottom:12px;font-size:13px;color:#E85D75;display:flex;justify-content:space-between;align-items:center;">
+                <span id="batchInfo">已选 0 张小卡</span>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="clearBatchSelection()" style="padding:2px 12px;background:#FF6B6B;color:white;border:none;border-radius:12px;font-size:11px;cursor:pointer;">取消选择</button>
+                    <button id="batchSellBtn" onclick="batchSell()" style="padding:2px 12px;background:#E85D75;color:white;border:none;border-radius:12px;font-size:11px;cursor:pointer;opacity:0.5;pointer-events:none;">批量出售</button>
+                </div>
+            </div>
 
-            <!-- 下半：物品区域 -->
-            <div>
-                <div style="font-size:14px;font-weight:600;color:#666;margin-bottom:8px;">🎁 物品（${gifts.length}件）</div>
-                ${gifts.length > 0 ? `
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-                        ${gifts.map(function(gift, index) {
-                            return `
-                                <div style="background:#F8F8F8;border-radius:12px;padding:10px;text-align:center;border:1px solid #EFEFEF;">
-                                    <div style="font-size:28px;margin-bottom:4px;">${gift.name ? gift.name.charAt(0) : '🎁'}</div>
-                                    <div style="font-size:11px;font-weight:600;color:#333;word-break:break-all;">${gift.name || '未知物品'}</div>
-                                    <div style="font-size:10px;color:#999;margin-top:2px;">${gift.desc || ''}</div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                ` : `
-                    <div style="text-align:center;padding:20px;color:#999;font-size:13px;background:#F8F8F8;border-radius:12px;">
-                        还没有物品，去扭蛋机抽礼物吧！
-                    </div>
-                `}
+            <!-- 内容区域 -->
+            <div id="giftContentArea">
+                ${renderGiftContent('cards')}
             </div>
         </div>
     `;
@@ -9579,6 +9925,440 @@ function showGifts() {
     modal.addEventListener("click", function(e) {
         if (e.target === modal) modal.remove();
     });
+}
+// ================= 切换批量模式 =================
+function toggleBatchMode() {
+    batchMode = !batchMode;
+    if (!batchMode) {
+        selectedCards = [];
+    }
+    var batchBar = document.getElementById('batchBar');
+    var batchBtn = document.getElementById('batchBtn');
+    
+    if (batchMode) {
+        if (batchBar) batchBar.style.display = 'flex';
+        if (batchBtn) batchBtn.textContent = '退出批量';
+        updateBatchInfo();
+    } else {
+        if (batchBar) batchBar.style.display = 'none';
+        if (batchBtn) batchBtn.textContent = '批量操作';
+        // 取消所有选中
+        document.querySelectorAll('.batch-checkbox').forEach(function(cb) {
+            cb.checked = false;
+        });
+        selectedCards = [];
+    }
+    // 刷新内容
+    var contentArea = document.getElementById('giftContentArea');
+    if (contentArea) {
+        contentArea.innerHTML = renderGiftContent(currentGiftTab);
+    }
+}
+
+// ================= 切换卡片选择 =================
+function toggleCardSelection(index) {
+    var idx = selectedCards.indexOf(index);
+    if (idx > -1) {
+        selectedCards.splice(idx, 1);
+    } else {
+        selectedCards.push(index);
+    }
+    updateBatchInfo();
+}
+
+// ================= 更新批量信息 =================
+function updateBatchInfo() {
+    var info = document.getElementById('batchInfo');
+    var sellBtn = document.getElementById('batchSellBtn');
+    if (info) {
+        info.textContent = '已选 ' + selectedCards.length + ' 张小卡';
+    }
+    if (sellBtn) {
+        if (selectedCards.length > 0) {
+            sellBtn.style.opacity = '1';
+            sellBtn.style.pointerEvents = 'auto';
+        } else {
+            sellBtn.style.opacity = '0.5';
+            sellBtn.style.pointerEvents = 'none';
+        }
+    }
+}
+
+// ================= 取消选择 =================
+function clearBatchSelection() {
+    selectedCards = [];
+    document.querySelectorAll('.batch-checkbox').forEach(function(cb) {
+        cb.checked = false;
+    });
+    updateBatchInfo();
+}
+
+// ================= 批量出售 =================
+function batchSell() {
+    if (selectedCards.length === 0) {
+        alert('请先选择要出售的小卡');
+        return;
+    }
+
+    var myCards = getMyCards();
+    var selectedData = [];
+    var totalPrice = 0;
+    var priceDetails = [];
+
+    // 计算总价
+    selectedCards.forEach(function(index) {
+        if (index < myCards.length) {
+            var card = myCards[index];
+            var priceMap = {
+                'N': 5,
+                'R': 8,
+                'SR': 20,
+                'SSR': 30,
+                'SP': 40
+            };
+            var rarityKey = (card.rarity || 'N').toUpperCase();
+            var basePrice = priceMap[rarityKey] || 5;
+            if (card.isHidden === true) {
+                basePrice = 1000;
+            }
+            // 计算浮动
+            var floatInfo = getCardFloat(rarityKey, card.isHidden);
+            var finalPrice = basePrice + floatInfo.floatValue;
+            if (finalPrice < 1) finalPrice = 1;
+            
+            selectedData.push({
+                card: card,
+                price: finalPrice,
+                index: index
+            });
+            totalPrice += finalPrice;
+            priceDetails.push(card.rarityLabel + ': ' + finalPrice + ' 元');
+        }
+    });
+
+    if (selectedData.length === 0) {
+        alert('没有可出售的小卡');
+        return;
+    }
+
+    // 弹出出售方式选择
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1001;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:32px;padding:24px 20px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:17px;font-weight:700;color:#1A1A1A;">批量出售 (${selectedData.length}张)</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+            <div style="font-size:13px;color:#666;margin-bottom:12px;text-align:center;">
+                <div style="font-size:12px;color:#999;margin-bottom:4px;">${priceDetails.join(' | ')}</div>
+                <span style="color:#E85D75;font-weight:700;font-size:18px;">总价：${totalPrice} 金钱</span>
+                <br>
+                <span style="font-size:11px;color:#999;">批量出售有额外折扣可能</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button onclick="this.closest('.full-modal').remove();executeBatchSell('zhongzhuan', ${totalPrice}, ${JSON.stringify(selectedData).replace(/"/g, '&quot;')})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    中转站
+                </button>
+                <button onclick="this.closest('.full-modal').remove();executeBatchSell('lvpaopao', ${totalPrice}, ${JSON.stringify(selectedData).replace(/"/g, '&quot;')})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    绿泡泡
+                </button>
+                <button onclick="this.closest('.full-modal').remove();executeBatchSell('xiaohuangyu', ${totalPrice}, ${JSON.stringify(selectedData).replace(/"/g, '&quot;')})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                    小黄鱼
+                </button>
+            </div>
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:12px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">取消</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+// ================= 执行批量出售 =================
+function executeBatchSell(method, totalPrice, selectedData) {
+    var earnedMoney = 0;
+    var resultMsg = '';
+    var success = false;
+    var title = '';
+
+    var random = Math.random();
+
+    // 先计算九折价格
+    var discountPrice = Math.floor(totalPrice * 0.9);
+
+    if (method === 'zhongzhuan') {
+        if (random < 0.25) {
+            resultMsg = '你被买家放鸽子了，批量出售失败';
+            earnedMoney = 0;
+            success = false;
+            title = '出售失败';
+        } else if (random < 0.5) {
+            resultMsg = '点击了诈骗链接，损失50元';
+            earnedMoney = -50;
+            success = false;
+            title = '出售失败';
+        } else if (random < 0.75) {
+            // ✅ 批量新增结果：对面十分爽快买下了你所有小卡，你为她打了九折
+            earnedMoney = discountPrice;
+            resultMsg = '对面十分爽快买下了你所有小卡，你为她打了九折';
+            success = true;
+            title = '出售成功';
+        } else {
+            earnedMoney = totalPrice;
+            resultMsg = '与买家顺利完成批量交易';
+            success = true;
+            title = '出售成功';
+        }
+    } else if (method === 'lvpaopao') {
+        if (random < 0.35) {
+            resultMsg = '与买家交谈甚欢，第二天收到了红色感叹号，出售失败';
+            earnedMoney = 0;
+            success = false;
+            title = '出售失败';
+        } else if (random < 0.7) {
+            // ✅ 批量新增结果
+            earnedMoney = discountPrice;
+            resultMsg = '对面十分爽快买下了你所有小卡，你为她打了九折';
+            success = true;
+            title = '出售成功';
+        } else {
+            earnedMoney = totalPrice;
+            resultMsg = '与买家顺利完成批量交易';
+            success = true;
+            title = '出售成功';
+        }
+    } else if (method === 'xiaohuangyu') {
+        if (random < 0.15) {
+            earnedMoney = Math.floor(totalPrice * 0.5);
+            resultMsg = '遭遇了大刀特刀，以总价的50%成交';
+            success = true;
+            title = '出售成功';
+        } else if (random < 0.3) {
+            earnedMoney = Math.floor(totalPrice * 0.8);
+            resultMsg = '遭到了小刀，以总价的80%成交';
+            success = true;
+            title = '出售成功';
+        } else if (random < 0.45) {
+            earnedMoney = Math.floor(totalPrice * 0.9);
+            resultMsg = '与买家相谈甚欢，给了对方优惠，以总价的90%成交';
+            success = true;
+            title = '出售成功';
+        } else if (random < 0.6) {
+            earnedMoney = Math.floor(totalPrice * 1.2);
+            resultMsg = '遇到了富婆，以总价的120%成交';
+            success = true;
+            title = '出售成功';
+        } else if (random < 0.8) {
+            // ✅ 批量新增结果
+            earnedMoney = discountPrice;
+            resultMsg = '对面十分爽快买下了你所有小卡，你为她打了九折';
+            success = true;
+            title = '出售成功';
+        } else {
+            earnedMoney = 0;
+            resultMsg = '遇到了ysg，所有小卡被白嫖了';
+            success = false;
+            title = '出售失败';
+        }
+    }
+
+    // 执行结果
+    if (success) {
+        // 按索引从大到小删除（避免索引错乱）
+        var sortedIndices = selectedData.map(function(item) { return item.index; }).sort(function(a, b) { return b - a; });
+        var myCards = getMyCards();
+        sortedIndices.forEach(function(idx) {
+            myCards.splice(idx, 1);
+        });
+        saveMyCards();
+
+        player.money = (player.money || 0) + earnedMoney;
+        renderMyPage();
+
+        var detailMsg = '获得金钱：' + earnedMoney;
+        showResultModal(title, resultMsg + '\n' + detailMsg, function() {
+            refreshGiftsContent();
+            // 退出批量模式
+            batchMode = false;
+            selectedCards = [];
+            var batchBar = document.getElementById('batchBar');
+            if (batchBar) batchBar.style.display = 'none';
+            var batchBtn = document.getElementById('batchBtn');
+            if (batchBtn) batchBtn.textContent = '批量操作';
+            // 刷新内容
+            var contentArea = document.getElementById('giftContentArea');
+            if (contentArea) {
+                contentArea.innerHTML = renderGiftContent(currentGiftTab);
+            }
+        });
+    } else {
+        if (earnedMoney < 0) {
+            player.money = Math.max(0, (player.money || 0) + earnedMoney);
+            renderMyPage();
+            showResultModal(title, resultMsg + '\n损失金钱：' + Math.abs(earnedMoney), function() {
+                refreshGiftsContent();
+            });
+        } else if (earnedMoney === 0 && resultMsg.includes('ysg')) {
+            // ysg 损失小卡
+            var sortedIndices = selectedData.map(function(item) { return item.index; }).sort(function(a, b) { return b - a; });
+            var myCards = getMyCards();
+            sortedIndices.forEach(function(idx) {
+                myCards.splice(idx, 1);
+            });
+            saveMyCards();
+            renderMyPage();
+            showResultModal(title, resultMsg, function() {
+                refreshGiftsContent();
+            });
+        } else {
+            showResultModal(title, resultMsg, function() {
+                refreshGiftsContent();
+            });
+        }
+    }
+}
+// ================= 切换小卡/物品标签 =================
+function switchGiftTab(tab) {
+    currentGiftTab = tab;
+
+    // 更新按钮样式
+    var cardsBtn = document.getElementById('giftTabCards');
+    var itemsBtn = document.getElementById('giftTabItems');
+    var myCards = getMyCards();
+
+    if (tab === 'cards') {
+        cardsBtn.style.background = '#E85D75';
+        cardsBtn.style.color = 'white';
+        itemsBtn.style.background = 'transparent';
+        itemsBtn.style.color = '#999';
+        cardsBtn.innerText = '🃏 小卡 (' + myCards.length + ')';
+        itemsBtn.innerText = '🎁 物品 (' + gifts.length + ')';
+    } else {
+        itemsBtn.style.background = '#E85D75';
+        itemsBtn.style.color = 'white';
+        cardsBtn.style.background = 'transparent';
+        cardsBtn.style.color = '#999';
+        itemsBtn.innerText = '🎁 物品 (' + gifts.length + ')';
+        cardsBtn.innerText = '🃏 小卡 (' + myCards.length + ')';
+    }
+
+    // 刷新内容
+    var contentArea = document.getElementById('giftContentArea');
+    if (contentArea) {
+        contentArea.innerHTML = renderGiftContent(tab);
+    }
+}
+
+// ================= 渲染小卡/物品内容 =================
+function renderGiftContent(tab) {
+    var myCards = getMyCards();
+
+    if (tab === 'cards') {
+        if (myCards.length === 0) {
+            return `
+                <div style="text-align:center;padding:40px 20px;color:#999;font-size:14px;background:#F8F8F8;border-radius:16px;">
+                    <div style="font-size:48px;margin-bottom:12px;">🃏</div>
+                    还没有小卡<br>去扭蛋机抽卡吧！
+                </div>
+            `;
+        }
+
+        return `
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                ${myCards.map(function(card, index) {
+                    // 批量模式下显示复选框
+                    var checkboxHtml = '';
+                    if (batchMode) {
+                        var checked = selectedCards.includes(index) ? 'checked' : '';
+                        checkboxHtml = `
+                            <div style="position:absolute;top:4px;left:4px;z-index:2;">
+                                <input type="checkbox" class="batch-checkbox" data-index="${index}" ${checked} style="width:16px;height:16px;cursor:pointer;accent-color:#E85D75;" onchange="toggleCardSelection(${index})">
+                            </div>
+                        `;
+                    }
+
+                    return `
+                        <div style="background:#F8F8F8;border-radius:12px;padding:10px 8px;text-align:center;border:1px solid #EFEFEF;position:relative;">
+                            ${checkboxHtml}
+                            <div style="width:100%;aspect-ratio:64/88;border-radius:8px;overflow:hidden;background:#F0F0F0;margin-bottom:6px;">
+                                <img src="${card.imageData}" style="width:100%;height:100%;object-fit:cover;">
+                            </div>
+                            <div style="font-size:12px;font-weight:700;color:#333;">${card.rarityLabel || card.rarity || 'N'}</div>
+                            <div style="font-size:10px;color:#999;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${card.setName || '未命名'}</div>
+                            ${!batchMode ? `
+                                <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
+                                    <button onclick="event.stopPropagation();giftCard(${index})" style="padding:2px 10px;background:#E85D75;color:white;border:none;border-radius:12px;font-size:10px;cursor:pointer;width:80%;">赠送</button>
+                                    <button onclick="event.stopPropagation();sellCard(${index})" style="padding:2px 10px;background:#FF6B6B;color:white;border:none;border-radius:12px;font-size:10px;cursor:pointer;width:80%;">出售</button>
+                                </div>
+                            ` : `
+                                <div style="font-size:10px;color:#999;">点击复选框选择</div>
+                            `}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+
+    } else {
+        if (gifts.length === 0) {
+            return `
+                <div style="text-align:center;padding:40px 20px;color:#999;font-size:14px;background:#F8F8F8;border-radius:16px;">
+                    <div style="font-size:48px;margin-bottom:12px;">🎁</div>
+                    还没有物品<br>去扭蛋机抽礼物吧！
+                </div>
+            `;
+        }
+
+        return `
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                ${gifts.map(function(gift, index) {
+                    var emoji = gift.name ? gift.name.charAt(0) : '🎁';
+                    if (gift.emoji) emoji = gift.emoji;
+                    return `
+                        <div style="background:#F8F8F8;border-radius:12px;padding:14px 8px;text-align:center;border:1px solid #EFEFEF;">
+                            <div style="font-size:32px;margin-bottom:4px;">${emoji}</div>
+                            <div style="font-size:12px;font-weight:600;color:#333;word-break:break-all;">${gift.name || '未知物品'}</div>
+                            <div style="font-size:10px;color:#999;margin-top:2px;">${gift.desc || ''}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+}
+
+// ================= 刷新物品内容（不关闭弹窗） =================
+function refreshGiftsContent() {
+    var contentArea = document.getElementById('giftContentArea');
+    if (contentArea) {
+        contentArea.innerHTML = renderGiftContent(currentGiftTab);
+    }
+
+    // 更新标签上的数量
+    var cardsBtn = document.getElementById('giftTabCards');
+    var itemsBtn = document.getElementById('giftTabItems');
+    var myCards = getMyCards();
+
+    if (cardsBtn) {
+        if (currentGiftTab === 'cards') {
+            cardsBtn.innerText = '小卡 (' + myCards.length + ')';
+        } else {
+            cardsBtn.innerText = '小卡 (' + myCards.length + ')';
+        }
+    }
+    if (itemsBtn) {
+        if (currentGiftTab === 'items') {
+            itemsBtn.innerText = '物品 (' + gifts.length + ')';
+        } else {
+            itemsBtn.innerText = '物品 (' + gifts.length + ')';
+        }
+    }
 }
 // ================= 小卡存储系统 =================
 // 存储抽到的小卡
@@ -9614,19 +10394,27 @@ function getMyCards() {
 }
 
 // 添加小卡
+// ================= 添加小卡 =================
 function addMyCard(cardData) {
     loadMyCards();
+    
+    // 确保 rarityLabel 正确传递
+    var rarityLabel = cardData.rarityLabel || cardData.rarity || 'N';
+    // 如果是 N，显示为 N，否则显示对应的等级
+    var displayLabel = rarityLabel.toUpperCase();
+    
     myCards.push({
         id: "card_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6),
         imageData: cardData.imageData,
         setName: cardData.setName || '未命名卡套',
         rarity: cardData.rarity || 'N',
-        rarityLabel: cardData.rarityLabel || 'N',
+        rarityLabel: displayLabel,
         cardLabel: cardData.cardLabel || '',
         isHidden: cardData.isHidden || false,
         obtainedAt: new Date().toLocaleString()
     });
     saveMyCards();
+    console.log('✅ 添加小卡:', displayLabel, '当前数量:', myCards.length);
 }
 
 // 删除小卡（出售或赠送后移除）
@@ -9843,7 +10631,6 @@ function executeGift(index, target) {
     });
 }
 // ================= 出售小卡 =================
-// ================= 出售小卡 =================
 function sellCard(index) {
     loadMyCards();
     if (index < 0 || index >= myCards.length) {
@@ -9852,8 +10639,9 @@ function sellCard(index) {
     }
 
     var card = myCards[index];
+    console.log('出售小卡:', card);
 
-    // 根据稀有度定价
+    // ✅ 统一使用大写
     var priceMap = {
         'N': 5,
         'R': 8,
@@ -9861,14 +10649,22 @@ function sellCard(index) {
         'SSR': 30,
         'SP': 40
     };
-    var basePrice = priceMap[card.rarity] || 5;
     
+    // 获取稀有度（统一转大写）
+    var rarityKey = (card.rarity || 'N').toUpperCase();
+    var basePrice = priceMap[rarityKey] || 5;
+
     // 隐藏款特殊价格
     if (card.isHidden === true) {
         basePrice = 1000;
     }
 
-    // 弹出出售方式选择
+    // 计算今日浮动价格
+    var floatInfo = getCardFloat(rarityKey, card.isHidden);
+    var finalPrice = basePrice + floatInfo.floatValue;
+
+    if (finalPrice < 1) finalPrice = 1;
+
     var modal = document.createElement("div");
     modal.className = "full-modal";
     modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1001;display:flex;align-items:center;justify-content:center;padding:20px;";
@@ -9880,17 +10676,22 @@ function sellCard(index) {
                 <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
             </div>
             <div style="font-size:13px;color:#666;margin-bottom:12px;text-align:center;">
-                ${card.setName} - ${card.rarityLabel} ${card.isHidden ? '（隐藏款）' : ''}
-                <br>基础售价：${basePrice} 金钱
+                ${card.setName} - ${card.rarityLabel || card.rarity || 'N'} ${card.isHidden ? '（隐藏款）' : ''}
+                <br>
+                <span style="text-decoration:line-through;color:#999;">基础售价：${basePrice} 金钱</span>
+                <br>
+                <span style="color:#E85D75;font-weight:700;font-size:16px;">今日售价：${finalPrice} 金钱</span>
+                <br>
+                <span style="font-size:11px;color:#999;">${floatInfo.displayText}</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:10px;">
-                <button onclick="this.closest('.full-modal').remove();sellCardByMethod(${index}, 'zhongzhuan', ${basePrice})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                <button onclick="this.closest('.full-modal').remove();sellCardByMethod(${index}, 'zhongzhuan', ${finalPrice})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
                     中转站
                 </button>
-                <button onclick="this.closest('.full-modal').remove();sellCardByMethod(${index}, 'lvpaopao', ${basePrice})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                <button onclick="this.closest('.full-modal').remove();sellCardByMethod(${index}, 'lvpaopao', ${finalPrice})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
                     绿泡泡
                 </button>
-                <button onclick="this.closest('.full-modal').remove();sellCardByMethod(${index}, 'xiaohuangyu', ${basePrice})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                <button onclick="this.closest('.full-modal').remove();sellCardByMethod(${index}, 'xiaohuangyu', ${finalPrice})" style="padding:12px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:16px;font-size:15px;cursor:pointer;transition:all 0.2s;text-align:center;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
                     小黄鱼
                 </button>
             </div>
@@ -9904,10 +10705,75 @@ function sellCard(index) {
         if (e.target === modal) modal.remove();
     });
 }
+// ================= 今日小卡浮动价格计算 =================
+function getCardFloat(rarity, isHidden) {
+    var floatValue = 0;
+    var displayText = '';
+    var emoji = '';
 
+    // 隐藏款单独处理
+    if (isHidden === true) {
+        // 隐藏款：上下浮动 50-100 元
+        var isUp = Math.random() > 0.5;
+        var amount = Math.floor(Math.random() * 51) + 50; // 50-100
+        floatValue = isUp ? amount : -amount;
+        emoji = isUp ? '📈' : '📉';
+        displayText = emoji + ' 今日隐藏款浮动 ' + (isUp ? '+' : '') + amount + ' 元';
+        return { floatValue: floatValue, displayText: displayText };
+    }
+
+    switch(rarity) {
+        case 'N':
+            // N卡：上下浮动 1 元
+            var isUp = Math.random() > 0.5;
+            var amount = 1;
+            floatValue = isUp ? amount : -amount;
+            emoji = isUp ? '📈' : '📉';
+            displayText = emoji + ' 今日N卡浮动 ' + (isUp ? '+' : '') + amount + ' 元';
+            break;
+
+        case 'R':
+            // R卡：上下浮动 2-5 元
+            var isUp = Math.random() > 0.5;
+            var amount = Math.floor(Math.random() * 4) + 2; // 2-5
+            floatValue = isUp ? amount : -amount;
+            emoji = isUp ? '📈' : '📉';
+            displayText = emoji + ' 今日R卡浮动 ' + (isUp ? '+' : '') + amount + ' 元';
+            break;
+
+        case 'SR':
+            // SR卡：向上浮动 5 元以内
+            var amount = Math.floor(Math.random() * 5) + 1; // 1-5
+            floatValue = amount; // 只向上
+            emoji = '📈';
+            displayText = emoji + ' 今日SR卡向上浮动 +' + amount + ' 元';
+            break;
+
+        case 'SSR':
+            // SSR卡：向上浮动 10-20 元
+            var amount = Math.floor(Math.random() * 11) + 10; // 10-20
+            floatValue = amount; // 只向上
+            emoji = '📈';
+            displayText = emoji + ' 今日SSR卡向上浮动 +' + amount + ' 元';
+            break;
+
+        case 'SP':
+            // SP卡：向上浮动 20-30 元
+            var amount = Math.floor(Math.random() * 11) + 20; // 20-30
+            floatValue = amount; // 只向上
+            emoji = '📈';
+            displayText = emoji + ' 今日SP卡向上浮动 +' + amount + ' 元';
+            break;
+
+        default:
+            floatValue = 0;
+            displayText = '今日无浮动';
+    }
+
+    return { floatValue: floatValue, displayText: displayText };
+}
 // ================= 按方式出售 =================
-// ================= 按方式出售 =================
-function sellCardByMethod(index, method, basePrice) {
+function sellCardByMethod(index, method, finalPrice) {
     loadMyCards();
     if (index < 0 || index >= myCards.length) {
         showResultModal("提示", "小卡不存在", null);
@@ -9935,7 +10801,8 @@ function sellCardByMethod(index, method, basePrice) {
             success = false;
             title = '出售失败';
         } else {
-            earnedMoney = basePrice;
+            // ✅ 使用 finalPrice（已包含浮动）
+            earnedMoney = finalPrice;
             resultMsg = '与买家顺利完成交易';
             success = true;
             title = '出售成功';
@@ -9947,29 +10814,30 @@ function sellCardByMethod(index, method, basePrice) {
             success = false;
             title = '出售失败';
         } else {
-            earnedMoney = basePrice;
+            earnedMoney = finalPrice;
             resultMsg = '与买家顺利完成交易';
             success = true;
             title = '出售成功';
         }
     } else if (method === 'xiaohuangyu') {
+        // ✅ 小黄鱼基于浮动后的价格计算
         if (random < 0.2) {
-            earnedMoney = Math.floor(basePrice * 0.5);
+            earnedMoney = Math.floor(finalPrice * 0.5);
             resultMsg = '遭遇了大刀特刀，以售价的50%成交';
             success = true;
             title = '出售成功';
         } else if (random < 0.4) {
-            earnedMoney = Math.floor(basePrice * 0.8);
+            earnedMoney = Math.floor(finalPrice * 0.8);
             resultMsg = '遭到了小刀，以售价的80%成交';
             success = true;
             title = '出售成功';
         } else if (random < 0.6) {
-            earnedMoney = Math.floor(basePrice * 0.9);
+            earnedMoney = Math.floor(finalPrice * 0.9);
             resultMsg = '与买家相谈甚欢，给了对方优惠，以售价的90%成交';
             success = true;
             title = '出售成功';
         } else if (random < 0.8) {
-            earnedMoney = Math.floor(basePrice * 1.2);
+            earnedMoney = Math.floor(finalPrice * 1.2);
             resultMsg = '遇到了富婆，以售价的120%成交';
             success = true;
             title = '出售成功';
@@ -9981,25 +10849,20 @@ function sellCardByMethod(index, method, basePrice) {
         }
     }
 
-    // ✅ 关键：执行出售结果
+    // 执行出售结果
     var detailMsg = '';
 
     if (success) {
-        // ✅ 1. 移除小卡
         myCards.splice(index, 1);
         saveMyCards();
-
-        // ✅ 2. 增加金钱到余额
         player.money = (player.money || 0) + earnedMoney;
         renderMyPage();
-
         detailMsg = '获得金钱：' + earnedMoney;
         showResultModal(title, resultMsg + '\n' + detailMsg, function() {
             refreshGiftsContent();
         });
     } else {
         if (earnedMoney < 0) {
-            // 损失金钱（从余额扣除）
             player.money = Math.max(0, (player.money || 0) + earnedMoney);
             renderMyPage();
             detailMsg = '损失金钱：' + Math.abs(earnedMoney);
@@ -10007,7 +10870,6 @@ function sellCardByMethod(index, method, basePrice) {
                 refreshGiftsContent();
             });
         } else if (earnedMoney === 0 && resultMsg.includes('ysg')) {
-            // ✅ ysg 只损失小卡，不扣钱（移除小卡）
             myCards.splice(index, 1);
             saveMyCards();
             renderMyPage();
@@ -10015,7 +10877,6 @@ function sellCardByMethod(index, method, basePrice) {
                 refreshGiftsContent();
             });
         } else {
-            // 出售失败，小卡保留
             showResultModal(title, resultMsg, function() {
                 refreshGiftsContent();
             });
@@ -10024,9 +10885,7 @@ function sellCardByMethod(index, method, basePrice) {
 }
 
 // ================= 显示结果弹窗 =================
-// ================= 显示结果弹窗（乞讨/才艺/打工使用） =================
 function showResultModal(title, content, infoLines) {
-    // 移除已存在的弹窗
     var existing = document.querySelector('.result-modal-overlay');
     if (existing) existing.remove();
 
@@ -10034,11 +10893,12 @@ function showResultModal(title, content, infoLines) {
     overlay.className = 'result-modal-overlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.35);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
 
-    // 处理 infoLines - 全部黑色
     var infoHtml = '';
     if (infoLines && infoLines.length > 0) {
         infoHtml = infoLines.map(function(line) {
-            return '<div style="font-size:15px;font-weight:600;color:#333333;margin-top:4px;">' + line + '</div>';
+            var isPositive = line.includes('+');
+            var color = isPositive ? '#E85D75' : '#999';
+            return '<div style="font-size:13px;font-weight:600;color:' + color + ';margin-top:3px;">' + line + '</div>';
         }).join('');
     }
 
@@ -10054,10 +10914,6 @@ function showResultModal(title, content, infoLines) {
     `;
 
     document.body.appendChild(overlay);
-
-    overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) overlay.remove();
-    });
 }
     // ================= 事件绑定 =================
     document.getElementById("favorabilityBtn")?.addEventListener("click", showFavorability);
@@ -10075,6 +10931,10 @@ function showResultModal(title, content, infoLines) {
         completedChapters = [false, false, false, false];
         unlockedChapters = [true, false, false, false];
         // ========== 清除结束 ==========
+        // ✅ 新游戏开始时重置备注（加在这里）
+    contactRemarks = {};
+    saveRemarks();
+    console.log('✅ 新游戏：备注已重置');
         // 检查是否有任何存档
         let saves = getAllSaves();
         let hasAnySave = saves.some(s => s.data !== null);
@@ -10223,6 +11083,12 @@ loadCardSettings();
 loadMyCards();
 loadCardSets();
 loadSelectedCardSet();
+// 加载备注数据
+loadRemarks();
+// ✅ 初始化朋友圈签名
+setTimeout(function() {
+    updateMomentsSignature();
+}, 300);
 </script>
 </body>
 </html>
