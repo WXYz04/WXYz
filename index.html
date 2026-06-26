@@ -1487,7 +1487,7 @@ function openCardSetEditor(setId) {
     });
 }
 
-// ================= 上传小卡图片 =================
+// ================= 上传小卡图片（带自动压缩） =================
 function uploadCardImage(type, index) {
     var fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -1499,38 +1499,33 @@ function uploadCardImage(type, index) {
         var file = e.target.files[0];
         if (!file) return;
 
-        if (file.size > 5 * 1024 * 1024) {
-            alert("⚠️ 图片太大了，请选择小于5MB的图片");
-            fileInput.remove();
-            return;
+        // 如果图片大于 500KB，提示压缩
+        if (file.size > 500 * 1024) {
+            alert('📸 图片较大（' + (file.size/1024).toFixed(0) + 'KB），将自动压缩到合适大小');
         }
 
         var reader = new FileReader();
         reader.onload = function(ev) {
             var imageData = ev.target.result;
 
-            // ✅ 修复：使用 currentCardSet 而不是 cardCollection
-            if (currentCardSet && currentCardSet.cards) {
-                currentCardSet.cards[type][index] = imageData;
-                console.log('✅ 图片已保存到 currentCardSet.cards.' + type + '[' + index + ']');
-            } else {
-                console.error('❌ currentCardSet 未初始化或没有 cards 属性');
-                alert('⚠️ 系统错误：请先打开一个卡套再上传图片');
+            // ✅ 调用压缩函数
+            compressImage(imageData, 150, function(compressedData) {
+                // 保存到 currentCardSet
+                if (currentCardSet && currentCardSet.cards) {
+                    currentCardSet.cards[type][index] = compressedData;
+                    console.log('✅ 图片已保存，大小:', (compressedData.length/1024).toFixed(0), 'KB');
+                }
+
+                // 更新界面
+                var targetDiv = document.getElementById('card_' + type + '_' + index);
+                if (targetDiv) {
+                    targetDiv.innerHTML = '<img src="' + compressedData + '" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">';
+                    targetDiv.style.background = "transparent";
+                }
+
                 fileInput.remove();
-                return;
-            }
-
-            // 更新界面
-            var targetDiv = document.getElementById('card_' + type + '_' + index);
-            if (targetDiv) {
-                targetDiv.innerHTML = '<img src="' + imageData + '" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">';
-                targetDiv.style.background = "transparent";
-                console.log('✅ 界面已更新');
-            } else {
-                console.error('❌ 找不到元素: card_' + type + '_' + index);
-            }
-
-            fileInput.remove();
+                alert('✅ 上传成功！图片已压缩至 ' + (compressedData.length/1024).toFixed(0) + ' KB');
+            });
         };
 
         reader.onerror = function(err) {
@@ -1547,6 +1542,60 @@ function uploadCardImage(type, index) {
     };
 
     fileInput.click();
+}
+
+// ================= 压缩图片 =================
+function compressImage(dataUrl, targetSizeKB, callback) {
+    var img = new Image();
+    img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+
+        var targetSize = targetSizeKB * 1024;
+        var quality = 0.85;
+        var width = img.width;
+        var height = img.height;
+
+        // 如果图片太大，先按比例缩小尺寸
+        var maxDimension = 800;
+        if (width > maxDimension || height > maxDimension) {
+            var ratio = Math.min(maxDimension / width, maxDimension / height);
+            width = Math.floor(width * ratio);
+            height = Math.floor(height * ratio);
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        var compressedData = canvas.toDataURL('image/jpeg', quality);
+
+        // 如果还太大，逐步降低质量
+        var attempts = 0;
+        while (compressedData.length > targetSize && quality > 0.1 && attempts < 10) {
+            quality -= 0.08;
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            compressedData = canvas.toDataURL('image/jpeg', quality);
+            attempts++;
+        }
+
+        // 如果还是太大，再次缩小尺寸
+        if (compressedData.length > targetSize) {
+            var scale = 0.7;
+            width = Math.floor(width * scale);
+            height = Math.floor(height * scale);
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            compressedData = canvas.toDataURL('image/jpeg', 0.5);
+        }
+
+        console.log('📊 压缩后大小:', (compressedData.length/1024).toFixed(0), 'KB');
+        callback(compressedData);
+    };
+    img.src = dataUrl;
 }
 
 // ================= 保存小卡设置 =================
