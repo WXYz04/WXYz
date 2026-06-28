@@ -3,12 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>四代天选嫂嫂模拟器 · 张桂源青梅线</title>
+    <title>4TA模拟器</title>
    
    <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         .app-container { max-width: 500px; margin: 0 auto; background: #FFFFFF; min-height: 100vh; position: relative; }
+/* 禁止长按弹出系统菜单 */
+* {
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+}
+/* 聊天消息区域 - 去掉滚动条，保留滚动功能 */
+.chat-messages {
+    background: #E8E8E8;
+    height: 350px;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* ✅ 隐藏滚动条 */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+/* ===== 聊天详情页面 ===== */
+#chatDetailScreen {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 70px);
+    position: relative;
+    background: #E8E8E8;
+}
+/* ===== 底部输入框区域 ===== */
+.chat-input-area {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    background: transparent;
+    border-top: none;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+}
+
+/* 消息区域 - 占满剩余空间 */
+#chatMessages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 16px 8px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    min-height: 0;
+    background: #E8E8E8;
+}
+#chatMessages::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+
+/* Chrome/Safari 隐藏滚动条 */
+.chat-messages::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
 
         #startScreen { background: #FFFFFF; min-height: 100vh; padding: 40px 24px; }
         .game-title { font-size: 2rem; font-weight: 700; color: #1A1A1A; text-align: center; }
@@ -188,7 +252,7 @@
 .bubble-other { background: white; padding: 10px 14px; border-radius: 4px 18px 18px 18px; font-size: 14px; }
         .message-time { font-size: 10px; color: #aaa; margin-top: 4px; }
         .typing-indicator { background: #F0F0F0; padding: 10px 14px; border-radius: 18px; font-size: 13px; color: #999; display: inline-block; }
-        .chat-input-area { padding: 12px; background: #FAFAFA; border-top: 1px solid #EFEFEF; display: flex; gap: 8px; }
+        
         .chat-input { flex: 1; padding: 5px 14px; border: 1px solid #EFEFEF; border-radius: 30px; background: white; cursor: pointer; color: #999; }
 
         .add-friend { position: fixed; bottom: 90px; right: 20px; background: #E85D75; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 99; }
@@ -388,7 +452,31 @@
             text-align: left;
             cursor: pointer;
         }
-        
+      
+
+/* ===== 输入框 ===== */
+#chatInputBox {
+    flex: 1;
+    padding: 6px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #333;
+    font-size: 14px;
+    outline: none;
+    min-height: 32px;
+    cursor: text;
+    pointer-events: auto;
+    backdrop-filter: blur(4px);
+}
+#chatInputBox:focus {
+    border-color: #E85D75;
+}
+
+#chatInputBox:empty::before {
+    content: '输入消息...';
+    color: #999;
+}
         .moment-publish-btn:hover {
             background: #EFEFEF;
         }
@@ -462,12 +550,7 @@
             font-size: 12px;
         }
         
-        /* 输入框区域 */
-        .chat-input-area {
-            padding: 8px 12px;
-            background: #FAFAFA;
-            border-top: 1px solid #EFEFEF;
-        }
+       
         .option-modal {
             max-height: 50vh;
             overflow-y: auto;
@@ -891,36 +974,106 @@
         </div>
     </div>
 </div>
-</div>
-        
     </div>
+    <!-- ↑ gameScreen 结束 -->
+
    <!-- 张桂源手机页面 -->
-<div id="zhangPhonePage" class="page" style="display:none;padding:0;background:#F5F5F5;position:relative;height:calc(100vh - 70px);">
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:20px;">
-        <!-- 手机模拟器 -->
-        <div style="width:80%;max-width:300px;aspect-ratio:9/19;background:#000;border-radius:32px;padding:8px;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative;">
-            <!-- 手机屏幕 -->
-            <div style="width:100%;height:100%;background:url('zgybz.jpg') center/cover no-repeat;border-radius:24px;overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;">
-                <!-- 顶部刘海（贴紧上部） -->
-                <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:25px;background:#000;border-radius:0 0 16px 16px;z-index:10;"></div>
-                
-                <!-- 时间 -->
-                <div style="font-size:52px;font-weight:300;color:white;margin-top:50px;text-shadow:0 2px 12px rgba(0,0,0,0.6);letter-spacing:2px;" id="phoneTime">09:41</div>
-                <div style="font-size:15px;color:rgba(255,255,255,0.85);margin-top:4px;text-shadow:0 2px 12px rgba(0,0,0,0.6);" id="phoneDate">2024年1月1日 星期一</div>
-                
-                <!-- 锁屏底部 - 滑动解锁（手机下半部分） -->
-                <div style="position:absolute;bottom:50px;left:50%;transform:translateX(-50%);width:70%;">
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
-                        <div style="font-size:13px;color:rgba(255,255,255,0.6);letter-spacing:3px;text-shadow:0 2px 8px rgba(0,0,0,0.5);">滑动解锁</div>
-                        <div style="width:50px;height:4px;background:rgba(255,255,255,0.2);border-radius:10px;animation:pulse 2s ease-in-out infinite;"></div>
-                    </div>
+<div id="zhangPhonePage" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#F5F5F5;z-index:50;display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px 20px 90px 20px;">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:20px;width:100%;">
+        <div style="text-align:center;width:100%;max-width:320px;margin:0 auto;">
+            <div style="font-size:20px;font-weight:700;color:#1A1A1A;margin-bottom:16px;">张桂源的手机</div>
+            <div style="width:80%;aspect-ratio:9/19;background:#000;border-radius:28px;margin:0 auto;padding:8px;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+                <div style="width:100%;height:100%;background:url('zgybz.jpg') center/cover no-repeat;border-radius:20px;overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;padding-top:40px;">
+                    <div style="font-size:40px;font-weight:300;color:white;text-shadow:0 2px 10px rgba(0,0,0,0.5);" id="phoneTime2">09:41</div>
+                    <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-top:4px;text-shadow:0 2px 8px rgba(0,0,0,0.5);" id="phoneDate2">2024年1月1日</div>
+                    <div style="position:absolute;bottom:40px;left:50%;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,0.5);letter-spacing:2px;">滑动解锁</div>
+                    <div style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);width:40px;height:4px;background:rgba(255,255,255,0.2);border-radius:4px;"></div>
                 </div>
             </div>
         </div>
-        <div style="color:rgba(0,0,0,0.25);font-size:11px;margin-top:10px;letter-spacing:2px;">张桂源的手机</div>
     </div>
 </div>
+<!-- ↑ app-container 结束 -->
+<!-- 设置弹窗 -->
+<div id="mySettingsModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:white;border-radius:24px;padding:24px 20px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="font-size:18px;font-weight:700;color:#1A1A1A;">设置</div>
+            <button onclick="closeMySettings()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="padding:14px 16px;background:#F8F8F8;border-radius:12px;cursor:pointer;transition:background 0.2s;display:flex;align-items:center;gap:12px;" onclick="openChatSettings()" onmouseenter="this.style.background='#F0EEEE'" onmouseleave="this.style.background='#F8F8F8'">
+                <span style="font-size:18px;">💬</span>
+                <span style="font-size:15px;color:#333;">聊天设置</span>
+                <span style="margin-left:auto;color:#999;font-size:14px;">›</span>
+            </div>
+        </div>
+    </div>
 </div>
+<!-- 聊天设置页面 -->
+<!-- 聊天设置页面 -->
+<div id="chatSettingsPage" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:white;border-radius:24px;padding:24px 20px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button onclick="closeChatSettings()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;">←</button>
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">聊天设置</div>
+            </div>
+            <button onclick="closeChatSettings()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+            
+            <!-- 聊天背景设置 -->
+            <div style="padding:14px 16px;background:#F8F8F8;border-radius:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:14px;color:#333;">聊天背景</span>
+                    <button id="chatBgUploadBtn" style="padding:4px 14px;background:#E85D75;color:white;border:none;border-radius:14px;font-size:12px;cursor:pointer;">上传图片</button>
+                </div>
+                <div id="chatBgPreview" style="width:100%;height:60px;border-radius:8px;background:#E8E8E8;border:1px solid #EFEFEF;display:flex;align-items:center;justify-content:center;font-size:12px;color:#999;overflow:hidden;">
+                    点击上传自定义背景
+                </div>
+                <button id="chatBgResetBtn" style="margin-top:6px;padding:2px 12px;background:transparent;border:none;color:#999;font-size:12px;cursor:pointer;display:none;">恢复默认</button>
+            </div>
+
+            <!-- 自己的气泡颜色设置 -->
+            <div style="padding:14px 16px;background:#F8F8F8;border-radius:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:14px;color:#333;">自己的气泡颜色</span>
+                    <span id="selectedColorLabel" style="font-size:12px;color:#999;">默认</span>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+                     <!-- 白色 -->
+    <div class="color-option" data-color="#FFFFFF" style="width:32px;height:32px;border-radius:50%;background:#FFFFFF;border:2px solid #EFEFEF;cursor:pointer;transition:all 0.2s;" onclick="selectBubbleColor('#FFFFFF', this)"></div>
+    <!-- 仿微信绿色 -->
+    <div class="color-option" data-color="#95EC69" style="width:32px;height:32px;border-radius:50%;background:#95EC69;border:2px solid #EFEFEF;cursor:pointer;transition:all 0.2s;" onclick="selectBubbleColor('#95EC69', this)"></div>
+                    <!-- 预设颜色 -->
+                    <div class="color-option" data-color="#DCF8C6" style="width:32px;height:32px;border-radius:50%;background:#DCF8C6;border:2px solid #EFEFEF;cursor:pointer;transition:all 0.2s;" onclick="selectBubbleColor('#DCF8C6', this)"></div>
+                    <div class="color-option" data-color="#FFE4B5" style="width:32px;height:32px;border-radius:50%;background:#FFE4B5;border:2px solid #EFEFEF;cursor:pointer;transition:all 0.2s;" onclick="selectBubbleColor('#FFE4B5', this)"></div>
+                    <div class="color-option" data-color="#FFB6C1" style="width:32px;height:32px;border-radius:50%;background:#FFB6C1;border:2px solid #EFEFEF;cursor:pointer;transition:all 0.2s;" onclick="selectBubbleColor('#FFB6C1', this)"></div>
+                    <div class="color-option" data-color="#B5D8EB" style="width:32px;height:32px;border-radius:50%;background:#B5D8EB;border:2px solid #EFEFEF;cursor:pointer;transition:all 0.2s;" onclick="selectBubbleColor('#B5D8EB', this)"></div>
+                    <div class="color-option" data-color="#C8E6C9" style="width:32px;height:32px;border-radius:50%;background:#C8E6C9;border:2px solid #EFEFEF;cursor:pointer;transition:all 0.2s;" onclick="selectBubbleColor('#C8E6C9', this)"></div>
+                    <div class="color-option" data-color="#D1C4E9" style="width:32px;height:32px;border-radius:50%;background:#D1C4E9;border:2px solid #EFEFEF;cursor:pointer;transition:all 0.2s;" onclick="selectBubbleColor('#D1C4E9', this)"></div>
+                    <div class="color-option" data-color="#FFCCBC" style="width:32px;height:32px;border-radius:50%;background:#FFCCBC;border:2px solid #EFEFEF;cursor:pointer;transition:all 0.2s;" onclick="selectBubbleColor('#FFCCBC', this)"></div>
+                    <div class="color-option" data-color="#B2DFDB" style="width:32px;height:32px;border-radius:50%;background:#B2DFDB;border:2px solid #EFEFEF;cursor:pointer;transition:all 0.2s;" onclick="selectBubbleColor('#B2DFDB', this)"></div>
+                    <div style="width:32px;height:32px;border-radius:50%;background:white;border:2px dashed #CCC;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:#999;" onclick="openColorPicker()">+</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                    <input type="color" id="customColorPicker" style="width:32px;height:32px;border:none;cursor:pointer;display:none;" onchange="applyCustomColor(this.value)">
+                    <button id="bubbleColorResetBtn" style="padding:2px 12px;background:transparent;border:none;color:#999;font-size:12px;cursor:pointer;display:none;" onclick="resetBubbleColor()">恢复默认</button>
+                </div>
+            </div>
+
+            <!-- 聊天语速设置（预留） -->
+            <div style="padding:14px 16px;background:#F8F8F8;border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:14px;color:#333;">聊天语速</span>
+                <span style="font-size:13px;color:#999;">功能开发中</span>
+            </div>
+
+        </div>
+    </div>
+</div>
+        
+    
 
 <script>
     // ================= 商业街功能 =================
@@ -3323,7 +3476,15 @@ function blockContact(contact) {
     }
    function renderChatMessages() {
     var container = document.getElementById("chatMessages");
-    container.style.background = "#E8E8E8";
+    if (!container) return;
+
+    // 应用背景
+    var bgData = localStorage.getItem('chat_bg');
+    if (bgData && bgData.length > 100) {
+        container.style.cssText = 'flex:1;overflow-y:auto;padding:16px 16px 8px 16px;display:flex;flex-direction:column;gap:8px;scrollbar-width:none;-ms-overflow-style:none;min-height:0;background:transparent !important;background-image:url(' + bgData + ') !important;background-size:cover !important;background-position:center !important;background-repeat:no-repeat !important;';
+    } else {
+        container.style.cssText = 'flex:1;overflow-y:auto;padding:16px 16px 8px 16px;display:flex;flex-direction:column;gap:8px;scrollbar-width:none;-ms-overflow-style:none;min-height:0;background:#E8E8E8;';
+    }
 
     var data = chatData[currentChatContact];
     if (!data || !data.messages || !data.messages.length) {
@@ -3353,42 +3514,67 @@ function blockContact(contact) {
             }
         } else {
             if (currentChatContact === "张桂源") {
-                avatar = '<img src="zgyweixin.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;">';
+                avatar = '<img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'🏀\'">';
+            } else if (currentChatContact === "WXYz") {
+                avatar = '<img src="WXYz.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'👤\'">';
             } else {
                 avatar = "🎤";
             }
         }
 
-        var msgId = "msg_" + i + "_" + Date.now();
-
-        // ✅ 长按事件
         var longPressAttr = "";
         if (!isMe && currentChatContact === "张桂源") {
             var textContent = msg.text.replace(/<[^>]*>/g, '').trim();
-            if (textContent === "但是忘了你在上课了哈哈哈") {
+            if (textContent.includes("但是忘了你在上课了")) {
                 longPressAttr = 'data-quote="forgot" style="cursor:pointer;" oncontextmenu="event.preventDefault();showQuoteMenu(this, \'forgot\', ' + i + ')" ontouchstart="handleTouchStart(event, this, \'forgot\', ' + i + ')" ontouchend="handleTouchEnd(event)"';
-            } else if (textContent === "我来接你，有话跟你说") {
+            } else if (textContent.includes("我来接你，有话跟你说")) {
                 longPressAttr = 'data-quote="pickup" style="cursor:pointer;" oncontextmenu="event.preventDefault();showQuoteMenu(this, \'pickup\', ' + i + ')" ontouchstart="handleTouchStart(event, this, \'pickup\', ' + i + ')" ontouchend="handleTouchEnd(event)"';
             }
         }
 
-        // ✅ 所有气泡统一白色
-        html += '<div class="message-row" style="justify-content: ' + (isMe ? 'flex-end' : 'flex-start') + ';">';
-        if (!isMe) {
-            html += '<div class="message-avatar">' + avatar + '</div>';
+        // ✅ 判断是否是图片消息
+        var isImage = msg.text && msg.text.includes('<img');
+
+        if (isImage) {
+            // 图片消息：只显示头像 + 图片，不加气泡
+            html += '<div class="message-row" style="justify-content: ' + (isMe ? 'flex-end' : 'flex-start') + ';">';
+            if (!isMe) {
+                html += '<div class="message-avatar">' + avatar + '</div>';
+            }
+            html += '<div style="max-width:70%;">' + msg.text + '</div>';
+            if (isMe) {
+                html += '<div class="message-avatar">' + avatar + '</div>';
+            }
+            html += '</div>';
+        } else {
+            // 普通文字消息：显示气泡
+            html += '<div class="message-row" style="justify-content: ' + (isMe ? 'flex-end' : 'flex-start') + ';">';
+            if (!isMe) {
+                html += '<div class="message-avatar">' + avatar + '</div>';
+            }
+            html += '<div class="message-bubble">';
+            html += '<div class="' + (isMe ? 'bubble-me' : 'bubble-other') + '" ' + longPressAttr + ' style="background:white;">' + msg.text + '</div>';
+            html += '<div class="message-time">' + msg.time + '</div>';
+            html += '</div>';
+            if (isMe) {
+                html += '<div class="message-avatar">' + avatar + '</div>';
+            }
+            html += '</div>';
         }
-        html += '<div class="message-bubble">';
-        html += '<div class="' + (isMe ? 'bubble-me' : 'bubble-other') + '" ' + longPressAttr + ' style="background:white;">' + msg.text + '</div>';
-        html += '<div class="message-time">' + msg.time + '</div>';
-        html += '</div>';
-        if (isMe) {
-            html += '<div class="message-avatar">' + avatar + '</div>';
-        }
-        html += '</div>';
     }
 
     container.innerHTML = html;
     container.scrollTop = container.scrollHeight;
+
+    // 应用气泡颜色
+    var savedColor = localStorage.getItem('bubble_color');
+    document.querySelectorAll('.bubble-me').forEach(function(el) {
+        if (savedColor) {
+            el.style.background = savedColor;
+        } else {
+            el.style.background = '#DCF8C6';
+        }
+    });
 }
 // ================= 长按引用功能 =================
 var longPressTimer = null;
@@ -3408,24 +3594,24 @@ function handleTouchEnd(e) {
 
 // 显示引用菜单
 function showQuoteMenu(element, type, index) {
-    // 移除已有菜单
     var existing = document.querySelector('.quote-menu');
     if (existing) existing.remove();
 
     var rect = element.getBoundingClientRect();
     var menu = document.createElement("div");
     menu.className = "quote-menu";
-    menu.style.cssText = "position:fixed;top:" + (rect.top - 10) + "px;left:" + (rect.left + rect.width/2 - 40) + "px;background:white;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:999;overflow:hidden;padding:4px 0;min-width:80px;";
+    // 菜单出现在聊天框上方
+    menu.style.cssText = "position:fixed;bottom:" + (window.innerHeight - rect.top + 10) + "px;left:" + (rect.left + rect.width/2 - 35) + "px;background:#2C2C2C;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.25);z-index:999;overflow:visible;padding:6px 0;min-width:60px;";
 
     menu.innerHTML = `
-        <div style="padding:8px 16px;font-size:14px;color:#333;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#F5F5F5'" onmouseleave="this.style.background='transparent'" onclick="selectQuote('${type}', ${index})">
-            💬 引用
+        <div style="padding:6px 16px;font-size:13px;color:white;cursor:pointer;transition:background 0.15s;text-align:center;letter-spacing:0.5px;" onmouseenter="this.style.background='#444'" onmouseleave="this.style.background='transparent'" onclick="selectQuote('${type}', ${index})">
+            引用
         </div>
+        <div style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #2C2C2C;"></div>
     `;
 
     document.body.appendChild(menu);
 
-    // 点击其他地方关闭
     setTimeout(function() {
         document.addEventListener('click', function closeMenu(e) {
             if (!menu.contains(e.target)) {
@@ -3435,22 +3621,25 @@ function showQuoteMenu(element, type, index) {
         });
     }, 10);
 }
-
 // 选择引用
 function selectQuote(type, index) {
     var menu = document.querySelector('.quote-menu');
     if (menu) menu.remove();
 
     var date = new Date().toLocaleDateString();
+    // 获取被引用的消息内容
+    var messages = chatData["张桂源"].messages;
+    var quoteText = "";
+    if (messages && messages[index]) {
+        quoteText = messages[index].text.replace(/<[^>]*>/g, '').trim();
+    }
 
     if (type === 'forgot') {
-        // 引用「但是忘了你在上课了哈哈哈」
-        showQuoteReplyOptions('但是忘了你在上课了哈哈哈', [
+        showQuoteReplyOptions(quoteText, [
             { text: "没有，我们在上体育课", next: 'forgot_reply' }
         ]);
     } else if (type === 'pickup') {
-        // 引用「我来接你，有话跟你说」
-        showQuoteReplyOptions('我来接你，有话跟你说', [
+        showQuoteReplyOptions(quoteText, [
             { text: "你下午不回来？", next: 'pickup_a' },
             { text: "谁要你接了", next: 'pickup_b' }
         ]);
@@ -3468,7 +3657,7 @@ function showQuoteReplyOptions(quoteText, options) {
             引用 ${userWechatName}：${quoteText}
         </div>
         ${options.map(function(opt, idx) {
-            return '<button class="option-btn" data-choice="' + idx + '">「' + opt.text + '」</button>';
+            return '<button class="option-btn" data-choice="' + idx + '">' + opt.text + '</button>';
         }).join('')}
     `;
 
@@ -3479,13 +3668,13 @@ function showQuoteReplyOptions(quoteText, options) {
             var choice = parseInt(this.dataset.choice);
             modal.remove();
             var selected = options[choice];
-            sendQuoteReply(selected.text, selected.next);
+            // ✅ 传递引用文本
+            sendQuoteReply(selected.text, selected.next, quoteText);
         });
     });
 }
-
 // 发送引用回复
-function sendQuoteReply(text, nextStep) {
+function sendQuoteReply(text, nextStep, quoteText) {
     var date = new Date().toLocaleDateString();
 
     var avatarData = localStorage.getItem("player_avatar");
@@ -3493,9 +3682,21 @@ function sendQuoteReply(text, nextStep) {
         ? '<img src="' + avatarData + '" style="width:40px;height:40px;border-radius:12px;object-fit:cover;">' 
         : '🐰';
 
+    // ✅ 构建带引用格式的消息（去掉小三角）
+    var displayText = text;
+    if (quoteText) {
+        var zhangName = getContactDisplayName("张桂源");
+        displayText = `
+            ${text}
+            <div style="margin-top:5px;padding-top:5px;border-top:1px solid #E8E8E8;width:auto;max-width:100%;font-size:12px;color:#999;word-break:break-all;padding-left:0px;">
+                ${zhangName}：${quoteText}
+            </div>
+        `;
+    }
+
     chatData["张桂源"].messages.push({
         from: "me",
-        text: text,
+        text: displayText,
         time: "14:35",
         avatar: avatarDisplay,
         date: date,
@@ -3536,7 +3737,16 @@ function openChat(contact) {
     document.getElementById("chatDetailScreen").style.display = "block";
     document.getElementById("chatContactName").innerText = contact;
     renderChatMessages();
-    
+    // 修复聊天布局
+fixChatLayout();
+    // 应用聊天背景
+applyChatBackground();
+    // ✅ 打开聊天时强制应用背景
+    var container = document.getElementById("chatMessages");
+    var bgData = localStorage.getItem('chat_bg');
+    if (container && bgData && bgData.length > 100) {
+        container.style.cssText = 'background: transparent; background-image: url(' + bgData + '); background-size: cover; background-position: center; background-repeat: no-repeat; height: 350px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px;';
+    }
     // ✅ 显示联系人名称（优先显示备注）
      var displayName = getContactDisplayName(contact);
     document.getElementById("chatContactName").innerText = displayName;
@@ -5799,6 +6009,13 @@ function renderMyPage() {
 
     document.getElementById("profileCard").innerHTML = `
         <div class="profile-container" style="text-align:center; position:relative;">
+    
+            <!-- ✅ 右上角设置按钮 -->
+            <div style="position:absolute;top:12px;right:16px;">
+                <button onclick="openChatSettings()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;padding:4px 8px;border-radius:8px;transition:background 0.2s;" onmouseenter="this.style.background='#F0F0F0'" onmouseleave="this.style.background='transparent'">
+                    ⚙️
+                </button>
+            </div>
             <div id="avatarContainer" style="display:inline-block; margin-bottom:8px;">
                 ${avatarHtml}
             </div>
@@ -7282,9 +7499,10 @@ function showChapter1CallReplies() {
     var commonReplies = [
         { from: "other", text: "我有个好消息要告诉你", time: "14:31" },
         { from: "other", text: "但是忘了你在上课了哈哈哈", time: "14:31" },
+         { from: "other", text: "你应该没开手机铃吧😏", time: "14:31" },
         { from: "other", text: "你放学等我好不", time: "14:32" },
         { from: "other", text: "我来接你，有话跟你说", time: "14:33" },
-        { from: "other", text: "哎呀能不能快点放学啊", time: "14:33" }
+        { from: "other", text: "我真等不及了但是先保密", time: "14:33" }
     ];
 
     var allReplies = replies.concat(commonReplies);
@@ -7292,35 +7510,36 @@ function showChapter1CallReplies() {
 
     function sendReply() {
         if (idx >= allReplies.length) {
-            var inputBox = document.getElementById("chatInputBox");
-            if (inputBox) {
-                inputBox.innerText = "对方暂未回复，点击左上角继续剧情";
-                inputBox.style.color = "#999";
-                inputBox.style.cursor = "default";
-                inputBox.onclick = function() {};
-            }
+    var inputBox = document.getElementById("chatInputBox");
+    if (inputBox) {
+        // ✅ 保持空白，可输入
+        inputBox.innerText = "";
+        inputBox.style.cssText = 'flex:1;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:18px;background:rgba(255,255,255,0.85);color:#333;font-size:14px;outline:none;min-height:32px;cursor:text;pointer-events:auto;';
+        inputBox.contentEditable = 'true';
+        inputBox.focus();
+    }
 
-            var backBtn = document.getElementById("chatBackBtn");
-            if (backBtn) {
-                var newBackBtn = backBtn.cloneNode(true);
-                backBtn.parentNode.replaceChild(newBackBtn, backBtn);
-                newBackBtn.addEventListener("click", function() {
-                    document.getElementById("chatListScreen").style.display = "block";
-                    document.getElementById("chatDetailScreen").style.display = "none";
-                    switchPage("story");
-                    document.getElementById("chapterSelectPage").style.display = "none";
-                    document.getElementById("storyDetailPage").style.display = "block";
-                    document.getElementById("chapterTitle").innerText = "第1章 · 重庆的夏天永远不会结束";
-                });
-            }
-            return;
-        }
+    var backBtn = document.getElementById("chatBackBtn");
+    if (backBtn) {
+        var newBackBtn = backBtn.cloneNode(true);
+        backBtn.parentNode.replaceChild(newBackBtn, backBtn);
+        newBackBtn.addEventListener("click", function() {
+            document.getElementById("chatListScreen").style.display = "block";
+            document.getElementById("chatDetailScreen").style.display = "none";
+            switchPage("story");
+            document.getElementById("chapterSelectPage").style.display = "none";
+            document.getElementById("storyDetailPage").style.display = "block";
+            document.getElementById("chapterTitle").innerText = "第1章 · 重庆的夏天永远不会结束";
+        });
+    }
+    return;
+}
 
         var container = document.getElementById("chatMessages");
         var typingRow = document.createElement("div");
         typingRow.className = "message-row";
         typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
         container.appendChild(typingRow);
         container.scrollTop = container.scrollHeight;
 
@@ -7362,10 +7581,68 @@ function showChapter1CallReplies() {
 // 没有，我们在上体育课 → 张桂源回复
 function showForgotReply() {
     var date = new Date().toLocaleDateString();
+    
+    // 先发送文字回复
     var replies = [
-        { from: "other", text: "哦哦哦哦哦哦好的", time: "14:36" }
+        { from: "other", text: "😳我去没看课表", time: "14:36" },
+        { from: "other", text: "那我岂不是又少打一节课篮球", time: "14:36" }
     ];
-    sendMultipleReplies(replies, date);
+    
+    var idx = 0;
+    
+    function sendNext() {
+        if (idx >= replies.length) {
+            // ✅ 文字发完后发送图片
+            var container = document.getElementById("chatMessages");
+            var typingRow = document.createElement("div");
+            typingRow.className = "message-row";
+            typingRow.style.justifyContent = "flex-start";
+            typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+            container.appendChild(typingRow);
+            container.scrollTop = container.scrollHeight;
+            
+            setTimeout(function() {
+                typingRow.remove();
+                chatData["张桂源"].messages.push({
+                    from: "other",
+                    text: '<img src="wy.png" style="width:120px;border-radius:12px;display:block;">',
+                    time: "14:37",
+                    avatar: "🏀",
+                    date: date,
+                    read: false
+                });
+                renderChatMessages();
+                renderChatList();
+            }, 700);
+            return;
+        }
+        
+        var container = document.getElementById("chatMessages");
+        var typingRow = document.createElement("div");
+        typingRow.className = "message-row";
+        typingRow.style.justifyContent = "flex-start";
+        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        container.appendChild(typingRow);
+        container.scrollTop = container.scrollHeight;
+        
+        setTimeout(function() {
+            typingRow.remove();
+            chatData["张桂源"].messages.push({
+                from: "other",
+                text: replies[idx].text,
+                time: replies[idx].time,
+                avatar: "🏀",
+                date: date,
+                read: false
+            });
+            renderChatMessages();
+            renderChatList();
+            idx++;
+            setTimeout(sendNext, 600);
+        }, 700);
+    }
+    
+    sendNext();
 }
 
 // 你下午不回来？→ 张桂源回复
@@ -7407,7 +7684,7 @@ function sendMultipleReplies(replies, date, callback) {
         var typingRow = document.createElement("div");
         typingRow.className = "message-row";
         typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
         container.appendChild(typingRow);
         container.scrollTop = container.scrollHeight;
 
@@ -7438,7 +7715,7 @@ function showCommonBranch() {
     modal.className = "option-modal";
     modal.innerHTML = `
         <div style="margin-bottom:12px; font-weight:600;">选择回复</div>
-        <button class="option-btn" data-choice="A">「不好」（故意逗他）</button>
+        <button class="option-btn" data-choice="A">「不好」（建议）</button>
         <button class="option-btn" data-choice="B">「好」</button>
     `;
 
@@ -7472,7 +7749,8 @@ function showCommonBranch() {
                         { from: "other", text: "？？？？？", time: "14:39" },
                         { from: "other", text: "哇塞", time: "14:40" },
                         { from: "other", text: "我特意绕路来接你", time: "14:40" },
-                        { from: "other", text: "绕路", time: "14:40" },
+                        { from: "other", text: "绕、路", time: "14:40" },
+                        { from: "other", text: "raolu", time: "14:40" },
                         { from: "other", text: "你这个人好冷漠", time: "14:40" }
                     ];
                     sendMultipleReplies(replies, date, function() {
@@ -12621,55 +12899,55 @@ var isZhangPhoneActive = false;
 var isLongPressTriggered = false;
 
 function switchToZhangPhone() {
-    // 隐藏所有页面
-    document.querySelectorAll('.page').forEach(function(p) {
-        p.classList.remove('active');
-        p.style.display = 'none';
-    });
-    
-    var phonePage = document.getElementById('zhangPhonePage');
-    if (phonePage) {
-        phonePage.style.display = 'block';
-        phonePage.classList.add('active');
-    }
-    
-    document.querySelectorAll('.nav-item').forEach(function(b) {
-        b.classList.remove('active');
-    });
-    document.getElementById('myNavBtn').classList.add('active');
-    
-    // ✅ 修改导航栏文字为「TA的」
-    var myNavBtn = document.getElementById('myNavBtn');
-    if (myNavBtn) {
-        var span = myNavBtn.querySelector('span');
-        if (span) {
-            span.textContent = 'TA的';
+    console.log('切换到张桂源手机');
+    var page = document.getElementById('zhangPhonePage');
+    if (page) {
+        // 显示手机页面
+        page.style.display = 'flex';
+        
+        // 更新时间
+        var now = new Date();
+        var h = String(now.getHours()).padStart(2, '0');
+        var m = String(now.getMinutes()).padStart(2, '0');
+        var timeEl = document.getElementById('phoneTime2');
+        if (timeEl) timeEl.textContent = h + ':' + m;
+        var dateEl = document.getElementById('phoneDate2');
+        if (dateEl) {
+            var y = now.getFullYear();
+            var mo = now.getMonth() + 1;
+            var d = now.getDate();
+            dateEl.textContent = y + '年' + mo + '月' + d + '日';
         }
+        
+        // 更新导航栏文字为「TA的」
+        var myBtn = document.getElementById('myNavBtn');
+        if (myBtn) {
+            var span = myBtn.querySelector('span');
+            if (span) span.textContent = 'TA的';
+        }
+        
+        isZhangPhoneActive = true;
+    } else {
+        console.log('页面不存在');
     }
-    
-    updatePhoneTime();
-    isZhangPhoneActive = true;
-    
-    if (navigator.vibrate) {
-        navigator.vibrate(30);
-    }
-    console.log('已切换到张桂源手机');
 }
-
 function switchToMyPage() {
+    console.log('切换回我的页面');
+    var page = document.getElementById('zhangPhonePage');
+    if (page) {
+        page.style.display = 'none';
+    }
+    
+    // 恢复导航栏文字为「我的」
+    var myBtn = document.getElementById('myNavBtn');
+    if (myBtn) {
+        var span = myBtn.querySelector('span');
+        if (span) span.textContent = '我的';
+    }
+    
+    // 显示我的页面
     switchPage('my');
     isZhangPhoneActive = false;
-    
-    // ✅ 恢复导航栏文字为「我的」
-    var myNavBtn = document.getElementById('myNavBtn');
-    if (myNavBtn) {
-        var span = myNavBtn.querySelector('span');
-        if (span) {
-            span.textContent = '我的';
-        }
-    }
-    
-    console.log('已切换回我的页面');
 }
 
 // 获取我的导航按钮
@@ -12768,6 +13046,511 @@ setInterval(updatePhoneTime, 60000);
 loadMyWeibo();
 // 绑定微博事件
 bindWeiboEvents();
+// ================= 我的页面设置 =================
+
+// 打开设置弹窗
+function openMySettings() {
+    var modal = document.getElementById('mySettingsModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// 关闭设置弹窗
+function closeMySettings() {
+    var modal = document.getElementById('mySettingsModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 打开聊天设置
+function openChatSettings() {
+    // 关闭设置弹窗
+    closeMySettings();
+    // 打开聊天设置页面
+    var page = document.getElementById('chatSettingsPage');
+    if (page) {
+        page.style.display = 'flex';
+    }
+}
+
+// 关闭聊天设置
+function closeChatSettings() {
+    var page = document.getElementById('chatSettingsPage');
+    if (page) {
+        page.style.display = 'none';
+    }
+}
+
+// 绑定设置按钮事件
+document.addEventListener('DOMContentLoaded', function() {
+    var settingsBtn = document.getElementById('mySettingsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', openMySettings);
+    }
+});
+// ================= 聊天设置功能 =================
+
+// 加载已保存的设置
+function loadChatSettings() {
+    // 加载聊天背景
+    var bgData = localStorage.getItem('chat_bg');
+    if (bgData) {
+        var preview = document.getElementById('chatBgPreview');
+        if (preview) {
+            preview.innerHTML = '<img src="' + bgData + '" style="width:100%;height:100%;object-fit:cover;">';
+            preview.style.background = 'transparent';
+        }
+        document.getElementById('chatBgResetBtn').style.display = 'inline';
+        applyChatBackground(bgData);
+    }
+
+    // 加载气泡颜色
+    var color = localStorage.getItem('bubble_color');
+    if (color) {
+        document.getElementById('selectedColorLabel').textContent = '已自定义';
+        document.getElementById('bubbleColorResetBtn').style.display = 'inline';
+        // 高亮对应的颜色选项
+        document.querySelectorAll('.color-option').forEach(function(el) {
+            if (el.dataset.color === color) {
+                el.style.border = '2px solid #333';
+                el.style.transform = 'scale(1.1)';
+            } else {
+                el.style.border = '2px solid #EFEFEF';
+                el.style.transform = 'scale(1)';
+            }
+        });
+        applyBubbleColor(color);
+    }
+}
+
+// ===== 聊天背景 =====
+
+// 上传聊天背景
+document.getElementById('chatBgUploadBtn').addEventListener('click', function() {
+    var fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+
+    fileInput.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert('图片太大了，请选择小于5MB的图片');
+            fileInput.remove();
+            return;
+        }
+
+        var reader = new FileReader();
+        // 在聊天背景上传成功后的回调中
+reader.onload = function(ev) {
+    var imageData = ev.target.result;
+    compressImage(imageData, 200, function(compressedData) {
+        localStorage.setItem('chat_bg', compressedData);
+        var preview = document.getElementById('chatBgPreview');
+        preview.innerHTML = '<img src="' + compressedData + '" style="width:100%;height:100%;object-fit:cover;">';
+        preview.style.background = 'transparent';
+        document.getElementById('chatBgResetBtn').style.display = 'inline';
+        
+        // ✅ 立即应用背景到当前聊天
+        var chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) {
+            chatMessages.style.backgroundImage = 'url(' + compressedData + ')';
+            chatMessages.style.backgroundSize = 'cover';
+            chatMessages.style.backgroundPosition = 'center';
+            chatMessages.style.backgroundRepeat = 'no-repeat';
+        }
+        alert('✅ 聊天背景已更新');
+    });
+};
+        reader.readAsDataURL(file);
+        fileInput.remove();
+    };
+
+    fileInput.oncancel = function() {
+        fileInput.remove();
+    };
+
+    fileInput.click();
+});
+
+// 恢复默认聊天背景
+document.getElementById('chatBgResetBtn').addEventListener('click', function() {
+    if (confirm('确定恢复默认聊天背景吗？')) {
+        localStorage.removeItem('chat_bg');
+        var preview = document.getElementById('chatBgPreview');
+        preview.innerHTML = '点击上传自定义背景';
+        preview.style.background = '#E8E8E8';
+        this.style.display = 'none';
+        applyChatBackground(null);
+        alert('✅ 已恢复默认背景');
+    }
+});
+
+// 应用聊天背景
+function applyChatBackground(data) {
+    var chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        if (data) {
+            chatMessages.style.backgroundImage = 'url(' + data + ')';
+            chatMessages.style.backgroundSize = 'cover';
+            chatMessages.style.backgroundPosition = 'center';
+            chatMessages.style.backgroundRepeat = 'no-repeat';
+        } else {
+            chatMessages.style.backgroundImage = 'none';
+            chatMessages.style.background = '#E8E8E8';
+        }
+    }
+}
+
+// ===== 气泡颜色 =====
+
+// 选择预设颜色
+function selectBubbleColor(color, element) {
+    document.querySelectorAll('.color-option').forEach(function(el) {
+        el.style.border = '2px solid #EFEFEF';
+        el.style.transform = 'scale(1)';
+    });
+    element.style.border = '2px solid #333';
+    element.style.transform = 'scale(1.1)';
+
+    localStorage.setItem('bubble_color', color);
+    document.getElementById('selectedColorLabel').textContent = '已自定义';
+    document.getElementById('bubbleColorResetBtn').style.display = 'inline';
+    applyBubbleColor(color);
+}
+
+// 打开颜色选择器
+function openColorPicker() {
+    document.getElementById('customColorPicker').click();
+}
+
+// 应用自定义颜色
+function applyCustomColor(color) {
+    document.querySelectorAll('.color-option').forEach(function(el) {
+        el.style.border = '2px solid #EFEFEF';
+        el.style.transform = 'scale(1)';
+    });
+    // 找到匹配的颜色选项或创建一个临时高亮
+    var matched = false;
+    document.querySelectorAll('.color-option').forEach(function(el) {
+        if (el.dataset.color === color) {
+            el.style.border = '2px solid #333';
+            el.style.transform = 'scale(1.1)';
+            matched = true;
+        }
+    });
+    if (!matched) {
+        // 如果颜色不在预设中，保存但不高亮预设
+        console.log('自定义颜色已保存:', color);
+    }
+
+    localStorage.setItem('bubble_color', color);
+    document.getElementById('selectedColorLabel').textContent = '已自定义';
+    document.getElementById('bubbleColorResetBtn').style.display = 'inline';
+    applyBubbleColor(color);
+}
+
+// 恢复默认气泡颜色
+function resetBubbleColor() {
+    if (confirm('确定恢复默认气泡颜色吗？')) {
+        localStorage.removeItem('bubble_color');
+        document.getElementById('selectedColorLabel').textContent = '默认';
+        document.getElementById('bubbleColorResetBtn').style.display = 'none';
+        document.querySelectorAll('.color-option').forEach(function(el) {
+            el.style.border = '2px solid #EFEFEF';
+            el.style.transform = 'scale(1)';
+        });
+        applyBubbleColor(null);
+        alert('✅ 已恢复默认气泡颜色');
+    }
+}
+
+// 应用气泡颜色
+function applyBubbleColor(color) {
+    var bubbleMeElements = document.querySelectorAll('.bubble-me');
+    bubbleMeElements.forEach(function(el) {
+        if (color) {
+            el.style.background = color;
+        } else {
+            el.style.background = '#DCF8C6';
+        }
+    });
+}
+
+// ===== 压缩图片函数 =====
+function compressImage(dataUrl, targetSizeKB, callback) {
+    var img = new Image();
+    img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+
+        var targetSize = targetSizeKB * 1024;
+        var quality = 0.85;
+        var width = img.width;
+        var height = img.height;
+
+        var maxDimension = 800;
+        if (width > maxDimension || height > maxDimension) {
+            var ratio = Math.min(maxDimension / width, maxDimension / height);
+            width = Math.floor(width * ratio);
+            height = Math.floor(height * ratio);
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        var compressedData = canvas.toDataURL('image/jpeg', quality);
+
+        var attempts = 0;
+        while (compressedData.length > targetSize && quality > 0.1 && attempts < 10) {
+            quality -= 0.08;
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            compressedData = canvas.toDataURL('image/jpeg', quality);
+            attempts++;
+        }
+
+        if (compressedData.length > targetSize) {
+            var scale = 0.7;
+            width = Math.floor(width * scale);
+            height = Math.floor(height * scale);
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            compressedData = canvas.toDataURL('image/jpeg', 0.5);
+        }
+
+        callback(compressedData);
+    };
+    img.src = dataUrl;
+}
+
+// 在打开聊天设置时加载设置
+function openChatSettings() {
+    closeMySettings();
+    var page = document.getElementById('chatSettingsPage');
+    if (page) {
+        page.style.display = 'flex';
+        loadChatSettings();
+    }
+}
+
+// 修改 renderChatMessages，应用气泡颜色
+// 在 renderChatMessages 函数中，找到气泡渲染部分，添加颜色应用
+
+// 在 renderChatMessages 中，当渲染自己的气泡时：
+// 检查是否有保存的颜色
+// var savedColor = localStorage.getItem('bubble_color');
+// 如果有，应用到 .bubble-me 上
+
+// 或者直接在 CSS 中动态添加样式
+// 在应用气泡颜色时，动态更新样式
+function updateBubbleStyle() {
+    var color = localStorage.getItem('bubble_color');
+    var styleEl = document.getElementById('bubbleStyle');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'bubbleStyle';
+        document.head.appendChild(styleEl);
+    }
+    if (color) {
+        styleEl.textContent = '.bubble-me { background: ' + color + ' !important; }';
+    } else {
+        styleEl.textContent = '.bubble-me { background: #DCF8C6 !important; }';
+    }
+}
+
+// 修改 applyBubbleColor 和 resetBubbleColor，调用 updateBubbleStyle
+function applyBubbleColor(color) {
+    updateBubbleStyle();
+    // 更新已有的气泡
+    document.querySelectorAll('.bubble-me').forEach(function(el) {
+        if (color) {
+            el.style.background = color;
+        } else {
+            el.style.background = '#DCF8C6';
+        }
+    });
+}
+
+function resetBubbleColor() {
+    localStorage.removeItem('bubble_color');
+    document.getElementById('selectedColorLabel').textContent = '默认';
+    document.getElementById('bubbleColorResetBtn').style.display = 'none';
+    document.querySelectorAll('.color-option').forEach(function(el) {
+        el.style.border = '2px solid #EFEFEF';
+        el.style.transform = 'scale(1)';
+    });
+    updateBubbleStyle();
+    document.querySelectorAll('.bubble-me').forEach(function(el) {
+        el.style.background = '#DCF8C6';
+    });
+    alert('✅ 已恢复默认气泡颜色');
+}
+
+// 在 renderChatMessages 中，确保新渲染的气泡也应用颜色
+// 添加一个全局函数来应用颜色
+function applyColorToNewBubbles() {
+    var color = localStorage.getItem('bubble_color');
+    document.querySelectorAll('.bubble-me').forEach(function(el) {
+        if (color) {
+            el.style.background = color;
+        } else {
+            el.style.background = '#DCF8C6';
+        }
+    });
+}
+// ================= 压缩图片 =================
+function compressImage(dataUrl, targetSizeKB, callback) {
+    var img = new Image();
+    img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+
+        var targetSize = targetSizeKB * 1024;
+        var quality = 0.85;
+        var width = img.width;
+        var height = img.height;
+
+        var maxDimension = 800;
+        if (width > maxDimension || height > maxDimension) {
+            var ratio = Math.min(maxDimension / width, maxDimension / height);
+            width = Math.floor(width * ratio);
+            height = Math.floor(height * ratio);
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        var compressedData = canvas.toDataURL('image/jpeg', quality);
+
+        var attempts = 0;
+        while (compressedData.length > targetSize && quality > 0.1 && attempts < 10) {
+            quality -= 0.08;
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            compressedData = canvas.toDataURL('image/jpeg', quality);
+            attempts++;
+        }
+
+        if (compressedData.length > targetSize) {
+            var scale = 0.7;
+            width = Math.floor(width * scale);
+            height = Math.floor(height * scale);
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            compressedData = canvas.toDataURL('image/jpeg', 0.5);
+        }
+
+        callback(compressedData);
+    };
+    img.src = dataUrl;
+}
+// 修改 renderChatMessages，在最后调用 applyColorToNewBubbles
+function applyChatBackground() {
+    var bgData = localStorage.getItem('chat_bg');
+    var detailScreen = document.getElementById('chatDetailScreen');
+    var messages = document.getElementById('chatMessages');
+
+    if (bgData && bgData.length > 100) {
+        // 只设置在 detailScreen 上
+        if (detailScreen) {
+            detailScreen.style.backgroundImage = 'url(' + bgData + ')';
+            detailScreen.style.backgroundSize = 'cover';
+            detailScreen.style.backgroundPosition = 'center';
+            detailScreen.style.backgroundRepeat = 'no-repeat';
+        }
+        // messages 背景透明
+        if (messages) {
+            messages.style.background = 'transparent';
+            messages.style.backgroundImage = 'none';
+        }
+    } else {
+        if (detailScreen) {
+            detailScreen.style.backgroundImage = 'none';
+            detailScreen.style.background = '#E8E8E8';
+        }
+        if (messages) {
+            messages.style.background = '#E8E8E8';
+            messages.style.backgroundImage = 'none';
+        }
+    }
+}
+// ================= 强制壁纸全屏 =================
+function forceChatBackground() {
+    var bgData = localStorage.getItem('chat_bg');
+    
+    // 获取所有相关容器
+    var detailScreen = document.getElementById('chatDetailScreen');
+    var messages = document.getElementById('chatMessages');
+    var inputArea = document.querySelector('.chat-input-area');
+    
+    // 如果有壁纸
+    if (bgData && bgData.length > 100) {
+        // 1. 聊天详情页 - 壁纸
+        if (detailScreen) {
+            detailScreen.style.cssText = 'display:flex;flex-direction:column;height:calc(100vh - 70px);position:relative;background:transparent !important;background-image:url(' + bgData + ') !important;background-size:cover !important;background-position:center !important;background-repeat:no-repeat !important;';
+        }
+        
+        // 2. 消息区域 - 完全透明
+        if (messages) {
+            messages.style.cssText = 'flex:1;overflow-y:auto;padding:16px 16px 8px 16px;display:flex;flex-direction:column;gap:8px;scrollbar-width:none;-ms-overflow-style:none;min-height:0;background:transparent !important;background-image:none !important;';
+        }
+        
+        // 3. 输入框区域 - 透明
+        if (inputArea) {
+            inputArea.style.cssText = 'flex-shrink:0;padding:6px 12px;background:transparent !important;border-top:none;display:flex;align-items:center;min-height:44px;';
+        }
+        
+        console.log('✅ 壁纸已强制全屏');
+    } else {
+        // 没有壁纸，用默认灰色
+        if (detailScreen) {
+            detailScreen.style.cssText = 'display:flex;flex-direction:column;height:calc(100vh - 70px);position:relative;background:#E8E8E8;';
+        }
+        if (messages) {
+            messages.style.cssText = 'flex:1;overflow-y:auto;padding:16px 16px 8px 16px;display:flex;flex-direction:column;gap:8px;scrollbar-width:none;-ms-overflow-style:none;min-height:0;background:#E8E8E8;';
+        }
+        console.log('✅ 使用默认灰色背景');
+    }
+}
+
+// 执行
+forceChatBackground();
+console.log('✅ 已执行强制壁纸全屏');
+function fixChatLayout() {
+    var detailScreen = document.getElementById('chatDetailScreen');
+    var messages = document.getElementById('chatMessages');
+    var inputArea = document.querySelector('.chat-input-area');
+
+    if (detailScreen) {
+        detailScreen.style.cssText = 'display:flex !important;flex-direction:column !important;height:calc(100vh - 70px) !important;position:relative !important;';
+    }
+
+    if (messages) {
+        messages.style.cssText = 'flex:1 !important;overflow-y:auto !important;padding:16px !important;display:flex !important;flex-direction:column !important;gap:8px !important;scrollbar-width:none !important;-ms-overflow-style:none !important;min-height:0 !important;';
+    }
+
+    if (inputArea) {
+        inputArea.style.cssText = 'flex-shrink:0 !important;padding:6px 12px !important;background:rgba(255,255,255,0.1) !important;border-top:1px solid rgba(255,255,255,0.2) !important;display:flex !important;align-items:center !important;min-height:44px !important;margin-top:auto !important;';
+    }
+
+    var inputBox = document.getElementById('chatInputBox');
+    if (inputBox) {
+        inputBox.style.cssText = 'flex:1 !important;padding:6px 12px !important;border:1px solid rgba(255,255,255,0.3) !important;border-radius:18px !important;background:rgba(255,255,255,0.85) !important;color:#333 !important;font-size:14px !important;outline:none !important;min-height:32px !important;cursor:text !important;pointer-events:auto !important;';
+        inputBox.contentEditable = 'true';
+    }
+}
 </script>
 </body>
 </html>
