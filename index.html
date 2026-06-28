@@ -7480,7 +7480,7 @@ function showChapter1CallReplies() {
             { 
                 from: "other", 
                 text: "？？", 
-                time: "14:28",
+                time: "14:30",
                 quote: userWechatName + "：" + userMessage
             },
             { from: "other", text: "我是去干正事了好吧", time: "14:29" }
@@ -7490,7 +7490,7 @@ function showChapter1CallReplies() {
             { 
                 from: "other", 
                 text: "我去干正事了", 
-                time: "14:28",
+                time: "14:30",
                 quote: userWechatName + "：" + userMessage
             }
         ];
@@ -7578,175 +7578,37 @@ function showChapter1CallReplies() {
 }
 // ================= 引用后续回复 =================
 
-// 没有，我们在上体育课 → 张桂源回复
 function showForgotReply() {
     var date = new Date().toLocaleDateString();
-    
-    // 先发送文字回复
     var replies = [
         { from: "other", text: "😳我去没看课表", time: "14:36" },
         { from: "other", text: "那我岂不是又少打一节课篮球", time: "14:36" }
     ];
-    
-    var idx = 0;
-    
-    function sendNext() {
-        if (idx >= replies.length) {
-            // ✅ 文字发完后发送图片
-            var container = document.getElementById("chatMessages");
-            var typingRow = document.createElement("div");
-            typingRow.className = "message-row";
-            typingRow.style.justifyContent = "flex-start";
-            typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
-            container.appendChild(typingRow);
-            container.scrollTop = container.scrollHeight;
-            
-            setTimeout(function() {
-                typingRow.remove();
-                chatData["张桂源"].messages.push({
-                    from: "other",
-                    text: '<img src="wy.png" style="width:120px;border-radius:12px;display:block;">',
-                    time: "14:37",
-                    avatar: "🏀",
-                    date: date,
-                    read: false
-                });
-                renderChatMessages();
-                renderChatList();
-            }, 700);
-            return;
-        }
-        
-        var container = document.getElementById("chatMessages");
-        var typingRow = document.createElement("div");
-        typingRow.className = "message-row";
-        typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
-        container.appendChild(typingRow);
-        container.scrollTop = container.scrollHeight;
-        
-        setTimeout(function() {
-            typingRow.remove();
-            chatData["张桂源"].messages.push({
-                from: "other",
-                text: replies[idx].text,
-                time: replies[idx].time,
-                avatar: "🏀",
-                date: date,
-                read: false
-            });
-            renderChatMessages();
-            renderChatList();
-            idx++;
-            setTimeout(sendNext, 600);
-        }, 700);
-    }
-    
-    sendNext();
+    sendMultipleReplies(replies, date);
 }
-
-// ================= 第一步：张桂源发送「等我好不好嘛」 =================
+// 你下午不回来？→ 张桂源回复
 function showPickupAReply() {
     var date = new Date().toLocaleDateString();
-    var userWechatName = player.wechatName || player.name || "用户";
-    var userMessage = "你下午不回来？";
-
     var replies = [
-        { text: "不回来了，还有一些手续要办", time: "14:36" },
-        { text: "但是放学我一定去接你", time: "14:36" },
-        { text: "等我好不好嘛", time: "14:36" }
+        { from: "other", text: "不回来了，还有一些手续要办", time: "14:36" },
+        { from: "other", text: "但是放学我一定去接你", time: "14:36" },
+        { from: "other", text: "等我好不好嘛", time: "14:36" }
     ];
-
-    var idx = 0;
-
-    function sendNext() {
-        if (idx >= replies.length) {
-            // 发送完「等我好不好嘛」后，发送「我等不及了先保密」
-            setTimeout(function() {
-                sendZhangMessage("我等不及了先保密", "14:37", date, function() {
-                    // 判断是否接了 API
-                    var hasApi = localStorage.getItem('api_base_url') && localStorage.getItem('api_key');
-                    if (hasApi) {
-                        enterFreeChatMode();
-                    } else {
-                        showCommonBranch();
-                    }
-                });
-            }, 500);
-            return;
-        }
-
-        var container = document.getElementById("chatMessages");
-        var typingRow = document.createElement("div");
-        typingRow.className = "message-row";
-        typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
-        container.appendChild(typingRow);
-        container.scrollTop = container.scrollHeight;
-
-        setTimeout(function() {
-            typingRow.remove();
-
-            var displayText = replies[idx].text;
-            // 第一条回复带引用
-            if (idx === 0) {
-                displayText = `
-                    ${replies[idx].text}
-                    <div style="margin-top:5px;padding-top:5px;border-top:1px solid #E8E8E8;width:auto;max-width:100%;font-size:12px;color:#999;word-break:break-all;">
-                        ${userWechatName}：${userMessage}
-                    </div>
-                `;
-            }
-
-            chatData["张桂源"].messages.push({
-                from: "other",
-                text: displayText,
-                time: replies[idx].time,
-                avatar: "🏀",
-                date: date,
-                read: false
-            });
-            renderChatMessages();
-            renderChatList();
-            idx++;
-            setTimeout(sendNext, 600);
-        }, 700);
-    }
-
-    sendNext();
+    sendMultipleReplies(replies, date, function() {
+        showCommonBranch();
+    });
 }
 
+// 谁要你接了 → 张桂源回复
 function showPickupBReply() {
     var date = new Date().toLocaleDateString();
-    var userWechatName = player.wechatName || player.name || "用户";
-    var userMessage = "谁要你接了";
-
     var replies = [
-        { text: "我就接", time: "14:38" },
-        { text: "等我好不好嘛", time: "14:38" }
+        { from: "other", text: "我就接", time: "14:38" },
+        { from: "other", text: "等我好不好嘛", time: "14:38" }
     ];
-
-    var idx = 0;
-
-    function sendNext() {
-        if (idx >= replies.length) {
-            setTimeout(function() {
-                sendZhangMessage("我等不及了先保密", "14:39", date, function() {
-                    var hasApi = localStorage.getItem('api_base_url') && localStorage.getItem('api_key');
-                    if (hasApi) {
-                        enterFreeChatMode();
-                    } else {
-                        showCommonBranch();
-                    }
-                });
-            }, 500);
-            return;
-        }
-        // ... 原有发送逻辑 ...
-        sendNext();
-    }
-
-    sendNext();
+    sendMultipleReplies(replies, date, function() {
+        showCommonBranch();
+    });
 }
 
 // 发送多条回复
@@ -13629,157 +13491,6 @@ function fixChatLayout() {
         inputBox.style.cssText = 'flex:1 !important;padding:6px 12px !important;border:1px solid rgba(255,255,255,0.3) !important;border-radius:18px !important;background:rgba(255,255,255,0.85) !important;color:#333 !important;font-size:14px !important;outline:none !important;min-height:32px !important;cursor:text !important;pointer-events:auto !important;';
         inputBox.contentEditable = 'true';
     }
-}
-// ================= 张桂源发送消息 =================
-function sendZhangMessage(text, time, date, callback) {
-    var container = document.getElementById("chatMessages");
-    var typingRow = document.createElement("div");
-    typingRow.className = "message-row";
-    typingRow.style.justifyContent = "flex-start";
-    typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
-    container.appendChild(typingRow);
-    container.scrollTop = container.scrollHeight;
-
-    setTimeout(function() {
-        typingRow.remove();
-        chatData["张桂源"].messages.push({
-            from: "other",
-            text: text,
-            time: time,
-            avatar: "🏀",
-            date: date,
-            read: false
-        });
-        renderChatMessages();
-        renderChatList();
-        if (callback) callback();
-    }, 700);
-}
-// ================= 自由输入模式（API 对话） =================
-function enterFreeChatMode() {
-    var inputBox = document.getElementById("chatInputBox");
-    if (inputBox) {
-        inputBox.innerText = "";
-        inputBox.style.cssText = 'flex:1;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:18px;background:rgba(255,255,255,0.85);color:#333;font-size:14px;outline:none;min-height:32px;cursor:text;pointer-events:auto;';
-        inputBox.contentEditable = 'true';
-        inputBox.focus();
-        inputBox.onkeydown = function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                var text = inputBox.innerText.trim();
-                if (text) {
-                    sendPlayerMessage(text);
-                    inputBox.innerText = "";
-                }
-            }
-        };
-    }
-
-    // 修改返回按钮
-    var backBtn = document.getElementById("chatBackBtn");
-    if (backBtn) {
-        var newBackBtn = backBtn.cloneNode(true);
-        backBtn.parentNode.replaceChild(newBackBtn, backBtn);
-        newBackBtn.addEventListener("click", function() {
-            document.getElementById("chatListScreen").style.display = "block";
-            document.getElementById("chatDetailScreen").style.display = "none";
-            switchPage("story");
-            document.getElementById("chapterSelectPage").style.display = "none";
-            document.getElementById("storyDetailPage").style.display = "block";
-            document.getElementById("chapterTitle").innerText = "第1章 · 重庆的夏天永远不会结束";
-        });
-    }
-
-    // 添加提示
-    var hint = document.createElement('div');
-    hint.style.cssText = 'text-align:center;font-size:12px;color:#999;padding:4px 0;';
-    hint.textContent = '💬 自由输入模式（AI 自动回复）';
-    var inputArea = document.querySelector('.chat-input-area');
-    if (inputArea) {
-        inputArea.parentNode.insertBefore(hint, inputArea);
-    }
-}
-// ================= 玩家发送消息（自由模式） =================
-function sendPlayerMessage(text) {
-    var date = new Date().toLocaleDateString();
-    var now = new Date();
-    var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-
-    // 获取玩家头像
-    var avatarData = localStorage.getItem("player_avatar");
-    var avatarDisplay = (avatarData && avatarData.startsWith("data:image"))
-        ? '<img src="' + avatarData + '" style="width:40px;height:40px;border-radius:12px;object-fit:cover;">'
-        : '🐰';
-
-    // 发送玩家消息
-    chatData["张桂源"].messages.push({
-        from: "me",
-        text: text,
-        time: timeStr,
-        avatar: avatarDisplay,
-        date: date,
-        read: true
-    });
-    renderChatMessages();
-    renderChatList();
-
-    // 调用 API 生成张桂源回复
-    callZhangAiApi(text, date);
-}
-// ================= 调用 API 生成张桂源回复 =================
-function callZhangAiApi(playerText, date) {
-    var baseUrl = localStorage.getItem('api_base_url');
-    var apiKey = localStorage.getItem('api_key');
-    var model = localStorage.getItem('api_model');
-    var customModel = localStorage.getItem('api_custom_model');
-    var finalModel = model === 'custom' ? customModel : model;
-
-    if (!baseUrl || !apiKey) {
-        // 没有 API，使用备用回复
-        var fallback = ['哈哈', '真的吗', '好厉害', '不错', '嗯嗯', '懂了', '可以', '笑死', '太真实了', '我服了'];
-        var replyText = fallback[Math.floor(Math.random() * fallback.length)];
-        sendZhangMessage(replyText, '14:38', date);
-        return;
-    }
-
-    var messages = [
-        { role: 'system', content: '你是张桂源，一个性格开朗、有点皮的初中生，正在和青梅竹马聊天。根据对方发的内容，用自然、活泼的语气回复，20字以内。' },
-        { role: 'user', content: playerText }
-    ];
-
-    fetch(baseUrl + '/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + apiKey
-        },
-        body: JSON.stringify({
-            model: finalModel || 'gpt-3.5-turbo',
-            messages: messages,
-            max_tokens: 50,
-            temperature: 0.9
-        })
-    })
-    .then(function(response) {
-        if (!response.ok) throw new Error('API 请求失败: ' + response.status);
-        return response.json();
-    })
-    .then(function(data) {
-        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (reply) {
-            var now = new Date();
-            var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-            sendZhangMessage(reply.trim(), timeStr, date);
-        }
-    })
-    .catch(function(error) {
-        console.log('API 调用失败:', error);
-        var fallback = ['哈哈', '真的吗', '好厉害', '不错', '嗯嗯', '懂了'];
-        var replyText = fallback[Math.floor(Math.random() * fallback.length)];
-        var now = new Date();
-        var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-        sendZhangMessage(replyText, timeStr, date);
-    });
 }
 </script>
 </body>
