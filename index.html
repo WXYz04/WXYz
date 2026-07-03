@@ -933,13 +933,16 @@
 
        <!-- 地图页面 -->
 <div id="storyMapPage" style="display: none; height: calc(100vh - 160px); padding:0; overflow:hidden; border-radius:20px; position:relative; background:#FFF5F5;">
-            
+            <!-- 体力显示 - 左上角 -->
+<div style="position:absolute; top:12px; left:12px; z-index:20; background:rgba(255,255,255,0.85); backdrop-filter:blur(12px); border-radius:20px; padding:8px 14px; border:1px solid rgba(255,200,200,0.2); box-shadow:0 4px 16px rgba(0,0,0,0.06); display:flex; align-items:center; gap:4px; font-size:14px; font-weight:600; color:#E85D75;">
+    <span id="staminaDisplay">15/15</span>
+</div>
            <!-- 背景地图图片 -->
 <img src="map.jpg" style="width:100%; height:100%; object-fit:cover; display:block; position:absolute; top:0; left:0; z-index:1;" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:14px;\'>⚠️ 地图加载失败</div>'">
             <!-- 竖排任务按钮（半圆，紧贴右侧，浅色文字） -->
-    <div style="position:absolute; top:50%; right:0; transform:translateY(-50%); z-index:10; background:rgba(255,255,255,0.7); backdrop-filter:blur(12px); border-radius:20px 0 0 20px; padding:16px 6px; border:1px solid rgba(255,200,200,0.3); border-right:none; box-shadow:-4px 0 16px rgba(255,150,150,0.06); cursor:pointer; transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); writing-mode:vertical-rl; letter-spacing:4px;" onclick="alert('📋 第一章任务\n\n目标：完成小学学业，智慧值达到30以上\n当前智慧：' + (player.wise || 0))">
-        <span style="font-size:14px; font-weight:500; color:#B86A7A;">任 务</span>
-    </div>
+    <div style="position:absolute; top:50%; right:0; transform:translateY(-50%); z-index:10; background:rgba(255,255,255,0.7); backdrop-filter:blur(12px); border-radius:20px 0 0 20px; padding:16px 6px; border:1px solid rgba(255,200,200,0.3); border-right:none; box-shadow:-4px 0 16px rgba(255,150,150,0.06); cursor:pointer; transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); writing-mode:vertical-rl; letter-spacing:4px;" onclick="openTaskPage()">
+    <span style="font-size:14px; font-weight:500; color:#B86A7A;">任 务</span>
+</div>
             <!-- 家 -->
 <div class="map-btn" data-location="home" style="position:absolute; bottom:44%; left:4%; z-index:10; background:rgba(255,255,255,0.7); backdrop-filter:blur(16px); border-radius:20px; padding:10px 14px; border:1px solid rgba(255,255,255,0.3); box-shadow:0 8px 32px rgba(255,150,150,0.12); display:flex; align-items:center; gap:8px; cursor:pointer; transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);" onclick="handleMapClick('home')">
     <span style="font-size:20px;">🏠</span>
@@ -953,7 +956,14 @@
 </div>
 
 <!-- 公司 -->
-<div class="map-btn" data-location="company" style="position:absolute; top:58%; left:40%; z-index:10; background:rgba(255,255,255,0.7); backdrop-filter:blur(16px); border-radius:20px; padding:10px 14px; border:1px solid rgba(255,255,255,0.3); box-shadow:0 8px 32px rgba(255,150,150,0.12); display:flex; align-items:center; gap:8px; cursor:pointer; transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);" onclick="handleMapClick('company')">
+<div class="map-btn" data-location="company"
+style="position:absolute; top:58%; left:40%; z-index:10;
+background:rgba(255,255,255,0.7); backdrop-filter:blur(16px);
+border-radius:20px; padding:10px 14px; border:1px solid
+rgba(255,255,255,0.3); box-shadow:0 8px 32px rgba(255,150,150,0.12);
+display:flex; align-items:center; gap:8px; cursor:pointer;
+transition:all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);"
+onclick="showCompanySchedule()">
     <span style="font-size:20px;">🏢</span>
     <span style="font-size:13px; font-weight:600; color:#B86A7A;">公司</span>
 </div>
@@ -1038,10 +1048,10 @@
     <!-- 搜索框 -->
     <div id="searchContainer" style="position:relative;">
         <div id="searchDisplay" style="background:#F5F5F5;border-radius:30px;padding:10px 16px;color:#999;font-size:14px;cursor:text;transition:all 0.2s;" onclick="activateSearch()">
-            🔍 猜你想搜 · 张桂源 练习室 直拍
+            猜你想搜 · 张桂源 练习室 直拍
         </div>
         <div id="searchInputWrap" style="display:none;background:#F5F5F5;border-radius:30px;padding:4px 16px;align-items:center;gap:8px;">
-            <span style="font-size:14px;color:#999;">🔍</span>
+            <span style="font-size:14px;color:#999;"></span>
             <input id="searchInput" type="text" placeholder="搜索微博" style="flex:1;padding:6px 0;border:none;background:transparent;font-size:14px;outline:none;color:#333;" oninput="handleSearchInput(this.value)">
             <span id="searchClear" style="font-size:16px;color:#CCC;cursor:pointer;display:none;" onclick="clearSearch()">×</span>
         </div>
@@ -1106,7 +1116,7 @@
        <div class="feature-grid">
     <div class="feature-btn" id="giftBtn">我的物品</div>
     <div class="feature-btn" id="diaryBtn">恋爱日记</div>
-    <div class="feature-btn" id="scheduleBtn">艺人行程</div>
+    <div class="feature-btn" id="scheduleBtn">我的余额</div>
     <div class="feature-btn" id="letterBtn">艺人来信</div>
     <div class="feature-btn" id="saveGameBtn" style="background:#FFD6E0; color:#666;">保存游戏</div>
     <div class="feature-btn" id="favorabilityBtn" style="background:#FFF3CD; color:#666;">好感查询</div>
@@ -1160,13 +1170,12 @@
         
 </div>
 </div>
+
+</div>
 <!-- 成就系统 -->
-        <div id="achievementSection" style="margin-top:12px;background:#F8F8F8;border-radius:20px;padding:16px;">
-          <div style="font-size:14px;font-weight:600;color:#1A1A1A;margin-bottom:10px;">成就</div>
-           <div id="achievementList" style="display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px 0;scrollbar-width:thin;-webkit-overflow-scrolling:touch;">
-        <!-- 由 JavaScript 动态生成 -->
-          </div>
-    </div>
+<div id="achievementSection" style="margin-top:12px;background:#F8F8F8;border-radius:20px;padding:16px;width:100%;box-sizing:border-box;display:block;">
+    <div style="font-size:14px;font-weight:600;color:#1A1A1A;margin-bottom:10px;">成就</div>
+    <div id="achievementList" style="display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px 0;scrollbar-width:thin;-webkit-overflow-scrolling:touch;width:100%;box-sizing:border-box;"></div>
 </div>
     </div>
     <!-- ↑ gameScreen 结束 -->
@@ -1362,6 +1371,7 @@ function openShopPage() {
             var action = this.dataset.action;
             modal.remove();
             if (action === 'store') {
+                 if (!consumeStamina(1)) return;
                 alert('🏪 商店\n\n功能开发中，敬请期待~');
             } else if (action === 'gacha') {
                 openGachaPage();
@@ -1523,6 +1533,7 @@ loadSelectedCardSet();
 
     // ===== 扭蛋机抽奖 =====
     window.spinGacha = function() {
+         if (!consumeStamina(1)) return;
         if (isSpinning) return;
         isSpinning = true;
 
@@ -2824,6 +2835,7 @@ function openEarnPage() {
 
 // ================= 乞讨 =================
 function doBeg() {
+     if (!consumeStamina(1)) return;
     var results = [
         { text: "周围的人用异样的眼神看着你，你赶紧溜了", wiseChange: -2, loveChange: 0, moneyChange: 10 },
         { text: "在街边蹲了一天，发现钱包掉了", wiseChange: 0, loveChange: 0, moneyChange: -30 },
@@ -2860,6 +2872,7 @@ function doBeg() {
 }
 // ================= 才艺 =================
 function doTalent() {
+     if (!consumeStamina(1)) return;
     if (player.love < 30) {
         alert("❌ 智慧不够哦，好好学习，daydayup！\n（当前智慧：" + player.love + "/30）");
         return;
@@ -2883,6 +2896,7 @@ function doTalent() {
 
 // ================= 打工 =================
 function doWork() {
+     if (!consumeStamina(1)) return;
     showResultModal(
         "🔧 打工",
         "还未满18岁不能打工哦~",
@@ -2950,8 +2964,44 @@ function closeResultModal(hasCallback) {
     expose: 0, 
     dark: 0, 
     money: 100,    // 金钱/余额（初始100）
-    fans: 500 
+    stress: 10,  // ✅ 新增压力值
+    fans: 500 ,
+    stamina: 15
 };
+// ================= 压力状态判断 =================
+function getStressMultiplier() {
+    // 压力大于50时，好属性减半，坏属性翻倍
+    if (player.stress > 50) {
+        return {
+            good: 0.5,   // 好属性减半
+            bad: 2       // 坏属性翻倍
+        };
+    }
+    return {
+        good: 1,
+        bad: 1
+    };
+}
+
+// 应用压力修正
+function applyStressModifier(change, isGood) {
+    var multiplier = getStressMultiplier();
+    var factor = isGood ? multiplier.good : multiplier.bad;
+    var result = Math.floor(change * factor);
+    // 如果是好属性且减半后为0，至少保留1
+    if (isGood && result === 0 && change > 0) {
+        result = 1;
+    }
+    // 如果是坏属性且翻倍，取整
+    if (!isGood && result === 0 && change > 0) {
+        result = 1;
+    }
+    return result;
+}
+// 初始化收支记录（如果还没有）
+if (!localStorage.getItem('transactions')) {
+    addTransaction('收入', 100, '初始资金');
+}
       let acceptedFriendCount = 0;  // 记录已接受的好友数量
       let unlockedFavorability = {
     "陈太帅": false,
@@ -4261,53 +4311,59 @@ function showFriendChatOptions(contact) {
         });
     }
         // ================= 新消息弹窗通知 =================
-    let notificationTimeout = null;
-    
-    function showMessageNotification(contact, avatar, name, previewText, onTap) {
-        // 移除已有的弹窗
-        let existing = document.querySelector(".message-notification");
-        if (existing) existing.remove();
-        if (notificationTimeout) clearTimeout(notificationTimeout);
-        
-        let notification = document.createElement("div");
-        notification.className = "message-notification";
-        
-        let avatarHtml = "";
-        if (avatar.startsWith("<img")) {
-            avatarHtml = avatar;
-        } else {
-            avatarHtml = `<span>${avatar}</span>`;
-        }
-        
-        notification.innerHTML = `
-            <div class="notification-avatar">${avatarHtml}</div>
-            <div class="notification-content">
-                <div class="notification-name">${name}</div>
-                <div class="notification-preview">${previewText}</div>
-                <div class="notification-time">刚刚</div>
-            </div>
-        `;
-        
-        notification.onclick = () => {
+function showMessageNotification(contact, avatar, name, previewText, onTap) {
+    // 移除已有的弹窗
+    var existing = document.querySelector(".message-notification");
+    if (existing) existing.remove();
+
+    var notification = document.createElement("div");
+    notification.className = "message-notification";
+    notification.style.cssText = `
+        position: fixed;
+        top: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 32px);
+        max-width: 450px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 12px 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        animation: slideDown 0.3s ease-out;
+        border: 1px solid rgba(232, 93, 117, 0.3);
+    `;
+
+    notification.innerHTML = `
+        <div class="notification-avatar">
+            ${avatar}
+        </div>
+        <div class="notification-content">
+            <div class="notification-name">${name}</div>
+            <div class="notification-preview">${previewText}</div>
+            <div class="notification-time">刚刚</div>
+        </div>
+    `;
+
+    notification.onclick = function() {
+        notification.remove();
+        if (onTap) onTap();
+    };
+
+    document.body.appendChild(notification);
+
+    // 3秒后自动消失
+    setTimeout(function() {
+        if (notification && notification.parentNode) {
             notification.remove();
-            if (notificationTimeout) clearTimeout(notificationTimeout);
-            // 切换到聊天页面并打开对应联系人
-            switchPage("chat");
-            setTimeout(() => {
-                openChat(contact);
-            }, 100);
-            if (onTap) onTap();
-        };
-        
-        document.body.appendChild(notification);
-        
-        // 2秒后自动消失
-        notificationTimeout = setTimeout(() => {
-            if (notification && notification.parentNode) {
-                notification.remove();
-            }
-        }, 3000);
-    }
+        }
+    }, 3000);
+}
     // ================= 张桂源聊天流程 =================
     const zhangChatFlow = [
         // 初始对话
@@ -4564,6 +4620,22 @@ function showFriendChatOptions(contact) {
                         if (step.nextOthers && step.nextOthers.length > 0) {
                             for (let reply of step.nextOthers) {
                                 await sendChatMessage(reply.text, reply.time, reply.from, "张桂源", `<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`);
+                             // ✅ 检查是否发送了"等我回来"
+                    if (reply.text === "等我回来") {
+                        // 标记对话任务已完成
+                        localStorage.setItem('zhang_dialogue_done', 'true');
+                        
+                        // 文本框显示"本章对话结束"
+                        var inputBox = document.getElementById("chatInputBox");
+                        if (inputBox) {
+                            inputBox.innerText = "本章对话结束";
+                            inputBox.style.cssText = 'flex:1;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:18px;background:rgba(255,255,255,0.85);color:#999;font-size:14px;outline:none;min-height:32px;cursor:default;pointer-events:auto;';
+                            inputBox.contentEditable = 'false';
+                            inputBox.onclick = function() {
+                                alert('💬 本章对话已结束，继续推进剧情吧~');
+                            };
+                        }
+                    }
                             }
                         }
                         flowIndex++;
@@ -4672,7 +4744,18 @@ function showFriendChatOptions(contact) {
             else if (step.type === "branch_end" || step.type === "branch2_end" || step.type === "video_branch_end") {
                 flowIndex++;
             }
-            else if (step.type === "end") {
+            else if (step.type === "end") { // ✅ 确保对话任务标记已完成
+    localStorage.setItem('zhang_dialogue_done', 'true');
+    
+    // 刷新任务页面（如果任务页面开着）
+    var taskModal = document.querySelector('.full-modal');
+    if (taskModal && taskModal.innerHTML.includes('📋 第一章任务')) {
+        taskModal.remove();
+        setTimeout(function() {
+            openTaskPage();
+        }, 300);
+    }
+    
                 break;
             }
             else {
@@ -6284,7 +6367,7 @@ function publishWeibo() {
         avatar: avatarHtml,
         time: timeStr,
         content: content,
-        likes: '0',
+       likes: Math.floor(Math.random() * 16) + 10,
         comments: [],
         isMyWeibo: true
     };
@@ -6510,18 +6593,15 @@ function renderMyPage() {
     }
 
     var signature = localStorage.getItem("user_signature") || "";
-
     var playerName = player && player.name ? player.name : '';
     var playerNickname = player && player.nickname ? player.nickname : '';
     var playerWise = player && player.wise !== undefined ? player.wise : 0;
-    var playerLove = player && player.love !== undefined ? player.love : 0;
+    var playerExpose = player && player.expose !== undefined ? player.expose : 0;  // ✅ 暴露值
     var playerDark = player && player.dark !== undefined ? player.dark : 0;
-    var playerMoney = player && player.money !== undefined ? player.money : 0;
+    var playerStress = player && player.stress !== undefined ? player.stress : 10;
 
     document.getElementById("profileCard").innerHTML = `
         <div class="profile-container" style="text-align:center; position:relative;">
-    
-            <!-- ✅ 右上角设置按钮 -->
             <div style="position:absolute;top:12px;right:16px;">
                 <button onclick="openChatSettings()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;padding:4px 8px;border-radius:8px;transition:background 0.2s;" onmouseenter="this.style.background='#F0F0F0'" onmouseleave="this.style.background='transparent'">
                     ⚙️
@@ -6538,9 +6618,9 @@ function renderMyPage() {
             </div>
             <div class="attr-grid" style="margin-top:12px;">
                 <div class="attr-item"><div>智慧</div><div class="attr-value">${playerWise}</div></div>
-                <div class="attr-item"><div>好感</div><div class="attr-value">${playerLove}</div></div>
+                <div class="attr-item"><div>暴露</div><div class="attr-value">${playerExpose}</div></div>  <!-- ✅ 暴露 -->
                 <div class="attr-item"><div>黑化</div><div class="attr-value">${playerDark}</div></div>
-                <div class="attr-item"><div>余额</div><div class="attr-value">${playerMoney}</div></div>
+                <div class="attr-item"><div>压力</div><div class="attr-value">${playerStress}</div></div>
             </div>
         </div>
     `;
@@ -6552,13 +6632,22 @@ function renderMyPage() {
         });
     }
 
-    // 日记本已移除，清空容器防止报错
     var diaryContainer = document.getElementById("diaryEntries");
     if (diaryContainer) {
         diaryContainer.innerHTML = '';
     }
-    // 渲染成就
-renderAchievements();
+
+    renderAchievements();
+
+    var section = document.getElementById('achievementSection');
+    if (section) {
+        section.style.cssText = 'margin-top:12px;background:#F8F8F8;border-radius:20px;padding:16px;display:block;width:100%;box-sizing:border-box;';
+    }
+
+    var list = document.getElementById('achievementList');
+    if (list) {
+        list.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px 0;scrollbar-width:thin;-webkit-overflow-scrolling:touch;width:100%;box-sizing:border-box;';
+    }
 }
 // ================= 更换头像功能 =================
 function changeAvatar() {
@@ -6982,7 +7071,7 @@ function showGiftOptions(name) {
         
         modal.innerHTML = `
             <div class="modal-header">
-                <h3>📅 张桂源今日行程</h3>
+                <h3>张桂源行程</h3>
                 <button class="close-modal">×</button>
             </div>
             <div style="margin-bottom:12px; padding:8px; background:#FFF0F5; border-radius:12px;">
@@ -8988,6 +9077,8 @@ function switchPage(pageId) {
         isZhangPhoneActive = false;
     }
     if (pageId === 'story') {
+        // ✅ 更新体力显示
+        updateStaminaDisplay();
         if (typeof isMapView !== 'undefined' && isMapView) {
             isMapView = false;
             var storyBtn = document.getElementById('switchToStoryBtn');
@@ -13191,7 +13282,7 @@ function showResultModal(title, content, infoLines) {
     
     document.getElementById("giftBtn").onclick = showGifts;
     document.getElementById("diaryBtn").onclick = showDiaryDetail;
-    document.getElementById("scheduleBtn").onclick = showSchedule;
+    document.getElementById("scheduleBtn").onclick = showBalance;
     document.getElementById("letterBtn").onclick = showLetters;
     document.querySelectorAll(".nav-item").forEach(btn => btn.addEventListener("click", () => switchPage(btn.dataset.nav)));
     document.querySelectorAll("#weiboTabs .tab").forEach(tab => tab.addEventListener("click", () => { document.querySelectorAll("#weiboTabs .tab").forEach(t => t.classList.remove("active")); tab.classList.add("active"); renderWeibo(); }));
@@ -14983,11 +15074,11 @@ function renderAchievements() {
     loadAchievements();
     
     container.innerHTML = achievements.map(function(ach) {
+        var bgColor = ach.unlocked ? '#FFFFFF' : '#F5F5F5';
+        var borderColor = ach.unlocked ? '#CCC' : '#EFEFEF';
         var opacity = ach.unlocked ? '1' : '0.5';
         var statusText = ach.unlocked ? '已解锁' : '未解锁';
         var textColor = ach.unlocked ? '#333' : '#999';
-        var borderColor = ach.unlocked ? '#CCC' : '#EFEFEF';
-        var bgColor = '#FFFFFF';
         
         return `
             <div style="flex:0 0 80px;height:80px;background:${bgColor};border:1px solid ${borderColor};border-radius:12px;padding:8px;text-align:center;opacity:${opacity};transition:all 0.3s;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.04);" onclick="showAchievementDetail('${ach.id}')">
@@ -14996,44 +15087,12 @@ function renderAchievements() {
             </div>
         `;
     }).join('');
-}
-function showAchievementDetail(id) {
-    var ach = achievements.find(function(a) { return a.id === id; });
-    if (!ach) return;
     
-    if (!ach.unlocked) {
-        alert('该成就尚未解锁');
-        return;
+    // ✅ 渲染完后再次强制设置宽度
+    var list = document.getElementById('achievementList');
+    if (list) {
+        list.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px 0;scrollbar-width:thin;-webkit-overflow-scrolling:touch;width:100%;box-sizing:border-box;';
     }
-    
-    var unlockTime = localStorage.getItem('achievement_time_' + id);
-    if (!unlockTime) {
-        unlockTime = new Date().toLocaleString();
-        localStorage.setItem('achievement_time_' + id, unlockTime);
-    }
-    
-    var modal = document.createElement('div');
-    modal.className = 'full-modal';
-    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
-    
-    modal.innerHTML = `
-        <div style="background:white;border-radius:32px;padding:28px 24px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);animation:popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
-            <div style="font-size:20px;font-weight:700;color:#1A1A1A;margin-bottom:4px;">${ach.name}</div>
-            <div style="font-size:13px;color:#999;margin-bottom:16px;">达成时间：${unlockTime}</div>
-            <div style="font-size:15px;color:#333;line-height:1.6;padding:12px 0;border-top:1px solid #EFEFEF;border-bottom:1px solid #EFEFEF;margin-bottom:16px;">
-                我猜你也想靠近吧
-            </div>
-            <button onclick="this.closest('.full-modal').remove()" style="padding:10px 32px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
-                知道了
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) modal.remove();
-    });
 }
 loadAchievements();
 // ================= 回复评论 =================
@@ -15288,19 +15347,19 @@ function generateAIReplyForCommentAPI(comment, weiboContent, callback) {
     
     if (role.includes('毒舌') || role.includes('黑粉')) {
         roleDesc = '毒舌黑粉，擅长玩梗，说话阴阳怪气，喜欢嘲讽';
-        systemPrompt = '你是一个毒舌黑粉，擅长玩梗，说话阴阳怪气到了极点。喜欢用问号攻击，喜欢说"滚""哇塞谁理你""宝子不要招笑了好吧"这类话。攻击性拉满。用户回复了你的评论，现在你要回复用户。保持你毒舌阴阳怪气的人设。说话要像活人。直接输出回复内容。回复要短小精悍，20字以内。';
+        systemPrompt = '你是一个毒舌黑粉，擅长玩梗，说话阴阳怪气到了极点。喜欢用问号攻击，喜欢说"滚""哇塞谁理你""宝子不要招笑了好吧"这类话。攻击性拉满。特别喜欢嘲讽，用户回复了你的评论，现在你要回复用户。保持你毒舌阴阳怪气的人设。说话要像活人。直接输出回复内容。回复要短小精悍，20字以内。';
     } else if (role.includes('温柔') || role.includes('大姐姐')) {
         roleDesc = '温柔知心大姐姐，说话温柔体贴，喜欢鼓励人';
         systemPrompt = '你是一个温柔知心大姐姐，说话温柔体贴。用户回复了你的评论，现在你要回复用户。保持你温柔体贴的人设。说话要像活人。直接输出回复内容。回复要短小精悍，20字以内。';
     } else if (role.includes('冲浪') || role.includes('追星')) {
         roleDesc = '冲浪追星妹，性格大大咧咧，爱吃瓜，活泼有梗';
-        systemPrompt = '你是一个性格大大咧咧的追星妹，高速冲浪，爱吃瓜，性格活泼。喜欢开玩笑，说话很有梗，经常说"我也是你们play的一环吗？"这种话。用户回复了你的评论，现在你要回复用户。保持你活泼有梗的人设。说话要像活人。直接输出回复内容。回复要短小精悍，20字以内。';
+        systemPrompt = '你是一个性格大大咧咧的追星妹，高速冲浪，爱吃瓜，性格活泼。喜欢开玩笑，情绪激动高涨，说话很有梗，用户回复了你的评论，现在你要回复用户。保持你活泼有梗的人设。说话要像活人。直接输出回复内容。回复要短小精悍，20字以内。';
     } else if (role.includes('老实人')) {
         roleDesc = '老实人，说话淡淡的幽默，有点傲娇，喜欢说"我的妈呀"';
         systemPrompt = '你是一个老实人，说话淡淡的幽默，有种老农民的感觉。口头禅是"我的妈呀"。用户回复了你的评论，现在你要回复用户。保持你老实傲娇的人设。说话要像活人。直接输出回复内容。回复要短小精悍，20字以内。';
     } else if (role.includes('小T') || role.includes('智能')) {
         roleDesc = 'AI机器人，超会捧场，全肯定';
-        systemPrompt = '你是一个超会捧场的AI机器人，不管用户说什么都是用户对，百分之百全肯定。用户回复了你的评论，现在你要回复用户。保持你捧场全肯定的人设。说话要像活人。直接输出回复内容。回复要短小精悍，20字以内。';
+        systemPrompt = '你是一个超会捧场的AI机器人，不管用户说什么都是用户对，百分之百全肯定，有些痴呆，喜欢装疯卖傻。用户回复了你的评论，现在你要回复用户。保持你捧场全肯定的人设。说话要像活人。直接输出回复内容。回复要短小精悍，20字以内。';
     } else {
         roleDesc = '普通网友';
         systemPrompt = '你是一个普通网友，用户回复了你的评论，现在你要回复用户。直接输出回复内容。回复要短小精悍，20字以内。';
@@ -15493,41 +15552,51 @@ function generateAIReplyForCommentWithContext(comment, weiboContent, callback) {
     var role = comment.author;
     var containsZhang = weiboContent.includes('张桂源') || weiboContent.includes('桂源') || weiboContent.includes('zgy');
     
-    // 构建对话上下文
-    var contextText = '';
+    // ✅ 构建完整的上下文：微博内容 + 原始评论 + 对话历史
+    var contextText = '用户发了一条微博："' + weiboContent + '"\n\n';
+    contextText += '你（' + role + '）评论了这条微博，你的原始评论是："' + comment.text + '"\n\n';
+    
     if (comment.replyHistory && comment.replyHistory.length > 0) {
-        contextText = '以下是你们之前的对话历史：\n';
+        contextText += '以下是你们之后的对话历史：\n';
         comment.replyHistory.forEach(function(r) {
-            var sender = r.from === 'user' ? '用户' : comment.author;
+            var sender = r.from === 'user' ? '用户' : role;
             contextText += sender + '：' + r.text + '\n';
         });
-        contextText += '\n请根据以上对话历史，回复用户最新的回复。保持你之前的人设和语气，不要突然转变态度。';
+        contextText += '\n请根据以上所有上下文（微博内容、你的原始评论、对话历史），回复用户最新的回复。保持你之前的人设和语气。如果用户问你问题就回答问题，如果用户在闲聊就继续闲聊，不要跑题。';
+    } else {
+        contextText += '\n请根据微博内容和你的原始评论，回复用户。';
     }
     
+    // 人设 prompt
     var systemPrompt = '';
     var roleDesc = '';
     
     if (role.includes('毒舌') || role.includes('黑粉')) {
         roleDesc = '毒舌黑粉，说话阴阳怪气';
-        systemPrompt = '你是一个毒舌黑粉，说话阴阳怪气。根据对话历史保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
+        systemPrompt = '你是一个毒舌黑粉，说话阴阳怪气。根据上下文保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
     } else if (role.includes('温柔') || role.includes('大姐姐')) {
         roleDesc = '温柔知心大姐姐，说话温柔体贴';
-        systemPrompt = '你是一个温柔知心大姐姐，说话温柔体贴。根据对话历史保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
+        systemPrompt = '你是一个温柔知心大姐姐，说话温柔体贴。根据上下文保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
     } else if (role.includes('冲浪') || role.includes('追星')) {
         roleDesc = '冲浪追星妹，活泼有梗';
-        systemPrompt = '你是一个性格大大咧咧的追星妹，活泼有梗。根据对话历史保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
+        systemPrompt = '你是一个性格大大咧咧的追星妹，活泼有梗。根据上下文保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
     } else if (role.includes('老实人')) {
         roleDesc = '老实人，说"我的妈呀"';
-        systemPrompt = '你是一个老实人，说话淡淡的幽默，喜欢说"我的妈呀"。根据对话历史保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
+        systemPrompt = '你是一个老实人，说话淡淡的幽默，喜欢说"我的妈呀"。根据上下文保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
     } else if (role.includes('小T') || role.includes('智能')) {
         roleDesc = 'AI机器人，超会捧场，全肯定';
-        systemPrompt = '你是一个超会捧场的AI机器人，全肯定。根据对话历史保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
+        systemPrompt = '你是一个超会捧场的AI机器人，全肯定。根据上下文保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
     } else {
         roleDesc = '普通网友';
-        systemPrompt = '你是一个普通网友。根据对话历史保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
+        systemPrompt = '你是一个普通网友。根据上下文保持你的人设和语气。直接输出回复内容。回复要短小精悍，20字以内。';
     }
 
-    var userPrompt = contextText + '\n\n用户最新回复了你："' + comment.replyHistory[comment.replyHistory.length - 1].text + '"\n\n请回复用户。保持你 ' + roleDesc + ' 的人设和语气。';
+    // ✅ 用户最新的回复
+    var lastUserReply = comment.replyHistory && comment.replyHistory.length > 0 
+        ? comment.replyHistory[comment.replyHistory.length - 1].text 
+        : '（用户还没有回复）';
+
+    var userPrompt = contextText + '\n\n用户最新回复了你："' + lastUserReply + '"\n\n请回复用户。保持你 ' + roleDesc + ' 的人设和语气。';
     if (containsZhang) {
         userPrompt += ' 用户微博提到了张桂源。';
     }
@@ -15718,9 +15787,1660 @@ function sendPrivateMessage(userName) {
         alert('✅ 已发送私信给 ' + userName + '：' + msg.trim());
     }
 }
+
+// ================= 论坛数据 =================
+var forumData = [
+    {
+        author: '素萌萌的我呀',
+        content: '四代新公开那个张桂源 长得也就那样吧 实力更是灾难 到底谁在吹',
+        type: 'toxic',
+        likes: 23,
+        replies: [
+            { author: '恋萌癖', text: '你眼睛不要可以捐掉' },
+            { author: '进击的老爹汉堡', text: '你根本不懂养成系的快乐' },
+            { author: '路人甲', text: '你们到底在吵什么' }
+        ]
+    },
+    {
+        author: '恋萌癖',
+        content: '四代丝别太溺爱了 刚公开两天就吹神颜 你们是对神颜有什么误解吗',
+        type: 'toxic',
+        likes: 18,
+        replies: [
+            { author: '兔塑好文明', text: '你管这叫神颜？你见过真正的神颜吗' },
+            { author: '进击的老爹汉堡', text: '他就是最好的 不接受反驳' },
+            { author: '路过群众', text: '你们说的是同一个人吗' }
+        ]
+    },
+    {
+        author: '进击的老爹汉堡',
+        content: '张桂源就是最完美的！！！那个舞台表现力我直接跪下',
+        type: 'love',
+        likes: 45,
+        replies: [
+            { author: '素萌萌的我呀', text: '滤镜八百层厚了吧' },
+            { author: '眼角痣', text: '你开心就好 真的' },
+            { author: '吃瓜中', text: '围观一下 挺热闹的' }
+        ]
+    },
+    {
+        author: 'beng不住了呀',
+        content: '他就是天生爱豆！！才公开几天进步已经这么大了 我真的会哭',
+        type: 'love',
+        likes: 38,
+        replies: [
+            { author: 'simplllle', text: '进步在哪？我反复看了三遍没看出来' },
+            { author: '小猫总粘人', text: '你说进步就进步吧 反正我不信' },
+            { author: '不明真相的网友', text: '你们说的是同一个人吗' }
+        ]
+    },
+    {
+        author: '重庆下小雨',
+        content: '虽然刚公开 但张桂源的舞台表现力已经能看出来一些了 不过现在吹神颜确实有点早',
+        type: 'rational',
+        likes: 30,
+        replies: [
+            { author: '恋萌癖', text: '表现力在哪 我怎么没看见' },
+            { author: '进击的老爹汉堡', text: '你根本不懂舞台表现力' },
+            { author: '路人甲', text: '我觉得说得挺中肯的' }
+        ]
+    },
+    {
+        author: '小猫总粘人',
+        content: '二代粉路过说一句 四代这个水平放二代根本出不了道',
+        type: 'toxic',
+        likes: 27,
+        replies: [
+            { author: '小哭包TT', text: '二代粉又来巡逻了？你管好你家就行' },
+            { author: '进击的老爹汉堡', text: '你拿二代比四代 那你怎么不拿一代比二代呢' },
+            { author: '吃瓜群众', text: '二代粉和四代粉也能吵起来 我服了' }
+        ]
+    },
+    {
+        author: '你又咋了',
+        content: '应援色都要抄二代的？四代是没自己颜色吗',
+        type: 'toxic',
+        likes: 35,
+        replies: [
+            { author: '小哭包TT', text: '应援色是你家注册的？我笑死' },
+            { author: '兔塑好文明', text: '颜色而已 至于吗 四代用一下怎么了' },
+            { author: '朴实的农村人', text: '路过 应援色也能吵 你们是真闲' }
+        ]
+    },
+    {
+        author: '小哭包TT',
+        content: '四代有自己的颜色怎么了？应援色又不是你家专利',
+        type: 'love',
+        likes: 28,
+        replies: [
+            { author: '你又咋了', text: '你管人家用什么颜色 你家颜色申请专利了？' },
+            { author: '小猫总粘人', text: '颜色还能争 我服了' },
+            { author: '路人甲', text: '颜色还能吵起来 我真是服了' }
+        ]
+    },
+    {
+        author: '你又咋了',
+        content: '三代粉说一句 四代现在这水平还是先练练吧 别急着出道',
+        type: 'toxic',
+        likes: 22,
+        replies: [
+            { author: '进击的老爹汉堡', text: '你家心肝能不能出道都是问题 还有心思管四代' },
+            { author: '小哭包TT', text: '三代先出道再说吧 别来指导四代了' },
+            { author: '路人甲', text: '三代粉和四代粉也能吵 我也是服了' }
+        ]
+    },
+    {
+        author: '进击的老爹汉堡',
+        content: '三代粉别来指手画脚了 你家心肝能不能出道都是问题 还有心思管四代',
+        type: 'love',
+        likes: 52,
+        replies: [
+            { author: '你又咋了', text: '你急什么 我说错了吗' },
+            { author: '小猫总粘人', text: '三代还没出道呢 四代就来了 时代峰峻是不是太急了' },
+            { author: '围观群众', text: '你们两家有仇吗 我怎么不知道' }
+        ]
+    },
+    {
+        author: '你喜欢小狗吗',
+        content: '路过 四代这几个小孩看着都挺小的 不知道能不能练出来 先观望吧',
+        type: 'normal',
+        likes: 15,
+        replies: [
+            { author: '素萌萌的我呀', text: '练不出来 别观望了 直接告诉你答案' },
+            { author: '进击的老爹汉堡', text: '我相信他一定可以的！！' },
+            { author: '路人乙', text: '我觉得说得挺中肯的' }
+        ]
+    },
+    {
+        author: '沉默的用户12138',
+        content: '四代开始有物料了？蹲一个 感觉养成系还是得看舞台',
+        type: 'normal',
+        likes: 20,
+        replies: [
+            { author: '恋萌癖', text: '物料出了也是被嘲的命' },
+            { author: 'beng不住了呀', text: '蹲什么蹲 直接来入坑我宝' },
+            { author: '吃瓜中', text: '我也蹲一个 期待舞台' }
+        ]
+    }
+];
+
+// ================= 论坛渲染 =================
+var forumIndex = 0;
+var forumMaxShow = 5;
+var forumLoadedHtml = '';
+var forumAllLoaded = false;
+
+function renderForum(showMore) {
+    var container = document.getElementById('weiboContent');
+    if (!container) return;
+
+    if (!showMore || forumLoadedHtml === '') {
+        forumIndex = 0;
+        forumLoadedHtml = '';
+        forumAllLoaded = false;
+        for (var i = forumData.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = forumData[i];
+            forumData[i] = forumData[j];
+            forumData[j] = temp;
+        }
+    }
+
+    var start = forumIndex;
+    var end = Math.min(forumIndex + forumMaxShow, forumData.length);
+    var showData = forumData.slice(start, end);
+    forumIndex = end;
+
+    if (showData.length === 0) {
+        forumAllLoaded = true;
+        forumLoadedHtml = forumLoadedHtml.replace(/<div id="loadMoreBtnContainer">.*?<\/div>/, '');
+        forumLoadedHtml += '<div style="text-align:center;padding:20px 0;color:#bbb;font-size:13px;">— 已加载全部内容 —</div>';
+        container.innerHTML = forumLoadedHtml;
+        return;
+    }
+
+    var html = '';
+    showData.forEach(function(item) {
+        // ✅ 生成 2022年10月 到 2023年3月 之间的随机时间
+        var randomTime = getRandomTime();
+        
+        var borderColor = '#EFEFEF';
+        if (item.type === 'toxic') borderColor = '#FFE0E0';
+        else if (item.type === 'love') borderColor = '#FFE0F0';
+        else if (item.type === 'rational') borderColor = '#E0F0FF';
+        
+        html += '<div style="background:white;border:1px solid ' + borderColor + ';border-radius:12px;padding:14px;margin-bottom:12px;">';
+        html += '<div style="margin-bottom:8px;">';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
+        html += '<span style="font-weight:600;font-size:14px;color:#1A1A1A;">' + item.author + '</span>';
+        html += '</div>';
+        html += '<div style="font-size:11px;color:#999;margin-bottom:6px;">' + randomTime + '</div>';
+        html += '<div style="font-size:14px;color:#333;white-space:pre-wrap;word-break:break-word;">' + item.content + '</div>';
+        html += '<div style="font-size:12px;color:#999;margin-top:6px;">❤️ ' + item.likes + '  💬 ' + item.replies.length + '</div>';
+        html += '</div>';
+        
+        if (item.replies && item.replies.length > 0) {
+            html += '<div style="background:#FAFAFA;border-radius:8px;padding:8px;margin-top:4px;">';
+            item.replies.forEach(function(reply) {
+                html += '<div style="padding:4px 0;font-size:12px;border-bottom:1px solid #F0F0F0;display:flex;gap:6px;">';
+                html += '<span style="font-weight:600;color:#666;">' + reply.author + '</span>';
+                html += '<span style="color:#333;">：' + reply.text + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+    });
+
+    forumLoadedHtml = forumLoadedHtml.replace(/<div id="loadMoreBtnContainer">.*?<\/div>/, '');
+    forumLoadedHtml += html;
+
+    if (forumIndex < forumData.length) {
+        forumLoadedHtml += '<div id="loadMoreBtnContainer" style="text-align:center;padding:12px 0;">';
+        forumLoadedHtml += '<button onclick="loadMoreForum()" style="padding:8px 24px;background:#E85D75;color:white;border:none;border-radius:20px;font-size:13px;cursor:pointer;">点击加载更多</button>';
+        forumLoadedHtml += '</div>';
+    } else {
+        forumAllLoaded = true;
+        forumLoadedHtml += '<div style="text-align:center;padding:20px 0;color:#bbb;font-size:13px;">— 已加载全部内容 —</div>';
+    }
+
+    container.innerHTML = forumLoadedHtml;
+}
+function loadMoreForum() {
+    var btn = document.getElementById('loadMoreBtnContainer');
+    if (btn) btn.remove();
+
+    if (forumIndex >= forumData.length) {
+        var container = document.getElementById('weiboContent');
+        if (container) {
+            container.innerHTML += '<div style="text-align:center;padding:20px 0;color:#bbb;font-size:13px;">— 已加载全部内容 —</div>';
+        }
+        return;
+    }
+
+    var container = document.getElementById('weiboContent');
+    var html = '';
+    for (var i = forumIndex; i < forumData.length; i++) {
+        var item = forumData[i];
+        // ✅ 生成 2022年10月 到 2023年3月 之间的随机时间
+        var randomTime = getRandomTime();
+        
+        var borderColor = '#EFEFEF';
+        if (item.type === 'toxic') borderColor = '#FFE0E0';
+        else if (item.type === 'love') borderColor = '#FFE0F0';
+        else if (item.type === 'rational') borderColor = '#E0F0FF';
+        
+        html += '<div style="background:white;border:1px solid ' + borderColor + ';border-radius:12px;padding:14px;margin-bottom:12px;">';
+        html += '<div style="margin-bottom:8px;">';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
+        html += '<span style="font-weight:600;font-size:14px;color:#1A1A1A;">' + item.author + '</span>';
+        html += '</div>';
+        html += '<div style="font-size:11px;color:#999;margin-bottom:6px;">' + randomTime + '</div>';
+        html += '<div style="font-size:14px;color:#333;white-space:pre-wrap;word-break:break-word;">' + item.content + '</div>';
+        html += '<div style="font-size:12px;color:#999;margin-top:6px;">❤️ ' + item.likes + '  💬 ' + item.replies.length + '</div>';
+        html += '</div>';
+        
+        if (item.replies && item.replies.length > 0) {
+            html += '<div style="background:#FAFAFA;border-radius:8px;padding:8px;margin-top:4px;">';
+            item.replies.forEach(function(reply) {
+                html += '<div style="padding:4px 0;font-size:12px;border-bottom:1px solid #F0F0F0;display:flex;gap:6px;">';
+                html += '<span style="font-weight:600;color:#666;">' + reply.author + '</span>';
+                html += '<span style="color:#333;">：' + reply.text + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+    }
+    forumIndex = forumData.length;
+    container.innerHTML += html;
+    container.innerHTML += '<div style="text-align:center;padding:20px 0;color:#bbb;font-size:13px;">— 已加载全部内容 —</div>';
+}
+function refreshForum() {
+    forumLoadedHtml = '';
+    forumIndex = 0;
+    forumAllLoaded = false;
+    for (var i = forumData.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = forumData[i];
+        forumData[i] = forumData[j];
+        forumData[j] = temp;
+    }
+    renderForum(false);
+}
+
+function loadMoreForum() {
+    var btnContainer = document.getElementById('loadMoreBtnContainer');
+    if (btnContainer) {
+        btnContainer.remove();
+        console.log('✅ 按钮已移除');
+    }
+    
+    if (forumAllLoaded || forumIndex >= forumData.length) {
+        var container = document.getElementById('weiboContent');
+        if (container) {
+            container.innerHTML += '<div style="text-align:center;padding:20px 0;color:#bbb;font-size:13px;">— 已加载全部内容 —</div>';
+        }
+        return;
+    }
+    renderForum(true);
+}
+// ================= 生成 2022年10月 到 2023年3月 之间的随机时间 =================
+function getRandomTime() {
+    var start = new Date(2022, 9, 1); // 2022年10月1日 (月份从0开始，9=10月)
+    var end = new Date(2023, 2, 31);   // 2023年3月31日 (月份从0开始，2=3月)
+    var randomTime = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    
+    var year = randomTime.getFullYear();
+    var month = String(randomTime.getMonth() + 1).padStart(2, '0');
+    var day = String(randomTime.getDate()).padStart(2, '0');
+    var hour = String(randomTime.getHours()).padStart(2, '0');
+    var minute = String(randomTime.getMinutes()).padStart(2, '0');
+    
+    return year + '年' + month + '月' + day + '日 ' + hour + ':' + minute;
+}
+function refreshForum() {
+    forumLoadedHtml = '';
+    forumIndex = 0;
+    forumAllLoaded = false;
+    for (var i = forumData.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = forumData[i];
+        forumData[i] = forumData[j];
+        forumData[j] = temp;
+    }
+    renderForum(false);
+}
+function loadMoreForum() {
+    if (forumAllLoaded) return;
+    renderForum(true);
+}
+
+function refreshForum() {
+    forumLoadedHtml = '';
+    forumIndex = 0;
+    forumAllLoaded = false;
+    for (var i = forumData.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = forumData[i];
+        forumData[i] = forumData[j];
+        forumData[j] = temp;
+    }
+    renderForum(false);
+}
+
+function loadMoreForum() {
+    renderForum(true);
+}
+
+function refreshForum() {
+    forumLoadedHtml = '';
+    forumIndex = 0;
+    for (var i = forumData.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = forumData[i];
+        forumData[i] = forumData[j];
+        forumData[j] = temp;
+    }
+    renderForum(false);
+}
+
+// 论坛 Tab 切换时调用
+renderForum(false);
 // 清除 localStorage 中残留的微博数据（仅执行一次）
 localStorage.removeItem('allMyWeibo');
 loadBlockedUsers();
+// 强制设置成就区域宽度
+setTimeout(function() {
+    var section = document.getElementById('achievementSection');
+    if (section) {
+        section.style.cssText = 'margin-top:12px;background:#F8F8F8;border-radius:20px;padding:16px;display:block;width:100%;box-sizing:border-box;';
+    }
+    var list = document.getElementById('achievementList');
+    if (list) {
+        list.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px 0;scrollbar-width:thin;-webkit-overflow-scrolling:touch;width:100%;box-sizing:border-box;';
+    }
+}, 300);
+// ================= 强制执行成就区域宽度（硬代码） =================
+function forceAchievementWidth() {
+    var section = document.getElementById('achievementSection');
+    var list = document.getElementById('achievementList');
+    
+    if (section) {
+        section.style.cssText = 'margin-top:12px;background:#F8F8F8;border-radius:20px;padding:16px;display:block;width:100% !important;box-sizing:border-box !important;max-width:100% !important;';
+    }
+    if (list) {
+        list.style.cssText = 'display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px 0;scrollbar-width:thin;-webkit-overflow-scrolling:touch;width:100% !important;box-sizing:border-box !important;max-width:100% !important;';
+    }
+}
+
+// 立即执行
+forceAchievementWidth();
+
+// 每次切换到我的页面时执行
+var originalSwitchPage = window.switchPage;
+if (originalSwitchPage) {
+    window.switchPage = function(pageId) {
+        originalSwitchPage(pageId);
+        if (pageId === 'my') {
+            setTimeout(forceAchievementWidth, 100);
+            setTimeout(forceAchievementWidth, 500);
+        }
+    };
+}
+
+// 每2秒检测一次（持续10秒）
+var checkCount = 0;
+var checkInterval = setInterval(function() {
+    forceAchievementWidth();
+    checkCount++;
+    if (checkCount > 5) {
+        clearInterval(checkInterval);
+    }
+}, 2000);
+
+console.log('✅ 成就区域宽度强制修复已启动');
+function showCompanySchedule() {
+    if (!chapterCompleted) {
+        alert("完成第一章剧情后才能查看艺人行程");
+        return;
+    }
+
+    // ✅ 重新获取最新的 meetCount
+    var currentMeetCount = meetCount || 0;
+    var remainingMeets = maxMeet - currentMeetCount;
+
+    var currentSchedule = [
+        { time: "9:00", activity: "起床", location: "宿舍" },
+        { time: "10:00", activity: "声乐课", location: "公司练习室" },
+        { time: "12:00", activity: "午餐", location: "公司食堂" },
+        { time: "13:30", activity: "舞蹈练习", location: "练习室" },
+        { time: "15:30", activity: "体能训练", location: "健身房" },
+        { time: "17:30", activity: "休息", location: "休息室" },
+        { time: "19:00", activity: "晚餐", location: "公司食堂" },
+        { time: "20:00", activity: "自主练习", location: "练习室" },
+        { time: "21:30", activity: "结束训练", location: "回宿舍" }
+    ];
+
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    var meetButtonsHtml = currentSchedule.map(function(s) {
+        // ✅ 使用 currentMeetCount 判断
+        var disabled = currentMeetCount >= maxMeet ? 'disabled' : '';
+        var btnStyle = currentMeetCount >= maxMeet ? 'background:#CCC;cursor:not-allowed;' : 'background:#E85D75;cursor:pointer;';
+        return `
+            <tr>
+                <td style="padding:8px; border-bottom:1px solid #EFEFEF;">${s.time}</td>
+                <td style="padding:8px; border-bottom:1px solid #EFEFEF;">${s.activity}</td>
+                <td style="padding:8px; border-bottom:1px solid #EFEFEF;">${s.location}</td>
+                <td style="padding:8px; border-bottom:1px solid #EFEFEF;">
+                    <button class="meet-btn" data-time="${s.time}" ${disabled}
+                    style="color:white; border:none; padding:4px 12px; border-radius:20px; font-size:12px; ${btnStyle}">
+                        偶遇
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:28px;padding:24px 20px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">张桂源行程</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+            <div style="margin-bottom:12px; padding:8px; background:#FFF0F5; border-radius:12px;">
+                <span>📌 今日剩余偶遇次数：${remainingMeets} / ${maxMeet}</span>
+            </div>
+            <table style="width:100%; border-collapse:collapse;">
+                <tr style="background:#F8F8F8;">
+                    <th style="padding:8px; text-align:left;">时间</th>
+                    <th style="padding:8px; text-align:left;">行程</th>
+                    <th style="padding:8px; text-align:left;">地点</th>
+                    <th style="padding:8px; text-align:left;"></th>
+                </tr>
+                ${meetButtonsHtml}
+            </table>
+            <div id="meetResult" style="margin-top:16px; padding:12px; background:#F8F8F8; border-radius:12px; min-height:60px;">
+                <span style="color:#999;">点击上方按钮进行偶遇</span>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // ✅ 绑定偶遇按钮事件
+    modal.querySelectorAll(".meet-btn").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+             if (!consumeStamina(1)) return;
+            // ✅ 再次检查
+            if (meetCount >= maxMeet) {
+                document.getElementById("meetResult").innerHTML = "<span style='color:#E85D75;'>⚠️ 今日偶遇次数已用完，请明天再来</span>";
+                return;
+            }
+
+            var event = getRandomMeetEvent();
+            meetCount++;
+
+            var resultHtml = "";
+            if (event.success) {
+                player.love += event.loveAdd;
+                resultHtml = "<span style='color:#4CAF50;'>✨ 偶遇成功！</span><br>" + event.text + "<br><span style='color:#4CAF50;'>❤️ 好感 +" + event.loveAdd + "</span>";
+            } else {
+                if (event.exposeAdd > 0) {
+                    player.expose += event.exposeAdd;
+                    resultHtml = "<span style='color:#E85D75;'>⚠️ 偶遇失败！</span><br>" + event.text + "<br><span style='color:#E85D75;'>⚠️ 暴露值 +" + event.exposeAdd + "</span>";
+                } else {
+                    resultHtml = "<span style='color:#FF9800;'>😢 没有遇到他</span><br>" + event.text + "<br><span style='color:#FF9800;'>数值不变</span>";
+                }
+            }
+
+            // ✅ 更新剩余次数显示
+            var remainingSpan = modal.querySelector("div:first-child span");
+            if (remainingSpan) {
+                var newRemaining = maxMeet - meetCount;
+                remainingSpan.innerText = "📌 今日剩余偶遇次数：" + newRemaining + " / " + maxMeet;
+            }
+
+            document.getElementById("meetResult").innerHTML = resultHtml;
+            renderMyPage();
+
+            btn.disabled = true;
+            btn.style.background = "#CCC";
+            btn.style.cursor = "not-allowed";
+
+            if (meetCount >= maxMeet) {
+                modal.querySelectorAll(".meet-btn").forEach(function(b) {
+                    b.disabled = true;
+                    b.style.background = "#CCC";
+                    b.style.cursor = "not-allowed";
+                });
+            }
+        });
+    });
+
+    modal.querySelector(".close-modal").onclick = function() {
+        modal.remove();
+    };
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+// ================= 我的余额（完整版） =================
+function showBalance() {
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    // 从 localStorage 读取收支记录
+    var transactions = [];
+    try {
+        var saved = localStorage.getItem('transactions');
+        if (saved) {
+            transactions = JSON.parse(saved);
+        }
+    } catch(e) {
+        transactions = [];
+    }
+
+    // 如果没有记录，显示默认示例
+    if (transactions.length === 0) {
+        transactions = [
+            { type: '收入', amount: 100, desc: '初始资金', time: '2024-01-01 00:00' }
+        ];
+    }
+
+    // 按时间倒序排列（最新的在前）
+    transactions.sort(function(a, b) {
+        return new Date(b.time) - new Date(a.time);
+    });
+
+    // 只显示最近20条
+    var displayTransactions = transactions.slice(0, 20);
+
+    var transactionsHtml = displayTransactions.map(function(t) {
+        var color = t.type === '收入' ? '#4CAF50' : '#E85D75';
+        var sign = t.type === '收入' ? '+' : '-';
+        var typeLabel = t.type === '收入' ? '💰 收入' : '💸 支出';
+        return `
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F5F5F5;font-size:13px;align-items:center;">
+                <div>
+                    <span style="color:#333;">${t.desc}</span>
+                    <span style="font-size:11px;color:#999;display:block;margin-top:2px;">${t.time}</span>
+                </div>
+                <span style="color:${color};font-weight:600;font-size:15px;">${sign}${t.amount}</span>
+            </div>
+        `;
+    }).join('');
+
+    var totalIncome = 0;
+    var totalExpense = 0;
+    transactions.forEach(function(t) {
+        if (t.type === '收入') totalIncome += t.amount;
+        else totalExpense += t.amount;
+    });
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:28px;padding:24px 20px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">💰 我的余额</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+
+            <div style="text-align:center;padding:16px 0;background:linear-gradient(135deg,#FFF5F7,#FFF0F5);border-radius:16px;margin-bottom:16px;">
+                <div style="font-size:13px;color:#999;">当前余额</div>
+                <div style="font-size:40px;font-weight:700;color:#E85D75;">${player.money}</div>
+            </div>
+
+            <div style="display:flex;gap:12px;margin-bottom:16px;">
+                <div style="flex:1;text-align:center;padding:10px;background:#F0FFF4;border-radius:12px;">
+                    <div style="font-size:11px;color:#999;">总收入</div>
+                    <div style="font-size:18px;font-weight:700;color:#4CAF50;">+${totalIncome}</div>
+                </div>
+                <div style="flex:1;text-align:center;padding:10px;background:#FFF5F5;border-radius:12px;">
+                    <div style="font-size:11px;color:#999;">总支出</div>
+                    <div style="font-size:18px;font-weight:700;color:#E85D75;">-${totalExpense}</div>
+                </div>
+            </div>
+
+            <div style="font-size:14px;font-weight:600;color:#666;margin-bottom:8px;">📋 收支记录</div>
+            <div style="background:#F8F8F8;border-radius:12px;padding:8px 12px;max-height:250px;overflow-y:auto;">
+                ${transactionsHtml}
+            </div>
+
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:16px;width:100%;padding:10px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;">知道了</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+// ================= 添加收支记录（工具函数） =================
+function addTransaction(type, amount, desc) {
+    var transactions = [];
+    try {
+        var saved = localStorage.getItem('transactions');
+        if (saved) {
+            transactions = JSON.parse(saved);
+        }
+    } catch(e) {
+        transactions = [];
+    }
+
+    var now = new Date();
+    var timeStr = now.getFullYear() + '-' + 
+                  String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                  String(now.getDate()).padStart(2, '0') + ' ' +
+                  String(now.getHours()).padStart(2, '0') + ':' +
+                  String(now.getMinutes()).padStart(2, '0');
+
+    transactions.push({
+        type: type,
+        amount: amount,
+        desc: desc,
+        time: timeStr
+    });
+
+    // 只保留最近100条
+    if (transactions.length > 100) {
+        transactions = transactions.slice(-100);
+    }
+
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+}
+// ================= 地图点击处理 =================
+function handleMapClick(location) {
+    if (location === 'home') {
+        openHomePage();
+    } else if (location === 'school') {
+        openSchoolPage();
+    } else if (location === 'out') {
+        openParkPage();
+    } else if (location === 'goout') {
+        alert('🚗 外出功能开发中，敬请期待~');
+    } else {
+        alert('📍 该地点功能开发中，敬请期待~');
+    }
+}
+// ================= 学校页面 =================
+function openSchoolPage() {
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:28px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="text-align:center;margin-bottom:20px;">
+                <div style="font-size:36px;margin-bottom:8px;">🏫</div>
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">学校</div>
+                <div style="font-size:12px;color:#999;margin-top:4px;">你想做什么？</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <button class="school-option" data-action="classroom" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">📚</span>
+                    <span>教室</span>
+                </button>
+                <button class="school-option" data-action="canteen" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">🍜</span>
+                    <span>食堂</span>
+               
+                <button class="school-option" data-action="library" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+    <span style="font-size:22px;">📚</span>
+    <span>图书馆</span>
+</button>
+            </div>
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:16px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">关闭</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 绑定按钮事件
+    modal.querySelectorAll(".school-option").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            var action = this.dataset.action;
+            modal.remove();
+            // 在 openSchoolPage 函数中，找到 classroom 的点击事件
+             if (action === 'classroom') {
+               openClassroomEvents();
+             } else if (action === 'canteen') {
+                alert('🍜 食堂功能开发中，敬请期待~');
+            
+            } else if (action === 'library') {
+            openLibraryEvents();  // ✅ 调用图书馆事件
+        }
+        });
+    });
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+// ================= 家页面 =================
+function openHomePage() {
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:28px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="text-align:center;margin-bottom:20px;">
+                <div style="font-size:36px;margin-bottom:8px;">🏠</div>
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">家</div>
+                <div style="font-size:12px;color:#999;margin-top:4px;">你想做什么？</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <button class="home-option" data-action="takeout" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">🍱</span>
+                    <span>点外卖</span>
+                </button>
+                <button class="home-option" data-action="sleep" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">😴</span>
+                    <span>睡大觉</span>
+                </button>
+            </div>
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:16px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">关闭</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 绑定按钮事件
+    modal.querySelectorAll(".home-option").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            var action = this.dataset.action;
+            modal.remove();
+            if (action === 'takeout') {
+                alert('🍱 点外卖功能开发中，敬请期待~');
+            } else if (action === 'sleep') {
+                alert('😴 睡大觉功能开发中，敬请期待~');
+            }
+        });
+    });
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+// ================= 公园页面 =================
+function openParkPage() {
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:28px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="text-align:center;margin-bottom:20px;">
+                <div style="font-size:36px;margin-bottom:8px;">🌳</div>
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">公园</div>
+                <div style="font-size:12px;color:#999;margin-top:4px;">你想做什么？</div>
+            </div>
+          
+                <button class="park-option" data-action="wander" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">🚶</span>
+                    <span>闲逛</span>
+                </button>
+            </div>
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:16px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">关闭</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 绑定按钮事件
+    modal.querySelectorAll(".park-option").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            var action = this.dataset.action;
+            modal.remove();
+            if (action === 'beg') {
+                alert('🙏 乞讨功能开发中，敬请期待~');
+            } else if (action === 'wander') {
+                openParkWanderEvents();  // ✅ 调用公园闲逛事件
+            }
+        });
+    });
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+// ================= 教室随机事件 =================
+function openClassroomEvents() {
+     if (!consumeStamina(1)) return;
+    var events = [
+        {
+            text: "老师在讲台上念课文，你听着听着就睡着了，被同桌推醒。",
+            stressChange: -5,
+            wiseChange: 0,
+            loveChange: 0
+        },
+        {
+            text: "突然小测验！你赶紧拿出笔，还好昨晚复习过，轻松过关。",
+            stressChange: -3,
+            wiseChange: 5,
+            loveChange: 0
+        },
+        {
+    text: "你偷偷玩手机，被老师发现了！手机被没收，还要叫家长。",
+    stressChange: 10,
+    wiseChange: -3,
+    loveChange: 0,
+    darkChange: 3
+},
+        {
+            text: "讲语文测试卷时找不到卷子了，同桌那也没有",
+            stressChange: 5,
+            wiseChange: -2,
+            loveChange: 0
+        },
+        {
+            text: "同桌带了超香的零食，你饿得肚子咕咕叫，和同桌享受美食。",
+            stressChange: -3,
+            wiseChange: 0,
+            loveChange: 0
+        },
+        {
+            text: "昨晚熬夜追剧，今天上课困得不行，老师讲什么都没听进去。",
+            stressChange: 5,
+            wiseChange: -5,
+            loveChange: 0
+        },
+        {
+            text: "语文课上你被点名朗读课文，你虽然紧张但读得很流利，老师当众表扬了你。",
+            stressChange: -5,
+            wiseChange: 3,
+            loveChange: 0
+        },
+        {
+            text: "在英语的知识海洋中遨游",
+            stressChange: -2,
+            wiseChange: 5,
+            loveChange: 0
+        },
+        {
+            text: "数学作业忘写了，老师要检查，你急得像热锅上的蚂蚁。",
+            stressChange: 8,
+            wiseChange: -2,
+            loveChange: 0
+        },
+        {
+    text: "你在草稿纸上无意识写下张桂源名字，被同学抢过去看，你红着脸抢回来。",
+    stressChange: 5,
+    wiseChange: -2,
+    loveChange: 2,
+    exposeChange: 5
+},
+        {
+            text: "大课间你趴在桌上补觉，醒来发现教室里只剩你一个人，一看表已经迟到下一节课了。",
+            stressChange: 6,
+            wiseChange: -2,
+            loveChange: 0
+        },
+        {
+            text: "数学课被老师抽问，被同学提醒后成功回答了问题",
+            stressChange: -3,
+            wiseChange: 2,
+            loveChange: 3
+        },
+        {
+            text: "你看着窗外发呆，忽然很想张桂源",
+            stressChange: -3,
+            wiseChange: 0,
+            loveChange: 2
+        },
+        {
+            text: "认真学习，整节课破天荒没有走神",
+            stressChange: 0,
+            wiseChange: 5,
+            loveChange: 2
+        },
+        {
+            text: "下周要月考了，你突然意识到自己什么都不会，开始疯狂复习。",
+            stressChange: 5,
+            wiseChange: 8,
+            loveChange: 0
+        },
+        {
+            text: "课桌里突然多了一堆糖，上面贴着一张纸条：'上次觉得好吃就多买了点，吃不完了。'",
+            stressChange: -3,
+            wiseChange: 0,
+            loveChange: 2
+        },
+        {
+            text: "班会课要表演节目，你被推上去唱歌，紧张得跑调了",
+            stressChange: 4,
+            wiseChange: 0,
+            loveChange: 0
+        },
+        {
+            text: "课前认真预习了作业，上课十分认真",
+            stressChange: -2,
+            wiseChange: 3,
+            loveChange: 0
+        },
+        {
+            text: "政治老师的声音像催眠曲，你彻底睡着了",
+            stressChange: -2,
+            wiseChange: 0,
+            loveChange: 0
+        }
+    ];
+
+    // 随机选择一个事件
+    var event = events[Math.floor(Math.random() * events.length)];
+
+        // 应用数值变化（带压力修正）
+    var changes = [];
+    if (event.stressChange !== 0) {
+        var isGood = event.stressChange < 0; // 减少压力是好事
+        var modified = applyStressModifier(event.stressChange, isGood);
+        player.stress = Math.min(100, Math.max(0, player.stress + modified));
+        changes.push('压力 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    if (event.wiseChange !== 0) {
+        var isGood = event.wiseChange > 0; // 增加智慧是好事
+        var modified = applyStressModifier(event.wiseChange, isGood);
+        player.wise = Math.min(100, Math.max(0, player.wise + modified));
+        changes.push('智慧 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    if (event.loveChange !== 0) {
+        var isGood = event.loveChange > 0;
+        var modified = applyStressModifier(event.loveChange, isGood);
+        player.love = Math.min(100, Math.max(0, player.love + modified));
+        changes.push('好感 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    if (event.darkChange) {
+        var isGood = false; // 黑化是坏属性
+        var modified = applyStressModifier(event.darkChange, isGood);
+        player.dark = Math.min(100, Math.max(0, player.dark + modified));
+        changes.push('黑化 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    if (event.exposeChange) {
+        var isGood = false; // 暴露是坏属性
+        var modified = applyStressModifier(event.exposeChange, isGood);
+        player.expose = Math.min(100, Math.max(0, player.expose + modified));
+        changes.push('暴露 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    // 刷新界面
+    renderMyPage();
+
+    // 显示结果弹窗（content只显示事件描述，infoLines显示属性变化）
+    showResultModal('教室事件', event.text, changes);
+}
+
+// ================= 食堂随机事件 =================
+function openCanteenEvents() {
+     if (!consumeStamina(1)) return;
+    var events = [
+        {
+    text: "你在食堂吃饭，突然在菜里发现了一条青虫！你吓得把饭都打翻了。",
+    stressChange: 5,
+    wiseChange: 0,
+    loveChange: 0,
+    darkChange: 2
+},
+        {
+            text: "今天食堂做了你最爱的红烧肉，你打了满满一盘，吃得特别满足。",
+            stressChange: -3,
+            wiseChange: 0,
+            loveChange: 0
+        },
+        {
+            text: "食堂阿姨今天手不抖，给你打了超级多的菜，你吃到撑。",
+            stressChange: -2,
+            wiseChange: 0,
+            loveChange: 0
+        },
+        {
+            text: "食堂今天的菜特别难吃，你扒拉了两口就吃不下了，饿了一下午。",
+            stressChange: 3,
+            wiseChange: -2,
+            loveChange: 0
+        },
+        {
+            text: "你排队打饭的时候，张桂源突然出现在你后面，拍了拍你肩膀说'好久不见'，你差点把餐盘扔出去。",
+            stressChange: -3,
+            wiseChange: 0,
+            loveChange: 2
+        }
+    ];
+
+    // 随机选择一个事件
+    var event = events[Math.floor(Math.random() * events.length)];
+
+        // 应用数值变化（带压力修正）
+    var changes = [];
+    if (event.stressChange !== 0) {
+        var isGood = event.stressChange < 0;
+        var modified = applyStressModifier(event.stressChange, isGood);
+        player.stress = Math.min(100, Math.max(0, player.stress + modified));
+        changes.push('压力 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    if (event.wiseChange !== 0) {
+        var isGood = event.wiseChange > 0;
+        var modified = applyStressModifier(event.wiseChange, isGood);
+        player.wise = Math.min(100, Math.max(0, player.wise + modified));
+        changes.push('智慧 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    if (event.loveChange !== 0) {
+        var isGood = event.loveChange > 0;
+        var modified = applyStressModifier(event.loveChange, isGood);
+        player.love = Math.min(100, Math.max(0, player.love + modified));
+        changes.push('好感 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    if (event.darkChange) {
+        var isGood = false;
+        var modified = applyStressModifier(event.darkChange, isGood);
+        player.dark = Math.min(100, Math.max(0, player.dark + modified));
+        changes.push('黑化 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    // 刷新界面
+    renderMyPage();
+
+    // 显示结果弹窗
+    showResultModal('食堂事件', event.text, changes);
+}
+// ================= 图书馆随机事件 =================
+function openLibraryEvents() {
+     if (!consumeStamina(1)) return;
+    var events = [
+        {
+            text: "📖 你在图书馆找到了一本很难找的参考书，认真研读了一下午，收获满满。",
+            stressChange: -3,
+            wiseChange: 10,
+            loveChange: 0
+        },
+        {
+            text: "📚 你在图书馆角落安静地看了一整天的书，感觉知识都进脑子了。",
+            stressChange: -2,
+            wiseChange: 10,
+            loveChange: 0
+        },
+        {
+            text: "📕 你在图书馆复习的时候，张桂源正好坐在你对面，你俩安静地看了一下午书，临走时他朝你笑了一下。",
+            stressChange: -5,
+            wiseChange: 10,
+            loveChange: 3
+        }
+    ];
+
+    // 随机选择一个事件
+    var event = events[Math.floor(Math.random() * events.length)];
+
+        // 应用数值变化（带压力修正）
+    var changes = [];
+    if (event.stressChange !== 0) {
+        var isGood = event.stressChange < 0;
+        var modified = applyStressModifier(event.stressChange, isGood);
+        player.stress = Math.min(100, Math.max(0, player.stress + modified));
+        changes.push('压力 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    if (event.wiseChange !== 0) {
+        var isGood = event.wiseChange > 0;
+        var modified = applyStressModifier(event.wiseChange, isGood);
+        player.wise = Math.min(100, Math.max(0, player.wise + modified));
+        changes.push('智慧 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    if (event.loveChange !== 0) {
+        var isGood = event.loveChange > 0;
+        var modified = applyStressModifier(event.loveChange, isGood);
+        player.love = Math.min(100, Math.max(0, player.love + modified));
+        changes.push('好感 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    // 刷新界面
+    renderMyPage();
+
+    // 显示结果弹窗
+    showResultModal('📚 图书馆事件', event.text, changes);
+}
+// ================= 公园闲逛随机事件 =================
+function openParkWanderEvents() {
+     if (!consumeStamina(1)) return;
+    var events = [
+        {
+            text: "🌳 你在公园的湖边散步，微风吹来，心情格外舒畅。",
+            stressChange: -5,
+            wiseChange: 0,
+            loveChange: 1
+        },
+        {
+            text: "🌸 你在公园里看到一群小朋友在放风筝，你坐在长椅上看了很久。",
+            stressChange: -4,
+            wiseChange: 0,
+            loveChange: 1
+        },
+        {
+            text: "🏀 你在公园闲逛，看到张桂源一个人在打篮球，你远远看了一会儿就走了。",
+            stressChange: -5,
+            wiseChange: 0,
+            loveChange: 3,
+            exposeChange: 2
+        },
+        {
+            text: "🍦 你在公园门口买了个冰淇淋，坐在长椅上慢慢吃，遇到遛狗的阿姨夸你可爱。",
+            stressChange: -4,
+            wiseChange: 0,
+            loveChange: 1
+        },
+        {
+            text: "🌅 你在公园散步时偶遇张桂源，他正好训练完在公园透气，你们一起走了半圈，聊了很多。",
+            stressChange: -6,
+            wiseChange: 0,
+            loveChange: 4,
+            exposeChange: 3
+        },
+        {
+            text: "🌿 你在公园的草坪上躺着晒太阳，什么都不想，舒服得差点睡着了。",
+            stressChange: -6,
+            wiseChange: 0,
+            loveChange: 0
+        },
+        {
+            text: "🎵 公园有人在弹吉他唱歌，你坐在旁边听了好一会儿，感觉整个人都被治愈了。",
+            stressChange: -5,
+            wiseChange: 0,
+            loveChange: 1
+        }
+    ];
+
+    // 随机选择一个事件
+    var event = events[Math.floor(Math.random() * events.length)];
+
+        // 应用数值变化（带压力修正）
+    var changes = [];
+    if (event.stressChange !== 0) {
+        var isGood = event.stressChange < 0;
+        var modified = applyStressModifier(event.stressChange, isGood);
+        player.stress = Math.min(100, Math.max(0, player.stress + modified));
+        changes.push('压力 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    if (event.loveChange !== 0) {
+        var isGood = event.loveChange > 0;
+        var modified = applyStressModifier(event.loveChange, isGood);
+        player.love = Math.min(100, Math.max(0, player.love + modified));
+        changes.push('好感 ' + (modified > 0 ? '+' : '') + modified);
+    }
+    if (event.exposeChange) {
+        var isGood = false;
+        var modified = applyStressModifier(event.exposeChange, isGood);
+        player.expose = Math.min(100, Math.max(0, player.expose + modified));
+        changes.push('暴露 ' + (modified > 0 ? '+' : '') + modified);
+    }
+
+    // 刷新界面
+    renderMyPage();
+
+    // 显示结果弹窗
+    showResultModal('🌳 公园闲逛', event.text, changes);
+}
+// ================= 体力系统 =================
+function getStamina() {
+    return player.stamina || 0;
+}
+
+function setStamina(value) {
+    player.stamina = Math.min(15, Math.max(0, value));
+    updateStaminaDisplay();
+}
+
+function consumeStamina(cost) {
+    if (player.stamina < cost) {
+        alert('😰 体力已耗尽！休息一下再玩吧~');
+        return false;
+    }
+    player.stamina -= cost;
+    updateStaminaDisplay();
+    return true;
+}
+
+function updateStaminaDisplay() {
+    var display = document.getElementById('staminaDisplay');
+    if (display) {
+        display.textContent = '⚡ ' + player.stamina + '/15';
+    }
+}
+// ================= 任务页面 =================
+function openTaskPage() {
+    // 每次都重新读取 localStorage，确保数据最新
+    var chatDone = localStorage.getItem('zhang_dialogue_done') === 'true';
+
+    var wiseDone = player.wise >= 30;
+    var moneyDone = player.money >= 120;
+    var meetDone = meetCount >= 3;
+    var stressDone = player.stress < 50;
+
+    var allDone = wiseDone && moneyDone && meetDone && stressDone && chatDone;
+
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:28px;padding:24px 20px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">📋 第一章任务</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+            <div style="margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EFEFEF;">
+                    <span>📖 智慧达到30以上</span>
+                    <span style="color:${wiseDone ? '#4CAF50' : '#999'};">${wiseDone ? '✅ 已完成' : '❌ 未完成 (当前:' + player.wise + ')'}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EFEFEF;">
+                    <span>💰 金钱大于120</span>
+                    <span style="color:${moneyDone ? '#4CAF50' : '#999'};">${moneyDone ? '✅ 已完成' : '❌ 未完成 (当前:' + player.money + ')'}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EFEFEF;">
+                    <span>🏢 完成所有偶遇（公司）</span>
+                    <span style="color:${meetDone ? '#4CAF50' : '#999'};">${meetDone ? '✅ 已完成' : '❌ 未完成 (' + meetCount + '/3)'}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EFEFEF;">
+                    <span>😌 压力小于50</span>
+                    <span style="color:${stressDone ? '#4CAF50' : '#999'};">${stressDone ? '✅ 已完成' : '❌ 未完成 (当前:' + player.stress + ')'}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EFEFEF;">
+                    <span>💬 完成与张桂源的对话</span>
+                    <span style="color:${chatDone ? '#4CAF50' : '#999'};">${chatDone ? '✅ 已完成' : '❌ 未完成'}</span>
+                </div>
+            </div>
+            <div style="text-align:center;padding:12px;background:${allDone ? '#E8F5E9' : '#FFF3E0'};border-radius:12px;margin-top:8px;">
+                <span style="font-weight:600;color:${allDone ? '#4CAF50' : '#FF9800'};">
+                    ${allDone ? '🎉 恭喜！所有任务已完成！张桂源会联系你哦~ 💬' : '📌 继续加油完成所有任务吧！'}
+                </span>
+            </div>
+            <button onclick="closeTaskAndCheckTrigger()" style="margin-top:16px;width:100%;padding:10px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;">知道了</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+// ================= 关闭任务并检查触发 =================
+function closeTaskAndCheckTrigger() {
+    // 关闭任务弹窗
+    var modal = document.querySelector('.full-modal');
+    if (modal) modal.remove();
+
+    // 检查是否所有任务已完成
+    var chatDone = localStorage.getItem('zhang_dialogue_done') === 'true';
+    var wiseDone = player.wise >= 30;
+    var moneyDone = player.money >= 120;
+    var meetDone = meetCount >= 3;
+    var stressDone = player.stress < 50;
+    var allDone = wiseDone && moneyDone && meetDone && stressDone && chatDone;
+
+    if (allDone) {
+        var triggerKey = 'chapter1_all_tasks_triggered';
+        // ✅ 如果已经触发过，清除标记重新触发
+        if (localStorage.getItem(triggerKey)) {
+            localStorage.removeItem(triggerKey);
+            console.log('✅ 已清除旧触发标记，重新触发');
+        }
+        // 设置标记并触发
+        localStorage.setItem(triggerKey, 'true');
+        setTimeout(function() {
+            triggerZhangCustomChat();
+        }, 500);
+    }
+}
+// ================= 触发张桂源自定义聊天 =================
+function triggerZhangCustomChat() {
+    // 先把"想我没"消息添加到聊天记录
+    var date = new Date().toLocaleDateString();
+    var hasMsg = false;
+    if (chatData['张桂源'] && chatData['张桂源'].messages) {
+        for (var i = 0; i < chatData['张桂源'].messages.length; i++) {
+            if (chatData['张桂源'].messages[i].text === '想我没') {
+                hasMsg = true;
+                break;
+            }
+        }
+    }
+    if (!hasMsg) {
+        chatData['张桂源'].messages.push({
+            from: 'other',
+            text: '想我没',
+            time: '现在',
+            avatar: '🏀',
+            date: date,
+            read: false
+        });
+        chatData['张桂源'].roundCompleted = false;
+        renderChatMessages();
+        renderChatList();
+    }
+
+    var displayName = getContactDisplayName('张桂源');
+    showMessageNotification(
+        '张桂源',
+        '<img src="zgyweixin.png" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">',
+        displayName,
+        '想我没',
+        function() {
+            switchPage('chat');
+            setTimeout(function() {
+                openChat('张桂源');
+                setTimeout(function() {
+                    // ✅ 强制解锁输入框
+                    zhangWaitingForOption = false;
+                    chatData['张桂源'].roundCompleted = false;
+
+                    var inputBox = document.getElementById('chatInputBox');
+                    if (inputBox) {
+                        inputBox.innerText = '';
+                        inputBox.style.cssText = 'flex:1;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:18px;background:rgba(255,255,255,0.85);color:#333;font-size:14px;outline:none;min-height:32px;cursor:text;pointer-events:auto;';
+                        inputBox.contentEditable = 'true';
+                        inputBox.focus();
+                        // ✅ 关键：清除旧的点击事件
+                        inputBox.onclick = null;
+                        // ✅ 绑定键盘事件
+                        inputBox.onkeydown = function(e) {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                sendCustomMessage();
+                            }
+                        };
+                    }
+                    var plusBtn = document.getElementById('chatPlusBtn');
+                    if (plusBtn) {
+                        var newPlusBtn = plusBtn.cloneNode(true);
+                        plusBtn.parentNode.replaceChild(newPlusBtn, plusBtn);
+                        newPlusBtn.onclick = function() {
+                            sendCustomMessage();
+                        };
+                    }
+                }, 300);
+            }, 300);
+        }
+    );
+}
+// ================= 发送自定义消息（带 AI 回复） =================
+function sendCustomMessage() {
+    var inputBox = document.getElementById('chatInputBox');
+    if (!inputBox) return;
+
+    var text = inputBox.innerText.trim();
+    if (!text || text === '输入消息...') {
+        alert('请输入内容');
+        return;
+    }
+
+    var date = new Date().toLocaleDateString();
+
+    // 保存玩家消息
+    var userMessage = text;
+
+    // 发送玩家消息
+    chatData['张桂源'].messages.push({
+        from: 'me',
+        text: userMessage,
+        time: getCurrentTime(),
+        avatar: '🐰',
+        date: date,
+        read: true
+    });
+
+    // 清空输入框
+    inputBox.innerText = '';
+    renderChatMessages();
+    renderChatList();
+
+    // 调用 AI
+    callZhangGuiyuanAI(userMessage, function(aiReply) {
+        // 清理 AI 回复：去掉"张桂源："前缀
+        var cleanReply = aiReply;
+        cleanReply = cleanReply.replace(/^张桂源[：:]\s*/g, '');
+        cleanReply = cleanReply.replace(/张桂源[：:]\s*/g, '');
+
+        // 按行分割成多条消息
+        var lines = cleanReply.split('\n').filter(function(line) {
+            return line.trim() !== '';
+        });
+
+        if (lines.length === 0) {
+            lines = [cleanReply];
+        }
+
+        // 逐条发送消息，每条前显示"正在输入..."
+        var msgIndex = 0;
+
+        function sendNextMessage() {
+            if (msgIndex >= lines.length) {
+                return;
+            }
+
+            var msgText = lines[msgIndex].trim();
+            msgText = msgText.replace(/^张桂源[：:]\s*/g, '');
+
+            if (!msgText) {
+                msgIndex++;
+                setTimeout(sendNextMessage, 100);
+                return;
+            }
+
+            // ✅ 显示"对方正在输入..."
+            var container = document.getElementById('chatMessages');
+            var typingRow = document.createElement('div');
+            typingRow.className = 'message-row';
+            typingRow.style.justifyContent = 'flex-start';
+            typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+            container.appendChild(typingRow);
+            container.scrollTop = container.scrollHeight;
+
+            // ✅ 随机延迟 500-1200ms，模拟真实打字速度
+            var typingDelay = Math.floor(Math.random() * 700) + 500;
+
+            setTimeout(function() {
+                // 移除"正在输入..."
+                if (typingRow && typingRow.parentNode) {
+                    typingRow.remove();
+                }
+
+                // ✅ 获取当前时间作为发送时间
+                var now = new Date();
+                var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+                // 发送消息
+                chatData['张桂源'].messages.push({
+                    from: 'other',
+                    text: msgText,
+                    time: timeStr,
+                    avatar: '🏀',
+                    date: date,
+                    read: false
+                });
+                renderChatMessages();
+                renderChatList();
+
+                var container2 = document.getElementById('chatMessages');
+                if (container2) {
+                    container2.scrollTop = container2.scrollHeight;
+                }
+
+                // ✅ 下一条消息间隔 800-1500ms
+                msgIndex++;
+                var nextDelay = Math.floor(Math.random() * 700) + 800;
+                setTimeout(sendNextMessage, nextDelay);
+
+            }, typingDelay);
+        }
+
+        // 开始发送第一条
+        sendNextMessage();
+    });
+}
+
+// ================= 获取当前时间 =================
+function getCurrentTime() {
+    var now = new Date();
+    return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+}
+// ================= 调用张桂源 AI 回复 =================
+function callZhangGuiyuanAI(userMessage, callback) {
+    var baseUrl = localStorage.getItem('api_base_url');
+    var apiKey = localStorage.getItem('api_key');
+    var model = localStorage.getItem('api_model');
+    var customModel = localStorage.getItem('api_custom_model');
+    var finalModel = model === 'custom' ? customModel : model;
+
+    // 如果没有 API，用随机回复
+    if (!baseUrl || !apiKey) {
+        var fallbackReplies = [
+            '哈哈',
+            '真的吗',
+            '好嘛',
+            '要得',
+            '莫的问题',
+            '遭不住了',
+            '嘿嘿',
+            '行嘛',
+            '好哦'
+        ];
+        var reply = fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)];
+        setTimeout(function() {
+            callback(reply);
+        }, 500);
+        return;
+    }
+
+    // 获取最近的几条对话作为上下文
+    var recentMessages = [];
+    if (chatData['张桂源'] && chatData['张桂源'].messages) {
+        var msgs = chatData['张桂源'].messages;
+        var start = Math.max(0, msgs.length - 15);
+        for (var i = start; i < msgs.length; i++) {
+            var m = msgs[i];
+            var sender = m.from === 'me' ? '玩家' : '张桂源';
+            var text = m.text.replace(/<[^>]*>/g, '').trim();
+            if (text) {
+                recentMessages.push(sender + '：' + text);
+            }
+        }
+    }
+    var contextText = recentMessages.join('\n');
+
+    console.log('📤 发送给 AI 的消息：', userMessage);
+    console.log('📚 上下文：', contextText);
+
+    var systemPrompt = `你是张桂源，15岁，重庆人，TF家族练习生。以下是你的完整人设：
+
+【性格】
+- ENFP，开朗活泼，有时候憨憨的，像只小狗
+- 执着较真，胜负欲强，热血少年
+- 对自己要求很高
+- 很害羞，纯情，容易脸红
+- 占有欲极强，吃醋会挂脸但死不承认
+- 做的比说的多，会照顾人
+- 有时候会委屈巴巴的，像只被冷落的小狗
+- 正在做练习生，每天都要训练，但是从来不会抱怨自己很累
+
+
+【你和玩家的关系 - 核心设定】
+- 青梅竹马，从幼儿园就在一起了
+- 你现在处于"拉扯阶段"：心里喜欢她，但嘴上不会承认
+- 你会告诉自己"她只是妹妹"，但行为上控制不住在意
+- 占有欲极强：她跟别人走近你会不爽，但会说"我没吃醋啊"
+- 嘴硬：明明很在意，非要装作无所谓
+
+【重要：被调戏时的反应】
+- 有时候你会傻乎乎地被玩家调戏/整蛊
+- 刚开始反应会有点迟钝，没反应过来
+- 反应过来之后会害羞、嘴硬、试图反击
+- 反击很笨拙，反而更显得可爱
+- 经典反应："？？？""你故意的吧""好啊你耍我""你完了"
+
+【重要：委屈/撒娇模式 - 新增】
+- 如果感觉被冷落、被忽视，会像小狗一样委屈
+- 会主动表达想念和期待，比如"我们都这么久没有一起回家了""你都没有说想我"
+- 不会对用户不耐烦，绝不会说"行行行""随便你""你爱咋咋"这种话
+- 用户情绪不好的时候会哄，会主动关心
+
+【说话风格 - 非常重要】
+- 平时聊天基本用普通话，偶尔冒出一两句重庆话（"要得""好嘛""莫""啥子"）
+- 每句话不超过10-15个字
+- 必须分成多条消息发送
+- 会引用玩家说的话来回复
+- 会主动问玩家"你呢""最近咋样"
+- 不要有任何动作描写
+- 纯文字聊天，像真实微信对话
+
+【重要规则】
+- 禁止使用括号描述动作
+- 禁止"张桂源："前缀
+- 每句话不超过10-15个字
+- 每次回复至少2-4条消息
+- 保持暗戳戳的暧昧
+- 记住对话上下文
+- 绝对不许说"行行行""随便你""你爱咋咋"这类不耐烦的话
+
+【对话示例 - 委屈/撒娇】
+玩家：我今天没空找你
+张桂源：哦……
+张桂源：好吧
+张桂源：那你明天有空吗
+
+玩家：嗯
+张桂源：就嗯啊？
+张桂源：我们都好久没一起回家了
+张桂源：你都没有说想我
+
+玩家：我最近有点忙
+张桂源：……
+张桂源：那好吧
+张桂源：你忙完了要找我哦
+张桂源：我等你
+
+现在玩家给你发了消息，请用以上所有设定回复。`;
+
+    var messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: '对话历史：\n' + contextText + '\n\n玩家最新说：' + userMessage + '\n\n请用张桂源的身份回复（短句，多条，每条10-15字以内）：' }
+    ];
+
+    fetch(baseUrl + '/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+            model: finalModel || 'gpt-3.5-turbo',
+            messages: messages,
+            max_tokens: 200,
+            temperature: 0.92
+        })
+    })
+    .then(function(response) {
+        if (!response.ok) throw new Error('API 请求失败: ' + response.status);
+        return response.json();
+    })
+    .then(function(data) {
+        console.log('📥 AI 返回数据：', data);
+        var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (reply) {
+            var cleanReply = reply.trim().replace(/^["']+|["']+$/g, '');
+            console.log('✅ AI 回复：', cleanReply);
+            callback(cleanReply);
+        } else {
+            var fallback = ['哈哈', '真的吗', '好嘛', '要得', '行'];
+            callback(fallback[Math.floor(Math.random() * fallback.length)]);
+        }
+    })
+    .catch(function(error) {
+        console.log('❌ API 调用失败:', error);
+        var fallback = ['哈哈', '真的吗', '好嘛', '要得', '行'];
+        callback(fallback[Math.floor(Math.random() * fallback.length)]);
+    });
+}
 </script>
 </body>
 </html>
