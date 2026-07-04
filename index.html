@@ -2397,6 +2397,7 @@ let currentSelectedCardSet = null;
 function showGachaResultModal() {
     // 扣钱
     player.money = Math.max(0, player.money - 10);
+    addTransaction('支出', 10, '扭蛋机消费');
     renderMyPage();
 
     var result = getGachaResult();
@@ -2841,7 +2842,8 @@ function openEarnPage() {
 
 // ================= 乞讨 =================
 function doBeg() {
-     if (!consumeStamina(1)) return;
+    if (!consumeStamina(1)) return;
+
     var results = [
         { text: "周围的人用异样的眼神看着你，你赶紧溜了", wiseChange: -2, loveChange: 0, moneyChange: 10 },
         { text: "在街边蹲了一天，发现钱包掉了", wiseChange: 0, loveChange: 0, moneyChange: -30 },
@@ -2852,19 +2854,20 @@ function doBeg() {
 
     var result = results[Math.floor(Math.random() * results.length)];
 
-    // 更新智慧
     if (result.wiseChange !== 0) {
         player.wise = Math.min(100, Math.max(0, player.wise + result.wiseChange));
     }
-
-    // 更新好感（张桂源好感）
     if (result.loveChange !== 0) {
         player.love = Math.min(100, Math.max(0, player.love + result.loveChange));
     }
-
-    // ✅ 修复：使用 player.money 而不是 player.danger
     if (result.moneyChange !== 0) {
         player.money = Math.max(0, player.money + result.moneyChange);
+        // ✅ 添加收支记录
+        if (result.moneyChange > 0) {
+            addTransaction('收入', result.moneyChange, '乞讨获得');
+        } else if (result.moneyChange < 0) {
+            addTransaction('支出', Math.abs(result.moneyChange), '乞讨损失');
+        }
     }
 
     renderMyPage();
@@ -2878,28 +2881,30 @@ function doBeg() {
 }
 // ================= 才艺 =================
 function doTalent() {
-     if (!consumeStamina(1)) return;
-    if (player.love < 30) {
-        alert("❌ 智慧不够哦，好好学习，daydayup！\n（当前智慧：" + player.love + "/30）");
+    if (player.wise < 30) {
+        alert("❌ 智慧不够哦，好好学习，daydayup！\n（当前智慧：" + player.wise + "/30）");
         return;
     }
-    
+
     var results = [
         { text: "在街边诗兴大发，吟诵一首，周围连连叫好！", moneyChange: 20 },
         { text: "为低年级的同学辅导作业，赚了辅导费", moneyChange: 15 }
     ];
-    
+
     var result = results[Math.floor(Math.random() * results.length)];
-    player.danger = Math.max(0, player.danger + result.moneyChange);
-    renderMyPage();
     
+    player.money = Math.max(0, player.money + result.moneyChange);
+    // ✅ 添加收支记录
+    addTransaction('收入', result.moneyChange, '才艺展示收入');
+    
+    renderMyPage();
+
     showResultModal(
         "🎨 才艺展示",
         result.text,
         ["💰 金钱 +" + result.moneyChange]
     );
 }
-
 // ================= 打工 =================
 function doWork() {
      if (!consumeStamina(1)) return;
@@ -2973,6 +2978,13 @@ function closeResultModal(hasCallback) {
     stress: 10,  // ✅ 新增压力值
     fans: 500 ,
     stamina: 15
+};
+// 关注状态
+var followedArtists = {
+    '张桂源': false,
+    '左奇函': false,
+    '杨博文': false,
+    '陈奕恒': false
 };
 // ================= 压力状态判断 =================
 function getStressMultiplier() {
@@ -3500,7 +3512,7 @@ function showWXYZBranchOptions() {
                                         { text: "你看不到我的脸", time: "22:38" }
                                     ], function() {
                                         var replies4 = [
-                                            { from: "WXYz", text: "我看不到也晓得", time: "22:38", avatar: "👯" }
+                                            { from: "WXYz", text: "啧啧啧", time: "22:38", avatar: "👯" }
                                         ];
                                         sendWXYzReplies(replies4, function() {
                                             chatData['WXYz'].roundCompleted = true;
@@ -3580,17 +3592,17 @@ function showWXYZBranchOptions() {
                 });
             }
             
-            // ========== 分支C：他发了个跳舞视频给我看 ==========
+            // ========== 分支C：他说回来跳舞给我看 ==========
             else {
                 var replies = [
                     { from: "WXYz", text: "！！！", time: "22:34", avatar: "👯" },
                     { from: "WXYz", text: "真的假的", time: "22:34", avatar: "👯" },
-                    { from: "WXYz", text: "给我看看", time: "22:34", avatar: "👯" }
+                    { from: "WXYz", text: "那我也要看", time: "22:34", avatar: "👯" }
                 ];
                 sendWXYzReplies(replies, function() {
                     showPlayerReply2([
                         { text: "不行", time: "22:35" },
-                        { text: "他发给我个人的", time: "22:35" }
+                        { text: "他跳给我一个人的", time: "22:35" }
                     ], function() {
                         var replies2 = [
                             { from: "WXYz", text: "哦～～～", time: "22:36", avatar: "👯" },
@@ -3640,77 +3652,6 @@ function showWXYZBranchOptions() {
                     });
                 });
             }
-        };
-    });
-}
-// ================= 辅助：发送 WXYz 多条回复 =================
-function sendWXYzReplies(replies, callback) {
-    var date = new Date().toLocaleDateString();
-    var idx = 0;
-    
-    function sendNext() {
-        if (idx >= replies.length) {
-            if (callback) callback();
-            return;
-        }
-        
-        var container = document.getElementById("chatMessages");
-        var typingRow = document.createElement("div");
-        typingRow.className = "message-row";
-        typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="WXYz.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
-        container.appendChild(typingRow);
-        container.scrollTop = container.scrollHeight;
-        
-        setTimeout(function() {
-            typingRow.remove();
-            chatData['WXYz'].messages.push({
-                from: "other",
-                text: replies[idx].text,
-                time: replies[idx].time,
-                avatar: replies[idx].avatar || "👯",
-                date: date,
-                read: false
-            });
-            renderChatMessages();
-            renderChatList();
-            idx++;
-            setTimeout(sendNext, 600);
-        }, 700);
-    }
-    sendNext();
-}
-
-// ================= 辅助：弹出玩家回复选项 =================
-function showPlayerReply2(options, callback) {
-    var existing = document.querySelector('.option-modal');
-    if (existing) existing.remove();
-    
-    var modal = document.createElement("div");
-    modal.className = "option-modal";
-    var html = '<div style="margin-bottom:12px; font-weight:600;">选择回复</div>';
-    options.forEach(function(opt, idx) {
-        html += '<button class="option-btn" data-choice="' + idx + '">「' + opt.text + '」</button>';
-    });
-    modal.innerHTML = html;
-    document.body.appendChild(modal);
-    
-    modal.querySelectorAll(".option-btn").forEach(function(btn, idx) {
-        btn.onclick = function() {
-            modal.remove();
-            var date = new Date().toLocaleDateString();
-            var selected = options[idx];
-            chatData['WXYz'].messages.push({
-                from: "me",
-                text: selected.text,
-                time: selected.time || "现在",
-                avatar: "🐰",
-                date: date,
-                read: true
-            });
-            renderChatMessages();
-            renderChatList();
-            if (callback) callback();
         };
     });
 }
@@ -4443,32 +4384,46 @@ function openChat(contact) {
     }
 
     // ========== 张桂源 ==========
-    if (contact === "张桂源") {
-        if (!chatData["张桂源"].roundCompleted) {
-            if (chatData["张桂源"].messages.length === 1 && chatData["张桂源"].messages[0].text === "你今天放学旁边那个人是谁") {
-                if (!chatData["张桂源"]._flowStarted) {
-        chatData["张桂源"]._flowStarted = true;
-        startZhangChat();
-    }
-}
-            inputBox.innerText = "输入内容";
-            inputBox.onclick = function() {
-                if (zhangWaitingForOption) {
-                    alert("请直接点击上面的选项按钮");
-                } else {
-                    alert("请等待对方说完话，选项会自动弹出");
-                }
-            };
-        } else {
-            inputBox.innerText = "本章聊天已完成，好感度+" + zhangLoveTotal;
-            inputBox.onclick = function() {
-                alert("本章聊天已完成");
-            };
+if (contact === "张桂源") {
+    // 检查是否有"你今天放学旁边那个人是谁"这条消息
+    var hasFirstMsg = false;
+    if (chatData["张桂源"].messages) {
+        for (var i = 0; i < chatData["张桂源"].messages.length; i++) {
+            if (chatData["张桂源"].messages[i].text && chatData["张桂源"].messages[i].text.indexOf("你今天放学旁边那个人是谁") !== -1) {
+                hasFirstMsg = true;
+                break;
+            }
         }
-        renderChatMessages();
-        return;
     }
-
+    
+    if (!chatData["张桂源"].roundCompleted) {
+        // 如果有第一条消息，保留它，启动聊天
+        if (hasFirstMsg && chatData["张桂源"].messages.length === 1) {
+            if (!chatData["张桂源"]._flowStarted) {
+                chatData["张桂源"]._flowStarted = true;
+                startZhangChat();
+            }
+        } else if (!hasFirstMsg && chatData["张桂源"].messages.length === 0) {
+            startZhangChat();
+        }
+        
+        inputBox.innerText = "输入内容";
+        inputBox.onclick = function() {
+            if (zhangWaitingForOption) {
+                alert("请直接点击上面的选项按钮");
+            } else {
+                alert("请等待对方说完话，选项会自动弹出");
+            }
+        };
+    } else {
+        inputBox.innerText = "本章聊天已完成，好感度+" + zhangLoveTotal;
+        inputBox.onclick = function() {
+            alert("本章聊天已完成");
+        };
+    }
+    renderChatMessages();
+    return;
+}
     // ========== 三个好友 ==========
     if (contact === "陈太帅" || contact === "哈哈哈" || contact === "zhang憨蜹") {
         var friendData = chatData[contact];
@@ -4759,7 +4714,7 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
     // ================= 张桂源聊天流程 =================
     const zhangChatFlow = [
         // 初始对话
-         
+        
         { type: "player_option", time: "21:31", options: ["？"], loveAdd: [0], nextOthers: [] },
         { type: "player_option", time: "21:31", options: ["我妈啊"], loveAdd: [0], nextOthers: [] },
         { type: "other", time: "21:31", text: "哦哦", from: "张桂源" },
@@ -4781,7 +4736,7 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
         { type: "branch_start", time: "21:43" },
         { type: "branch_option", text: "不会", loveAdd: 2,
           replies: [
-              { from: "张桂源", text: "哦", time: "21:44" },
+              { from: "张桂源", text: "哈哈", time: "21:44" },
               { from: "张桂源", text: "那就好", time: "21:44" },
               { type: "player_reply", text: "什么叫那就好", time: "21:45", loveAdd: 0 },
               { from: "张桂源", text: "没得啥子意思", time: "21:45" },
@@ -4799,8 +4754,8 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
               
               { type: "player_reply", text: "我那不叫凶", time: "21:47", loveAdd: 0 },
               { from: "张桂源", text: "那叫啥子", time: "21:47" },
-              { type: "player_reply", text: "叫......拒绝回答", time: "21:48", loveAdd: 0 },
-              { from: "张桂源", text: "哈哈哈哈哈哈", time: "21:48" }
+              { type: "player_reply", text: "叫..我也不知道", time: "21:48", loveAdd: 0 },
+              { from: "张桂源", text: "哈哈哈哈行", time: "21:48" }
               
           ] },
         { type: "branch_option", text: "你问这个干嘛，怕我被拐了啊", loveAdd: 3,
@@ -4817,7 +4772,7 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
               { type: "player_reply", text: "你现在不好耍吗", time: "21:49", loveAdd: 0 },
               { from: "张桂源", text: "现在也好耍", time: "21:49" },
               { from: "张桂源", text: "但是你现在不让我牵了", time: "21:50" },
-              { type: "player_reply", text: "......", time: "21:50", loveAdd: 0 }
+              { type: "player_reply", text: "......？", time: "21:50", loveAdd: 0 }
           ] },
         { type: "branch_end" },
         
@@ -4842,7 +4797,7 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
               { from: "张桂源", text: "你说'张桂源你好厉害'", time: "21:59" },
               { from: "张桂源", text: "说全名", time: "21:59" },
               { type: "player_reply", text: "为啥", time: "22:00", loveAdd: 0 },
-              { from: "张桂源", text: "你说嘛你说嘛", time: "22:00", isVoice: true },
+              { from: "张桂源", text: "你说嘛你说嘛", time: "22:00", loveAdd: 0 },
               { type: "player_reply", text: "张桂源你好厉害", time: "22:01", loveAdd: 0 },
               { type: "player_reply", text: "行了吧", time: "22:01", loveAdd: 0 },
               { from: "张桂源", text: "哈哈哈哈哈哈哈哈哈", time: "22:02" },
@@ -4855,9 +4810,10 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
       { from: "张桂源", text: "我还在训练室，今天周五想多练练", time: "21:58" },
       { type: "player_reply", text: "那算了", time: "21:59", loveAdd: 0 },
       { from: "张桂源", text: "等一下", time: "21:59" },
-      { from: "张桂源", text: `<video src="meet.mp4" controls style="width:200px; border-radius:12px; max-width:100%;"></video>`, time: "22:00", isVideo: true },
-      { from: "张桂源", text: "怎么样，评价一下", time: "22:01" },
-      { from: "张桂源", text: "老师可是专门表扬了我哦", time: "22:01" }
+     
+      { from: "张桂源", text: "等我周末回来跳给你看", time: "22:01" },
+      { from: "张桂源", text: "保证很帅好吧", time: "22:01" },
+      { type: "player_reply", text: "好好好", time: "22:05", loveAdd: 0 }
   ],
   // 第三组分支：放在 replies 外面
   branch3: {
@@ -5843,8 +5799,8 @@ function changeMomentsBg() {
         };
     }
     
-       function renderWeibo() {
-         // 更新微博头像
+function renderWeibo() {
+    // 更新微博头像
     var avatarData = localStorage.getItem('player_avatar');
     var avatarImg = document.getElementById('weiboAvatar');
     var avatarFallback = document.getElementById('weiboAvatarFallback');
@@ -5856,253 +5812,163 @@ function changeMomentsBg() {
         avatarFallback.style.display = 'block';
         if (avatarImg) avatarImg.style.display = 'none';
     }
-    
-        // 检查是否完成第一章剧情
-        if (!chapterCompleted) {
-            let container = document.getElementById("weiboContent");
-            if (container) {
-                container.innerHTML = `<div class="placeholder" style="text-align:center; padding:60px 20px;">
-                                            <div class="placeholder-icon" style="font-size:48px; margin-bottom:16px;"></div>
-                                            <div>微博尚未解锁</div>
-                                            <div style="font-size:12px; color:#999; margin-top:8px;">完成第一章剧情后才能查看微博</div>
-                                        </div>`;
-            }
-            return;
-        }
-        
-        let activeTab = document.querySelector("#weiboTabs .tab.active")?.dataset.tab || "hot";
-        let container = document.getElementById("weiboContent");
-        
-       if (activeTab === "hot") {
-    // 热搜榜已经显示在搜索框下面了，这里显示空白或提示
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;font-size:14px;">点击搜索框查看热搜</div>';
-    return;
-}
-        else if (activeTab === "big") {
-            // ========== 张桂源大号微博 ==========
-            const artistBigWeibo = [
-                {
-                    id: "big3",
-                    author: "TF家族-张桂源",
-                    avatar: `<img src="zgywb.jpg" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">`,
-                    time: "2022年4月1日 20:03",
-                    content: "哈哈哈哈，真香！<br><br><img src='wbzx.jpg' style='width:100%; border-radius:12px; margin-top:8px;'>",
-                    likes: "3876",
-                    comments: [
-                        { level: "gold", user: "桂圆不圆", text: "哈哈哈哈哈哈你终于吃到了！", vip: "金粉" },
-                        { level: "blue", user: "源源的篮球", text: "看把你高兴的", vip: "铁粉" },
-                        { level: "purple", user: "一颗桂圆糖", text: "好吃吗宝宝", vip: "钻粉" },
-                        { level: "gold", user: "圆滚滚的源", text: "sdfj能不能给我儿吃点好的", vip: "金粉" },
-                        { level: "blue", user: "源来是饭", text: "真香警告！", vip: "铁粉" },
-                        { level: "gold", user: "桂源的小跟班", text: "我也想吃了", vip: "金粉" },
-                        { level: "purple", user: "桂圆味的冰淇淋", text: "好萌好萌呀宝宝", vip: "钻粉" },
-                        { level: "gold", user: "源来是你呀", text: "哈哈哈哈哈哈就三个字都能感受到你的快乐", vip: "金粉" }
-                    ]
-                },
-                {
-                    id: "big2",
-                    author: "TF家族-张桂源",
-                    avatar: `<img src="zgywb.jpg" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">`,
-                    time: "2022年3月20日 21:15",
-                    content: "哈哈哈今天训练老师夸我了，会继续努力的，你们最近有没有开心的事呢",
-                    likes: "4255",
-                    comments: [
-                        { level: "gold", user: "桂圆不圆", text: "老师夸你啥子了！快说快说！", vip: "金粉" },
-                        { level: "blue", user: "源源的篮球", text: "我的开心事就是看到你发微博了", vip: "铁粉" },
-                        { level: "purple", user: "一颗桂圆糖", text: "弟弟加油！你是最棒的！", vip: "钻粉" },
-                        { level: "gold", user: "圆滚滚的源", text: "最近开心的事是考试及格了哈哈哈", vip: "金粉" },
-                        { level: "blue", user: "源来是饭", text: "你开心我就开心！", vip: "铁粉" },
-                        { level: "gold", user: "桂源的小跟班", text: "老师夸你跳舞进步了吗？我也要夸你！", vip: "金粉" },
-                        { level: "purple", user: "源源不绝", text: "今天吃了好吃的火锅！开心！", vip: "钻粉" },
-                        { level: "gold", user: "源来是你呀", text: "看到你进步我就很开心了", vip: "金粉" }
-                    ]
-                },
-                {
-                    id: "big1",
-                    author: "TF家族-张桂源",
-                    avatar: `<img src="zgywb.jpg" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">`,
-                    time: "2022年3月13日 19:47",
-                    content: "欢迎来到桂源时间(•_•)v",
-                    likes: "1.1万",
-                    comments: [
-                        { level: "gold", user: "桂圆不圆", text: "桂源时间！！！我准时来了！！！", vip: "金粉" },
-                        { level: "blue", user: "源来是你呀", text: "这个表情符号哈哈哈哈好呆", vip: "铁粉" },
-                        { level: "purple", user: "今天也想吃桂圆", text: "弟弟头发怎么又湿了，训练辛苦了", vip: "钻粉" },
-                        { level: "gold", user: "源源的篮球", text: "(•_•)v 这个表情跟你好像", vip: "金粉" },
-                        { level: "blue", user: "一颗桂圆糖", text: "欢迎欢迎！以后每天都要更新好吗", vip: "铁粉" },
-                        { level: "gold", user: "桂源的小跟班", text: "终于发微博了！等了好久！", vip: "金粉" },
-                        { level: "purple", user: "圆滚滚的源", text: "这个嘴角哈哈哈哈好憨好可爱", vip: "钻粉" },
-                        { level: "gold", user: "桂圆味的冰淇淋", text: "已存图！期待下一次桂源时间！", vip: "金粉" }
-                    ]
-                }
-            ];
-            
-            container.innerHTML = artistBigWeibo.map(w => `
-                <div class="weibo-card" data-id="${w.id}" data-type="big" style="cursor:pointer;">
-                    <div class="weibo-author">
-                        <div class="weibo-avatar">${w.avatar}</div>
-                        <div class="weibo-name">${w.author}</div>
-                        <span class="vip-badge vip-gold">官方认证</span>
-                    </div>
-                    <div class="weibo-time" style="font-size:11px; color:#999; margin:4px 0;">${w.time}</div>
-                    <div class="weibo-content">${w.content}</div>
-                    <div class="weibo-stats">❤️ ${w.likes}  💬 ${w.comments.length}</div>
-                </div>
-            `).join("");
-            
-            document.querySelectorAll(".weibo-card[data-type='big']").forEach((card, idx) => {
-                card.addEventListener("click", () => {
-                    showWeiboDetail(artistBigWeibo[idx], "big");
-                });
-            });
-        } 
-        else if (activeTab === "small") {
-            // ========== 张桂源小号微博 ==========
-            const artistSmallWeibo = [
-                {
-                    id: "small4",
-                    author: "szygz",
-                    avatar: "🏀",
-                    time: "2023年3月25日 23:04",
-                    content: "交到了很多新朋友，但是好久没和她一起玩了，哈哈不会等下次见面就忘了吧！嗯，其实还是有点担心的，下次请她吃东西",
-                    likes: "203",
-                    comments: []
-                },
-                {
-                    id: "small3",
-                    author: "szygz",
-                    avatar: "🏀",
-                    time: "2023年2月20日 21:56",
-                    content: "第一次月考倒计时......心跳好快，离开学校还是要考试啊！加油吧",
-                    likes: "89",
-                    comments: []
-                },
-                {
-                    id: "small2",
-                    author: "szygz",
-                    avatar: "🏀",
-                    time: "2023年1月10日 22:13",
-                    content: "唉不说了吧，压腿怎么这么痛，腿已经不是我的了。唉，感觉比在舞室练累多了，但是今天老师说我有一点点进步，有点小开心，感觉自己差的还很多，想做的更好",
-                    likes: "156",
-                    comments: []
-                },
-                {
-                    id: "small1",
-                    author: "szygz",
-                    avatar: "🏀",
-                    time: "2022年9月10日 23:47",
-                    content: "今天第一天进训练室，还有其他好多伙伴，看来要更加努力了",
-                    likes: "128",
-                    comments: []
-                }
-            ];
-            
-            container.innerHTML = artistSmallWeibo.map(w => `
-                <div class="weibo-card" data-id="${w.id}" data-type="small" style="cursor:pointer; background:#FAFAFA;">
-                    <div class="weibo-author">
-                        <div class="weibo-avatar">${w.avatar}</div>
-                        <div class="weibo-name">${w.author}</div>
-                        <span class="vip-badge vip-blue">小号</span>
-                    </div>
-                    <div class="weibo-time" style="font-size:11px; color:#999; margin:4px 0;">${w.time}</div>
-                    <div class="weibo-content">${w.content}</div>
-                    <div class="weibo-stats">❤️ ${w.likes}  💬 ${w.comments.length}</div>
-                </div>
-            `).join("");
-            
-            document.querySelectorAll(".weibo-card[data-type='small']").forEach((card, idx) => {
-                card.addEventListener("click", () => {
-                    showWeiboDetail(artistSmallWeibo[idx], "small");
-                });
-            });
-        } 
-       else if (activeTab === "myweibo") {
-    loadMyWeibo();
-    var myWeiboList = allMyWeibo || [];
 
-    if (myWeiboList.length === 0) {
-        container.innerHTML = '<div class="placeholder" style="text-align:center;padding:60px 20px;color:#999;">' +
-            '<div class="placeholder-icon" style="font-size:48px;margin-bottom:16px;">📝</div>' +
-            '<div>还没有发表过微博</div>' +
-            '<div style="font-size:12px;color:#ccc;margin-top:8px;">在顶部输入框写下你的第一条微博吧！</div>' +
-            '</div>';
+    // 检查是否完成第一章剧情
+    if (!chapterCompleted) {
+        var container = document.getElementById('weiboContent');
+        if (container) {
+            container.innerHTML = '<div class="placeholder" style="text-align:center; padding:60px 20px;"><div class="placeholder-icon" style="font-size:48px; margin-bottom:16px;"></div><div>微博尚未解锁</div><div style="font-size:12px; color:#999; margin-top:8px;">完成第一章剧情后才能查看微博</div></div>';
+        }
         return;
     }
 
-    var html = '';
-    for (var i = 0; i < myWeiboList.length; i++) {
-        var w = myWeiboList[i];
+    var activeTab = document.querySelector('#weiboTabs .tab.active')?.dataset.tab || 'forum';
+    var container = document.getElementById('weiboContent');
+    if (!container) return;
 
-        var commentHtml = '';
-        if (w.comments && w.comments.length > 0) {
-            commentHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #EFEFEF;background:#FAFAFA;border-radius:8px;padding:8px;">';
-            for (var j = 0; j < w.comments.length; j++) {
-                var c = w.comments[j];
-                
-                // 原始评论
-                var replyBtn = '';
-                var maxRounds = 3;
-                var currentRounds = c.replyHistory ? c.replyHistory.length : 0;
-                var canReply = currentRounds < maxRounds;
-                
-                if (canReply) {
-                    var btnText = (currentRounds > 0) ? '继续回复' : '回复';
-                    replyBtn = '<span style="color:#E85D75;font-size:11px;cursor:pointer;margin-left:8px;" onclick="showReplyInput(' + i + ',' + j + ')">' + btnText + '</span>';
-                }
-                
-                // ✅ 原始评论 - 昵称可点击
-                commentHtml += '<div style="padding:3px 0;font-size:13px;border-bottom:1px solid #F5F5F5;display:flex;justify-content:space-between;align-items:center;">';
-                commentHtml += '<div><span style="font-weight:600;cursor:pointer;color:#333;" onclick="openUserProfile(\'' + c.author + '\', ' + i + ',' + j + ')">' + c.author + '</span><span>：' + c.text + '</span></div>';
-                commentHtml += '<div>' + replyBtn + '</div>';
-                commentHtml += '</div>';
-                
-                // 显示回复历史
-                if (c.replyHistory && c.replyHistory.length > 0) {
-                    for (var k = 0; k < c.replyHistory.length; k++) {
-                        var r = c.replyHistory[k];
-                        var isUser = r.from === 'user';
-                        var senderName = isUser ? '你' : c.author;
-                        var senderColor = isUser ? '#333' : '#666';
-                        var leftPadding = isUser ? '0px' : '20px';
-                        var borderColor = isUser ? '#E85D75' : '#CCC';
-                        commentHtml += '<div style="padding:2px 0 2px ' + leftPadding + ';font-size:12px;color:' + senderColor + ';border-left:2px solid ' + borderColor + ';margin-left:10px;padding-left:10px;margin-top:2px;display:flex;justify-content:space-between;align-items:center;">';
-                        // ✅ 回复历史中的昵称也可点击
-                        commentHtml += '<div><span style="font-weight:600;cursor:pointer;color:' + senderColor + ';" onclick="openUserProfile(\'' + c.author + '\', ' + i + ',' + j + ')">' + senderName + '</span><span>：' + r.text + '</span></div>';
-                        if (!isUser && canReply) {
-                            commentHtml += '<span style="color:#E85D75;font-size:11px;cursor:pointer;margin-left:8px;flex-shrink:0;" onclick="showReplyInput(' + i + ',' + j + ')">继续回复</span>';
-                        }
-                        commentHtml += '</div>';
-                    }
-                }
-                
-                // 回复输入框
-                commentHtml += '<div id="replyInput_' + i + '_' + j + '" style="display:none;padding:6px 0;margin-left:20px;">';
-                commentHtml += '<div style="display:flex;gap:6px;align-items:center;">';
-                commentHtml += '<input id="replyText_' + i + '_' + j + '" type="text" placeholder="回复 ' + c.author + '..." style="flex:1;padding:6px 10px;border:1px solid #EFEFEF;border-radius:16px;font-size:13px;outline:none;" onfocus="this.style.borderColor=\'#E85D75\'" onblur="this.style.borderColor=\'#EFEFEF\'">';
-                commentHtml += '<button onclick="sendReply(' + i + ',' + j + ')" style="padding:4px 14px;background:#E85D75;color:white;border:none;border-radius:16px;font-size:12px;cursor:pointer;">发送</button>';
-                commentHtml += '<span style="font-size:16px;cursor:pointer;color:#999;" onclick="cancelReply(' + i + ',' + j + ')">×</span>';
-                commentHtml += '</div>';
-                commentHtml += '</div>';
-            }
-            commentHtml += '</div>';
+    // ========== 论坛 ==========
+    if (activeTab === 'forum') {
+        renderForum(false);
+        return;
+    }
+
+    // ========== 我的关注（空状态） ==========
+    else if (activeTab === 'following') {
+    loadFollowingList();
+    var container = document.getElementById('weiboContent');
+    
+    if (myFollowingList.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#999;font-size:14px;">还没有关注任何人<br><span style="font-size:12px;color:#ccc;">去搜索框搜索"张桂源"关注吧！</span></div>';
+        return;
+    }
+    
+    var html = '';
+    myFollowingList.forEach(function(name) {
+        var weibos = getArtistBigWeibo(name);
+        weibos.forEach(function(w, idx) {
+            // 生成评论预览（显示前3条）
+var commentPreview = '';
+var showAllBtn = '';
+if (w.comments && w.comments.length > 0) {
+    commentPreview = '<div style="background:#F8F8F8;border-radius:8px;padding:8px;margin-top:8px;max-height:120px;overflow:hidden;">';
+    var showCount = Math.min(3, w.comments.length);
+    for (var ci = 0; ci < showCount; ci++) {
+        var c = w.comments[ci];
+        var vipClass = "";
+        var vipText = "";
+        if (c.level === "gold") {
+            vipClass = "vip-gold";
+            vipText = '<span class="vip-badge ' + vipClass + '" style="margin-left: 6px;font-size:10px;">金粉</span>';
+        } else if (c.level === "blue") {
+            vipClass = "vip-blue";
+            vipText = '<span class="vip-badge ' + vipClass + '" style="margin-left: 6px;font-size:10px;">铁粉</span>';
+        } else if (c.level === "purple") {
+            vipClass = "vip-purple";
+            vipText = '<span class="vip-badge ' + vipClass + '" style="margin-left: 6px;font-size:10px;">钻粉</span>';
+        }
+        commentPreview += '<div style="padding:3px 0;font-size:12px;border-bottom:1px solid #F0F0F0;display:flex;gap:4px;flex-wrap:wrap;">';
+        commentPreview += '<span style="font-weight:600;color:#666;">' + c.user + '</span>';
+        commentPreview += vipText;
+        commentPreview += '<span style="color:#333;">：' + c.text + '</span>';
+        commentPreview += '</div>';
+    }
+    if (w.comments.length > 3) {
+        commentPreview += '<div style="text-align:center;padding:4px 0;font-size:12px;color:#999;">还有 ' + (w.comments.length - 3) + ' 条评论...</div>';
+    }
+    commentPreview += '</div>';
+    showAllBtn = '<button onclick="showWeiboDetailFromFollowing(' + idx + ', \'' + name + '\')" style="margin-top:6px;padding:4px 14px;background:#E85D75;color:white;border:none;border-radius:16px;font-size:12px;cursor:pointer;">查看全部 ' + w.comments.length + ' 条评论</button>';
+}
+            
+            html += '<div class="weibo-card" style="background:white;border:1px solid #EFEFEF;border-radius:12px;padding:14px;margin-bottom:12px;" data-id="' + w.id + '" data-name="' + name + '" data-idx="' + idx + '">';
+            html += '<div class="weibo-author" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+            html += '<div class="weibo-avatar" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:#F0F0F0;overflow:hidden;">' + (w.avatar || '👤') + '</div>';
+            html += '<div class="weibo-name" style="font-weight:600;font-size:14px;">' + w.author + '</div>';
+            html += '<span style="font-size:10px;color:#FFD700;background:#FFF8E1;padding:0 10px;border-radius:10px;">已关注</span>';
+            html += '</div>';
+            html += '<div style="font-size:11px;color:#999;margin-bottom:6px;">' + w.time + '</div>';
+            html += '<div style="font-size:14px;color:#333;margin-bottom:8px;white-space:pre-wrap;word-break:break-word;">' + w.content + '</div>';
+            html += '<div style="font-size:12px;color:#999;">❤️ ' + w.likes + ' 💬 ' + w.comments.length + '</div>';
+            html += commentPreview;
+            html += showAllBtn;
+            html += '</div>';
+        });
+    });
+    container.innerHTML = html;
+}
+    // ========== 我的微博 ==========
+    else if (activeTab === 'myweibo') {
+        loadMyWeibo();
+        var myWeiboList = allMyWeibo || [];
+        if (myWeiboList.length === 0) {
+            container.innerHTML = '<div class="placeholder" style="text-align:center;padding:60px 20px;color:#999;"><div class="placeholder-icon" style="font-size:48px;margin-bottom:16px;">📝</div><div>还没有发表过微博</div><div style="font-size:12px;color:#ccc;margin-top:8px;">在顶部输入框写下你的第一条微博吧！</div></div>';
+            return;
         }
 
-        html += '<div class="weibo-card" style="background:white;border:1px solid #EFEFEF;border-radius:12px;padding:14px;margin-bottom:12px;">';
-        html += '<div class="weibo-author" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
-        html += '<div class="weibo-avatar" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:#F0F0F0;">' + (w.avatar || '🐰') + '</div>';
-        html += '<div class="weibo-name" style="font-weight:600;font-size:14px;">' + (w.author || '用户') + '</div>';
-        html += '<span style="font-size:10px;color:#E85D75;background:#FFF0F5;padding:0 10px;border-radius:10px;">我的</span>';
-        html += '</div>';
-        html += '<div style="font-size:11px;color:#999;margin-bottom:6px;">' + (w.time || '') + '</div>';
-        html += '<div style="font-size:14px;color:#333;margin-bottom:8px;white-space:pre-wrap;word-break:break-word;">' + w.content + '</div>';
-        html += '<div style="font-size:12px;color:#999;">❤️ ' + (w.likes || 0) + '  💬 ' + (w.comments ? w.comments.length : 0) + '</div>';
-        html += commentHtml;
-        html += '</div>';
+        var html = '';
+        for (var i = 0; i < myWeiboList.length; i++) {
+            var w = myWeiboList[i];
+            var commentHtml = '';
+            if (w.comments && w.comments.length > 0) {
+                commentHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #EFEFEF;background:#FAFAFA;border-radius:8px;padding:8px;">';
+                for (var j = 0; j < w.comments.length; j++) {
+                    var c = w.comments[j];
+                    var replyBtn = '';
+                    var maxRounds = 3;
+                    var currentRounds = c.replyHistory ? c.replyHistory.length : 0;
+                    var canReply = currentRounds < maxRounds;
+                    if (canReply) {
+                        var btnText = (currentRounds > 0) ? '继续回复' : '回复';
+                        replyBtn = '<span style="color:#E85D75;font-size:11px;cursor:pointer;margin-left:8px;" onclick="showReplyInput(' + i + ',' + j + ')">' + btnText + '</span>';
+                    }
+                    commentHtml += '<div style="padding:3px 0;font-size:13px;border-bottom:1px solid #F5F5F5;display:flex;justify-content:space-between;align-items:center;">';
+                    commentHtml += '<div><span style="font-weight:600;cursor:pointer;color:#333;" onclick="openUserProfile(\'' + c.author + '\', ' + i + ',' + j + ')">' + c.author + '</span><span>：' + c.text + '</span></div>';
+                    commentHtml += '<div>' + replyBtn + '</div>';
+                    commentHtml += '</div>';
+
+                    if (c.replyHistory && c.replyHistory.length > 0) {
+                        for (var k = 0; k < c.replyHistory.length; k++) {
+                            var r = c.replyHistory[k];
+                            var isUser = r.from === 'user';
+                            var senderName = isUser ? '你' : c.author;
+                            var senderColor = isUser ? '#333' : '#666';
+                            var leftPadding = isUser ? '0px' : '20px';
+                            var borderColor = isUser ? '#E85D75' : '#CCC';
+                            commentHtml += '<div style="padding:2px 0 2px ' + leftPadding + ';font-size:12px;color:' + senderColor + ';border-left:2px solid ' + borderColor + ';margin-left:10px;padding-left:10px;margin-top:2px;display:flex;justify-content:space-between;align-items:center;">';
+                            commentHtml += '<div><span style="font-weight:600;cursor:pointer;color:' + senderColor + ';" onclick="openUserProfile(\'' + c.author + '\', ' + i + ',' + j + ')">' + senderName + '</span><span>：' + r.text + '</span></div>';
+                            if (!isUser && canReply) {
+                                commentHtml += '<span style="color:#E85D75;font-size:11px;cursor:pointer;margin-left:8px;flex-shrink:0;" onclick="showReplyInput(' + i + ',' + j + ')">继续回复</span>';
+                            }
+                            commentHtml += '</div>';
+                        }
+                    }
+
+                    commentHtml += '<div id="replyInput_' + i + '_' + j + '" style="display:none;padding:6px 0;margin-left:20px;">';
+                    commentHtml += '<div style="display:flex;gap:6px;align-items:center;">';
+                    commentHtml += '<input id="replyText_' + i + '_' + j + '" type="text" placeholder="回复 ' + c.author + '..." style="flex:1;padding:6px 10px;border:1px solid #EFEFEF;border-radius:16px;font-size:13px;outline:none;" onfocus="this.style.borderColor=\'#E85D75\'" onblur="this.style.borderColor=\'#EFEFEF\'">';
+                    commentHtml += '<button onclick="sendReply(' + i + ',' + j + ')" style="padding:4px 14px;background:#E85D75;color:white;border:none;border-radius:16px;font-size:12px;cursor:pointer;">发送</button>';
+                    commentHtml += '<span style="font-size:16px;cursor:pointer;color:#999;" onclick="cancelReply(' + i + ',' + j + ')">×</span>';
+                    commentHtml += '</div>';
+                    commentHtml += '</div>';
+                }
+                commentHtml += '</div>';
+            }
+
+            html += '<div class="weibo-card" style="background:white;border:1px solid #EFEFEF;border-radius:12px;padding:14px;margin-bottom:12px;">';
+            html += '<div class="weibo-author" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+            html += '<div class="weibo-avatar" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:#F0F0F0;">' + (w.avatar || '🐰') + '</div>';
+            html += '<div class="weibo-name" style="font-weight:600;font-size:14px;">' + (w.author || '用户') + '</div>';
+            html += '<span style="font-size:10px;color:#E85D75;background:#FFF0F5;padding:0 10px;border-radius:10px;">我的</span>';
+            html += '</div>';
+            html += '<div style="font-size:11px;color:#999;margin-bottom:6px;">' + (w.time || '') + '</div>';
+            html += '<div style="font-size:14px;color:#333;margin-bottom:8px;white-space:pre-wrap;word-break:break-word;">' + w.content + '</div>';
+            html += '<div style="font-size:12px;color:#999;">❤️ ' + (w.likes || 0) + ' 💬 ' + (w.comments ? w.comments.length : 0) + '</div>';
+            html += commentHtml;
+            html += '</div>';
+        }
+        container.innerHTML = html;
+        return;
     }
-    container.innerHTML = html;
-    return;
 }
-    }
 // ================= AI 回复系统（调用 API） =================
 
 // AI 角色定义（用于构建 prompt）
@@ -7954,7 +7820,7 @@ function initMomentsData() {
             author: "张桂源",
             avatar: `<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`,
             time: "2022年2月15日 21:45",
-            content: "我妈包的就是好吃，元宵节快乐<br><br><img src='ty.jpg' style='width:50%; border-radius:12px; margin-top:8px;'>",
+            content: "吃汤圆咯🥳，元宵节快乐<br><br><img src='ty.jpg' style='width:50%; border-radius:12px; margin-top:8px;'>",
             likes: [],
             comments: [],
             replyOptions: [
@@ -7972,7 +7838,7 @@ function initMomentsData() {
             comments: [],
             replyOptions: [
                 { text: "这么厉害？", reply: "张桂源 回复 " + playerName + "：必须厉害好吧" },
-                { text: "进步最大？真的假的", reply: "张桂源 回复 " + playerName + "：" + (player.nickname || playerName) + "老师要不要验收成果" },
+                { text: "进步最大？真的假的", reply: "张桂源 回复 " + playerName + "：" + (player.nickname || playerName) + "要不要来验收下成果" },
                 { text: "膝盖还好吗", reply: "张桂源 回复 " + playerName + "：莫担心我得行" }
             ]
         },
@@ -7985,7 +7851,7 @@ function initMomentsData() {
             likes: [],
             comments: [],
             replyOptions: [
-                { text: "龙哥什么时候回来教我打篮球", reply: "张桂源：叫桂源哥哥就教你" },
+                { text: "龙哥什么时候回来教我打篮球", reply: "张桂源：叫哥就教你" },
                 { text: "厉害厉害", reply: "张桂源：哈哈那是当然，也不看是谁" }
             ]
         }
@@ -7998,96 +7864,135 @@ function initMomentsData() {
        // ================= 第一章剧情 =================
     let currentBranchStep = 0;
     let branchHistory = [];
-        // ================= 章节选择 =================
-    function renderChapterList() {
-        let container = document.getElementById("chapterList");
-        if (!container) return;
-        
-        const chapterNames = [
-            "重庆的夏天永远不会结束",
-            "第二章（他和他的朋友）",
-            "第三章（预留）",
-            "第四章（预留）"
-        ];
-        
-        let html = "";
-        for (let i = 0; i < totalChapters; i++) {
-            let isLocked = !unlockedChapters[i];
-            let isCompleted = completedChapters[i];
-            let statusText = "";
-            let statusClass = "";
-            
-            if (isLocked) {
-                statusText = "🔒 未解锁";
-                statusClass = "locked";
-            } else if (isCompleted) {
-                statusText = "✅ 已完成";
-                statusClass = "completed";
-            } else {
-                statusText = "📖 进行中";
-                statusClass = "unlocked";
-            }
-            
-            html += `
-                <div class="chapter-card ${isLocked ? 'locked' : ''}" data-index="${i}" ${isLocked ? 'style="cursor:not-allowed;"' : ''}>
-                    <div>
-                        <div class="chapter-title-text">第${i+1}章 · ${chapterNames[i]}</div>
-                        <div class="chapter-sub">${i === 0 ? '2022年 重庆' : '（预留）'}</div>
-                    </div>
-                    <div class="chapter-status ${statusClass}">${statusText}</div>
-                </div>
-            `;
-        }
-        container.innerHTML = html;
-        
-        document.querySelectorAll(".chapter-card:not(.locked)").forEach(card => {
-            card.addEventListener("click", function() {
-                let index = parseInt(this.dataset.index);
-                openChapter(index);
-            });
-        });
-        
-        updateChapterStatusHint();
+       function renderChapterList() {
+    var container = document.getElementById("chapterList");
+    if (!container) return;
+
+    // ✅ 检查所有任务是否完成，动态解锁第二章
+    var chatDone = localStorage.getItem('zhang_dialogue_done') === 'true';
+    var wiseDone = player.wise >= 30;
+    var moneyDone = player.money >= 120;
+    var meetDone = meetCount >= 3;
+    var stressDone = player.stress < 50;
+    var allDone = wiseDone && moneyDone && meetDone && stressDone && chatDone;
+
+    if (allDone && !unlockedChapters[1]) {
+        unlockedChapters[1] = true;
     }
+
+    const chapterNames = [
+        "重庆的夏天永远不会结束",
+        "生日和新的名字",
+        "第三章（预留）",
+        "第四章（预留）"
+    ];
+
+    var html = "";
+    for (var i = 0; i < totalChapters; i++) {
+        var isLocked = !unlockedChapters[i];
+        var isCompleted = completedChapters[i];
+        var statusText = "";
+        var statusClass = "";
+
+        if (isLocked) {
+            // 第一章默认解锁
+            if (i === 0) {
+                isLocked = false;
+            }
+            // 第二章通过任务解锁
+            if (i === 1 && allDone) {
+                isLocked = false;
+                unlockedChapters[1] = true;
+            }
+        }
+
+        if (isLocked) {
+            statusText = "🔒 未解锁";
+            statusClass = "locked";
+        } else if (isCompleted) {
+            statusText = "✅ 已完成";
+            statusClass = "completed";
+        } else {
+            statusText = "📖 进行中";
+            statusClass = "unlocked";
+        }
+
+        // 第二章显示任务解锁提示
+        var extraHint = "";
+        if (i === 1 && isLocked) {
+            extraHint = '<div style="font-size:10px;color:#999;margin-top:2px;">完成所有任务解锁</div>';
+        }
+
+        html += `
+            <div class="chapter-card ${isLocked ? 'locked' : ''}" data-index="${i}" ${isLocked ? 'style="cursor:not-allowed;"' : ''}>
+                <div>
+                    <div class="chapter-title-text">第${i+1}章 · ${chapterNames[i]}</div>
+                    <div class="chapter-sub">${i === 0 ? '2021年 重庆' : i === 1 ? '2022年 重庆' : '（预留）'}</div>
+                    ${extraHint}
+                </div>
+                <div class="chapter-status ${statusClass}">${statusText}</div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+
+    document.querySelectorAll(".chapter-card:not(.locked)").forEach(function(card) {
+        card.addEventListener("click", function() {
+            var index = parseInt(this.dataset.index);
+            openChapter(index);
+        });
+    });
+
+    updateChapterStatusHint();
+}
     
         function openChapter(index) {
-        viewingChapter = index;
-        document.getElementById("chapterSelectPage").style.display = "none";
-        document.getElementById("storyDetailPage").style.display = "block";
-        
-        if (index === 0) {
-            // 第一章代码不变
-            document.getElementById("chapterTitle").innerText = "第1章 · 重庆的夏天永远不会结束";
-            loadChapter1();
-        } else if (index === 1) {
-            // 第二章
-            document.getElementById("chapterTitle").innerText = "第2章 · 生日和新的名字";
-            
-            // 检查是否已完成
-             if (completedChapters[1] === true) {
-                // 显示已完成状态，但保留剧情内容
-                let savedStory = localStorage.getItem("chapter2_story_html");
-                if (savedStory && savedStory !== "") {
-                    document.getElementById("storyContent").innerHTML = savedStory;
-                } else {
-                    document.getElementById("storyContent").innerHTML = "✅ 第二章已完成！\n\n你已完成了「生日和新的名字」章节。";
-                }
-                document.getElementById("branchArea").innerHTML = "";
-                document.getElementById("endChapterBtn").style.display = "none";
-                document.getElementById("nextChapterBtn").style.display = "none";
-                document.getElementById("nextHint").innerHTML = "";
-            } else {
-                loadChapter2();
-            }
-        } else {
-            document.getElementById("storyContent").innerHTML = `<div style="text-align:center; padding:40px; color:#999;">第${index+1}章内容制作中，敬请期待~</div>`;
-            document.getElementById("branchArea").innerHTML = "";
-            document.getElementById("endChapterBtn").style.display = "none";
-            document.getElementById("nextChapterBtn").style.display = "none";
-            document.getElementById("nextHint").innerHTML = "";
-            document.getElementById("chapterTitle").innerText = `第${index+1}章 · ${["重庆的夏天永远不会结束","第二章（预留）","第三章（预留）","第四章（预留）"][index]}`;
-        }
+    viewingChapter = index;
+    document.getElementById("chapterSelectPage").style.display = "none";
+    document.getElementById("storyDetailPage").style.display = "block";
+
+    // ========== 第二章 ==========
+    if (index === 1) {
+        document.getElementById("chapterTitle").innerText = "第2章 · 生日和新的名字";
+        // ✅ 显示"正在更新中"
+        document.getElementById("storyContent").innerHTML = `
+            <div style="text-align:center;padding:60px 20px;color:#999;">
+                <div style="font-size:48px;margin-bottom:16px;">🚧</div>
+                <div style="font-size:18px;font-weight:600;color:#666;">第二章正在更新中</div>
+                <div style="font-size:14px;color:#999;margin-top:8px;">敬请期待~</div>
+            </div>
+        `;
+        document.getElementById("branchArea").innerHTML = "";
+        document.getElementById("endChapterBtn").style.display = "none";
+        document.getElementById("nextChapterBtn").style.display = "none";
+        document.getElementById("nextHint").innerHTML = "";
+        return;
     }
+
+    // ========== 第三章、第四章 ==========
+    if (index >= 2) {
+        document.getElementById("storyContent").innerHTML = `
+            <div style="text-align:center;padding:60px 20px;color:#999;">
+                <div style="font-size:48px;margin-bottom:16px;">🚧</div>
+                <div style="font-size:18px;font-weight:600;color:#666;">第${index+1}章正在更新中</div>
+                <div style="font-size:14px;color:#999;margin-top:8px;">敬请期待~</div>
+            </div>
+        `;
+        document.getElementById("branchArea").innerHTML = "";
+        document.getElementById("endChapterBtn").style.display = "none";
+        document.getElementById("nextChapterBtn").style.display = "none";
+        document.getElementById("nextHint").innerHTML = "";
+        document.getElementById("chapterTitle").innerText = `第${index+1}章 · ${["重庆的夏天永远不会结束","生日和新的名字","第三章（预留）","第四章（预留）"][index]}`;
+        return;
+    }
+
+    // ========== 第一章 ==========
+    if (index === 0) {
+        document.getElementById("chapterTitle").innerText = "第1章 · 重庆的夏天永远不会结束";
+        loadChapter1();
+    }
+}
     
     function backToChapterList() {
         document.getElementById("storyDetailPage").style.display = "none";
@@ -8096,48 +8001,45 @@ function initMomentsData() {
     }
     
     function updateChapterStatusHint() {
-        let hint = document.getElementById("chapterStatusHint");
-        if (!hint) return;
-        
-        if (!completedChapters[0]) {
-            hint.innerHTML = "📌 完成第一章剧情，解锁聊天和朋友圈";
-            hint.style.color = "#E85D75";
-            return;
-        }
-        
-        let allRead = true;
-        for (let friend of friends) {
-            let data = chatData[friend];
-            if (data && data.messages) {
-                for (let msg of data.messages) {
-                    if (msg.from === "other" && !msg.read) {
-                        allRead = false;
-                        break;
-                    }
-                }
-            }
-            if (!allRead) break;
-        }
-        let meetsDone = meetCount >= maxMeet;
-        
-        if (!unlockedChapters[1]) {
-            if (allRead && meetsDone) {
-                hint.innerHTML = "✅ 条件已满足！第二章已解锁";
-                hint.style.color = "#4CAF50";
-                unlockedChapters[1] = true;
-                renderChapterList();
-            } else {
-                let msg = "⚠️ 解锁第二章需要：";
-                if (!allRead) msg += "阅读所有聊天消息 ";
-                if (!meetsDone) msg += `偶遇(${meetCount}/${maxMeet}) `;
-                hint.innerHTML = msg;
-                hint.style.color = "#E85D75";
-            }
-        } else {
-            hint.innerHTML = "📖 点击章节开始阅读";
-            hint.style.color = "#999";
-        }
+    var hint = document.getElementById("chapterStatusHint");
+    if (!hint) return;
+
+    // 检查第一章是否已完成
+    if (!completedChapters[0]) {
+        hint.innerHTML = "📌 完成第一章剧情，解锁聊天和朋友圈";
+        hint.style.color = "#E85D75";
+        return;
     }
+
+    // 检查所有任务是否完成
+    var chatDone = localStorage.getItem('zhang_dialogue_done') === 'true';
+    var wiseDone = player.wise >= 30;
+    var moneyDone = player.money >= 120;
+    var meetDone = meetCount >= 3;
+    var stressDone = player.stress < 50;
+    var allDone = wiseDone && moneyDone && meetDone && stressDone && chatDone;
+
+    if (!unlockedChapters[1]) {
+        if (allDone) {
+            hint.innerHTML = "✅ 所有任务已完成！第二章已解锁 🎉";
+            hint.style.color = "#4CAF50";
+            unlockedChapters[1] = true;
+            renderChapterList();
+        } else {
+            var msg = "⚠️ 解锁第二章需要完成所有任务：";
+            if (!wiseDone) msg += " 智慧≥30";
+            if (!moneyDone) msg += " 金钱≥120";
+            if (!meetDone) msg += " 偶遇3次";
+            if (!stressDone) msg += " 压力<50";
+            if (!chatDone) msg += " 完成张桂源对话";
+            hint.innerHTML = msg;
+            hint.style.color = "#E85D75";
+        }
+    } else {
+        hint.innerHTML = "📖 第二章已解锁，点击开始阅读";
+        hint.style.color = "#999";
+    }
+}
 
     function loadChapter1() {
     // 如果第一章已完成，直接显示保存的剧情
@@ -12959,6 +12861,7 @@ function executeBatchSell(method, totalPrice, selectedData) {
         saveMyCards();
 
         player.money = (player.money || 0) + earnedMoney;
+        addTransaction('收入', earnedMoney, '出售小卡');
         renderMyPage();
 
         var detailMsg = '获得金钱：' + earnedMoney;
@@ -13217,7 +13120,6 @@ function giftCard(index) {
 
     var card = myCards[index];
 
-    // 弹出赠送对象选择
     var modal = document.createElement("div");
     modal.className = "full-modal";
     modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1001;display:flex;align-items:center;justify-content:center;padding:20px;";
@@ -13231,48 +13133,45 @@ function giftCard(index) {
             <div style="font-size:13px;color:#666;margin-bottom:12px;text-align:center;">
                 ${card.setName} - ${card.rarityLabel} ${card.isHidden ? '（隐藏款）' : ''}
             </div>
-
-            <!-- 人名按钮 -->
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
-                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '左奇函')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                <button onclick="this.closest('.full-modal').remove();showGiftNotAvailable()" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
                     左奇函
                 </button>
-                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '张桂源')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                <button onclick="this.closest('.full-modal').remove();showGiftNotAvailable()" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
                     张桂源
                 </button>
-                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '陈浚铭')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                <button onclick="this.closest('.full-modal').remove();showGiftNotAvailable()" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
                     陈浚铭
                 </button>
-                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '张函瑞')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                <button onclick="this.closest('.full-modal').remove();showGiftNotAvailable()" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
                     张函瑞
                 </button>
-                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, 'WXYz')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                <button onclick="this.closest('.full-modal').remove();showGiftNotAvailable()" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
                     WXYz
                 </button>
             </div>
-
-            <!-- 隔板 -->
             <div style="border-top:1px solid #EFEFEF;margin:8px 0 12px 0;"></div>
-
-            <!-- 两个选项按钮 -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '路人')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                <button onclick="this.closest('.full-modal').remove();showGiftNotAvailable()" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
                     送给路人
                 </button>
-                <button onclick="this.closest('.full-modal').remove();executeGift(${index}, '李飞')" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
+                <button onclick="this.closest('.full-modal').remove();showGiftNotAvailable()" style="padding:10px;background:#F5F5F5;border:1px solid #EFEFEF;border-radius:12px;font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='#EEEEEE'" onmouseleave="this.style.background='#F5F5F5'">
                     邮寄给李飞
                 </button>
             </div>
-
             <button onclick="this.closest('.full-modal').remove()" style="margin-top:12px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">取消</button>
         </div>
     `;
 
     document.body.appendChild(modal);
-
     modal.addEventListener("click", function(e) {
         if (e.target === modal) modal.remove();
     });
+}
+
+// ================= 赠送功能未开发提示 =================
+function showGiftNotAvailable() {
+    alert('🎁 赠送功能尚未开发，敬请期待~');
 }
 // ================= 执行赠送 =================
 function executeGift(index, target) {
@@ -13636,6 +13535,7 @@ function sellCardByMethod(index, method, finalPrice) {
         myCards.splice(index, 1);
         saveMyCards();
         player.money = (player.money || 0) + earnedMoney;
+        addTransaction('收入', earnedMoney, '出售小卡');
         renderMyPage();
         detailMsg = '获得金钱：' + earnedMoney;
         showResultModal(title, resultMsg + '\n' + detailMsg, function() {
@@ -13706,6 +13606,9 @@ function showResultModal(title, content, infoLines) {
         localStorage.removeItem("chapter2_messages_sent");
         localStorage.removeItem("chapter2_progress");
         localStorage.removeItem("chapter2_branch_choice");
+        // 清除任务标记
+localStorage.removeItem('zhang_dialogue_done');
+localStorage.removeItem('chapter1_all_tasks_triggered');
         
         chapterCompleted = false;
         completedChapters = [false, false, false, false];
@@ -14995,6 +14898,7 @@ function showChapter1EndStory2() {
 
         if (choice === "A") {
             extraText = `"那以后是不是不能常见面了？"
+
 "也不是不能……"他说，声音闷闷的，"就是可能没得以前那么多了。"
 
 "哦。"
@@ -15021,7 +14925,7 @@ function showChapter1EndStory2() {
 
 你忽然有点恨他。你恨他明明有什么话要说，又缩回去了。
 
-你忽然觉得心口很酸。那种酸从胸腔漫上来，一直蔓延到眼眶。你想说"我会想你"，但你不敢。你不知道说了之后他怎么接。他说"那太好了"还好，他万一说"我也想你"呢？你会怎么办？他万一说"你是我妹妹嘛，哥哥当然会想妹妹"呢？你会怎么办？`;
+你忽然觉得心口很酸。你想说"我会想你"，但你不敢。你不知道说了之后他怎么接。他说"那太好了"还好，他万一说"我也想你"呢？你会怎么办？他万一说"你是我妹妹嘛，哥哥当然会想妹妹"呢？你会怎么办？`;
 
         } else if (choice === "B") {
             extraText = `"你为什么不提前告诉我？"
@@ -15041,7 +14945,7 @@ function showChapter1EndStory2() {
 
 "有关。"他抬起头来看你，眼睛亮亮的，认真得不像他，"你是我……"
 
-他又卡住了。你发现他一紧张就会卡壳，嘴唇张开又合上，像那个词在喉咙里转了几圈但出不来。你看着他的嘴唇在路灯下面微微颤了一下，然后他别开脸了。
+他又卡住了。你发现他一紧张就会卡壳，嘴唇张开又合上，像那个词在喉咙里转了几圈但出不来。
 
 "……很重要的朋友。"他说。
 
@@ -15069,6 +14973,7 @@ function showChapter1EndStory2() {
 
         } else if (choice === "C") {
             extraText = `"恭喜你啊。"
+
 张桂源看了你三秒钟。
 
 "……你就说这个？"
@@ -15077,7 +14982,7 @@ function showChapter1EndStory2() {
 
 "我就是觉得——"他顿了一下，"你要是真替我高兴，你笑的时候不是那样子的。"
 
-你说不出话了。你从来没想过他会注意这种事。你忽然很难受。那种难受从胸口往上涌，涌到喉咙口，堵在那里。
+你说不出话了。你从来没想过他会注意这种事。你忽然很难受。
 
 "张桂源。"
 
@@ -15167,7 +15072,7 @@ document.querySelectorAll(".branch-btn[data-choice]").forEach(function(b) {
 
 然后他勾住了你。"骗人是小狗。"
 
-你张了张嘴，声音有点哑："你本来就是小狗。"
+你张了张嘴，声音有点哑："你是小学生吗"
 
 他笑了一声。笑声传过来的时候你感觉到他手指轻轻晃了一下，带动你的指节也跟着晃。他晃了三下，每一下你都能感觉到他指腹的力度——很轻，像怕弄疼你，又像舍不得松。
 然后他松开了。
@@ -15348,31 +15253,62 @@ function handleSearchInput(value) {
 function showSearchResults(showUser) {
     var results = document.getElementById('searchResults');
     var userResult = document.getElementById('searchUserResult');
-    var related = document.getElementById('searchRelatedTags');
+    var related = document.getElementById('searchRelated');
+    var title = document.getElementById('searchResultTitle');
 
     results.style.display = 'block';
 
-    // 用户结果
     if (showUser) {
+        title.textContent = '用户';
         userResult.style.display = 'flex';
+        related.style.display = 'block';
+        
+        // ✅ 更新关注按钮状态
+        var followBtn = document.getElementById('searchFollowBtn');
+        if (followBtn) {
+            if (followedArtists['张桂源']) {
+                followBtn.textContent = '已关注';
+                followBtn.style.background = '#EFEFEF';
+                followBtn.style.color = '#666';
+            } else {
+                followBtn.textContent = '关注';
+                followBtn.style.background = '#E85D75';
+                followBtn.style.color = 'white';
+            }
+        }
+        
+        var relatedTags = document.getElementById('searchRelatedTags');
+        var tagsHtml = '';
+        var shuffled = searchRelatedTags.slice();
+        for (var i = shuffled.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = shuffled[i];
+            shuffled[i] = shuffled[j];
+            shuffled[j] = temp;
+        }
+        shuffled.slice(0, 6).forEach(function(tag) {
+            tagsHtml += '<span style="background:#F0F0F0;padding:4px 12px;border-radius:16px;font-size:12px;color:#666;cursor:pointer;" onclick="searchTag(\'' + tag + '\')">' + tag + '</span>';
+        });
+        relatedTags.innerHTML = tagsHtml;
     } else {
+        title.textContent = '相关搜索';
         userResult.style.display = 'none';
+        related.style.display = 'block';
+        
+        var relatedTags = document.getElementById('searchRelatedTags');
+        var tagsHtml = '';
+        var shuffled = searchRelatedTags.slice();
+        for (var i = shuffled.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = shuffled[i];
+            shuffled[i] = shuffled[j];
+            shuffled[j] = temp;
+        }
+        shuffled.slice(0, 6).forEach(function(tag) {
+            tagsHtml += '<span style="background:#F0F0F0;padding:4px 12px;border-radius:16px;font-size:12px;color:#666;cursor:pointer;" onclick="searchTag(\'' + tag + '\')">' + tag + '</span>';
+        });
+        relatedTags.innerHTML = tagsHtml;
     }
-
-    // 相关搜索
-    var tagsHtml = '';
-    var shuffled = searchRelatedTags.slice();
-    for (var i = shuffled.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = shuffled[i];
-        shuffled[i] = shuffled[j];
-        shuffled[j] = temp;
-    }
-    var selected = shuffled.slice(0, 6);
-    selected.forEach(function(tag) {
-        tagsHtml += '<span style="background:#F0F0F0;padding:4px 12px;border-radius:16px;font-size:12px;color:#666;cursor:pointer;" onclick="searchTag(\'' + tag + '\')">' + tag + '</span>';
-    });
-    related.innerHTML = tagsHtml;
 }
 
 function searchTag(tag) {
@@ -15390,24 +15326,28 @@ function searchTag(tag) {
 
 // 关注按钮
 document.addEventListener('DOMContentLoaded', function() {
-    var followBtn = document.getElementById('searchFollowBtn');
-    if (followBtn) {
-        var isFollowing = false;
-        followBtn.addEventListener('click', function() {
-            isFollowing = !isFollowing;
-            if (isFollowing) {
-                this.textContent = '已关注';
-                this.style.background = '#EFEFEF';
-                this.style.color = '#666';
-                alert('✅ 已关注 张桂源');
-            } else {
-                this.textContent = '关注';
-                this.style.background = '#E85D75';
-                this.style.color = 'white';
-                alert('已取消关注');
-            }
-        });
-    }
+    // 关注按钮
+var followBtn = document.getElementById('searchFollowBtn');
+if (followBtn) {
+    followBtn.addEventListener('click', function() {
+        followedArtists['张桂源'] = !followedArtists['张桂源'];
+        
+        if (followedArtists['张桂源']) {
+            this.textContent = '已关注';
+            this.style.background = '#EFEFEF';
+            this.style.color = '#666';
+            alert('✅ 已关注 张桂源');
+            addToFollowing('张桂源');
+        } else {
+            this.textContent = '关注';
+            this.style.background = '#E85D75';
+            this.style.color = 'white';
+            alert('已取消关注 张桂源');
+            removeFromFollowing('张桂源');
+            loadFollowingList();
+        }
+    });
+}
 });
 
 // 点击页面其他地方关闭搜索结果
@@ -15882,15 +15822,17 @@ function showHotSearch() {
     hotList.innerHTML = html;
 }
 
-// 切换微博 Tab
 function switchWeiboTab(tab) {
     document.querySelectorAll('#weiboTabs .tab').forEach(function(t) {
         t.classList.remove('active');
     });
     document.querySelector('#weiboTabs .tab[data-tab="' + tab + '"]').classList.add('active');
-    // 关闭搜索
+
+    // 关闭搜索结果
     var results = document.getElementById('searchResults');
     if (results) results.style.display = 'none';
+
+    // ✅ 重新渲染微博内容
     renderWeibo();
 }
 
@@ -16128,32 +16070,103 @@ function saveBlockedUsers() {
     }
 }
 
+// ================= 用户主页 =================
 function openUserProfile(userName, weiboIndex, commentIndex) {
     var isBlocked = blockedUsers.indexOf(userName) !== -1;
+    
+    // 判断用户类型
+    var userType = 'normal';
+    var toxicNames = ['素萌萌的我呀', '恋萌癖', '眼角痣', '兔塑好文明', '你又咋了', '小猫总粘人', '小哭包TT', '别碰我宝宝', '恋萌癖'];
+    var gentleNames = ['simplllle', '梦中人', '不是麦当劳', '重庆下小雨', '你所存在的世界', '心跳前奏', '失眠小熊', '温柔知心大姐姐'];
+    var gossipNames = ['进击的老爹汉堡', 'beng不住了呀', '吃瓜中', '吃瓜群众', '围观群众', '不明真相的网友', '路过群众', '豆包'];
+    
+    if (toxicNames.indexOf(userName) !== -1) {
+        userType = 'toxic';
+    } else if (gentleNames.indexOf(userName) !== -1) {
+        userType = 'gentle';
+    } else if (gossipNames.indexOf(userName) !== -1) {
+        userType = 'gossip';
+    }
     
     var modal = document.createElement('div');
     modal.className = 'full-modal';
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    
+    var vipClass = '';
+    var levels = ['金粉', '铁粉', '钻粉'];
+    var randomLevel = levels[Math.floor(Math.random() * levels.length)];
+    if (randomLevel === '金粉') vipClass = 'vip-gold';
+    else if (randomLevel === '铁粉') vipClass = 'vip-blue';
+    else if (randomLevel === '钻粉') vipClass = 'vip-purple';
+    
+    // 根据用户类型分配签名
+    var signature = '';
+    
+    if (userType === 'toxic') {
+        // 毒舌用户 - 随机选择毒舌语录
+        var toxicSignatures = [
+            '你已经输得很彻底。当你点进我主页看到这行字的那一刻起，你就已经输的很彻底了，我的观点像刀刃一样已经深深扎进了你的心里，你试图反驳可是我无能为力，只能试图通过几分钟时间在我的主页里慌忙寻找我的软肋。',
+            '很遗憾地告知你，你到访我主页是我的耻辱，以后不要来了，我喜欢跟有钱有权有势之人往来，我喜欢美好的事物。',
+            '本人正在备战小升初，请勿过多交流，三四年级的小学生不要来问我经验了！我没有义务分享！'
+        ];
+        signature = toxicSignatures[Math.floor(Math.random() * toxicSignatures.length)];
+    } else if (userType === 'gentle') {
+        // 温柔姐姐 - 文艺风格
+        var gentleSignatures = [
+            '愿做一束温柔的光，照亮你前行的路',
+            '生活明朗，万物可爱，未来可期',
+            '做一个温暖的人，不卑不亢，清澈善良',
+            '愿所有美好，都恰逢其时',
+            '温柔半两，从容一生',
+            '保持热爱，奔赴山海，忠于自己，热爱生活',
+            '知世故而不世故，历圆滑而弥天真',
+            '慢慢理解世界，慢慢更新自己',
+            '愿你有足够多的云翳，来造就一个美丽的黄昏',
+            '花店不开了，花继续开',
+            '你是无意穿堂风，偏偏孤倨引山洪',
+            '白茶清欢无别事，我在等风也等你'
+        ];
+        signature = gentleSignatures[Math.floor(Math.random() * gentleSignatures.length)];
+    } else if (userType === 'gossip') {
+        // 吃瓜用户 - 活泼搞笑风格
+        var gossipSignatures = [
+            '豆包 帮我形容一下现在的心情 我现在很崩溃没文化形容不出来 我就一直假装不知道自己的人生完蛋了，然后继续玩手机，真羡慕你们啊，说一句心情不好，小窗全是安慰转账 我呢早晚有一天我把我的遗言发在网上，别人以为是文案嘎达嘎达两下阿帕兹阿帕兹的就复制走了，气得我跳楼时凭借一身厚厚的脂肪毫发无损的落地甚至小幅度回弹 万念俱灰地爬起来 听到围观群众说 好精彩 再来一遍',
+            '不喜欢我的 你点击那个屏蔽 我就消失了 有点恨我的 你点击那个加入黑名单 你就看不见我了 特别恨我的 那我也没办法你只能长按x点击卸载 这样我就魂飞魄散了 我们永生永世都不会再相见了',
+            '此账号发表的所有言论，意在取悦自己，并通过文字或图片强制干预他人的思想，如果翻阅之后出现不适等症状，恭喜你，你怀了我的孩子',
+            '大概是两年前吧，真事儿，我在家躺着，突然感觉到肚子很饿，然后我就起床，一打开冰箱，拿了几个鸡蛋做了个蛋炒饭，吃饱了就不饿了',
+            '今天又在瓜田里上蹿下跳 我不是在吃瓜，就是在去吃瓜的路上 吃瓜一线选手，随时准备战斗 我的快乐就是看别人谈恋爱（吃瓜）瓜田里的猹，说的就是我 每天一个八卦小知识，今天你吃瓜了吗 别急，我在吃瓜，吃完就回你'
+        ];
+        signature = gossipSignatures[Math.floor(Math.random() * gossipSignatures.length)];
+    } else {
+        // 普通用户 - 混合风格
+        var normalSignatures = [
+            '今天也是努力的一天呢',
+            '生活明朗，万物可爱',
+            '永远热爱，永远热泪盈眶',
+            '保持热爱，奔赴山海',
+            '慢慢来，比较快',
+            '你当像鸟飞往你的山',
+            '且听风吟，静待花开',
+            '愿所有美好如期而至',
+            '热爱可抵岁月漫长',
+            '知足且上进，温柔且坚定',
+            '行至朝雾里，坠入暮云间',
+            '山野万里，你是我藏在微风里的欢喜'
+        ];
+        signature = normalSignatures[Math.floor(Math.random() * normalSignatures.length)];
+    }
     
     var blockedHtml = '';
     if (isBlocked) {
         blockedHtml = '<div style="color:#E85D75;font-size:14px;margin-bottom:12px;">你已拉黑对方</div>';
     }
     
-    // ✅ 语录：深灰色，无框，无标题
-    var toxicBanner = `
-        <div style="font-size:12px;color:#999;line-height:1.6;margin-bottom:12px;text-align:center;">
-            你已经输得很彻底。<br>
-            当你点进我主页看到这行字的那一刻起，你就已经输的很彻底了，我的观点像刀刃一样已经深深扎进了你的心里，你试图反驳可是我无能为力，只能试图通过几分钟时间在我的主页里慌忙寻找我的软肋。
-        </div>
-    `;
-    
     modal.innerHTML = `
         <div style="background:white;border-radius:24px;padding:24px 20px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.15);text-align:center;max-height:90vh;overflow-y:auto;">
             <div style="width:60px;height:60px;border-radius:50%;background:#F0F0F0;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 8px auto;color:#999;">👤</div>
             <div style="font-size:18px;font-weight:700;color:#1A1A1A;margin-bottom:2px;">${userName}</div>
-            <div style="font-size:12px;color:#999;margin-bottom:12px;">微博用户</div>
-            ${toxicBanner}
+            <div style="font-size:11px;color:#999;margin-bottom:4px;">${randomLevel}</div>
+            <div style="font-size:12px;color:#666;margin-bottom:12px;line-height:1.6;padding:0 8px;${userType === 'toxic' ? 'color:#333;font-weight:500;' : ''}">${signature}</div>
             ${blockedHtml}
             <div style="display:flex;gap:12px;margin-top:12px;flex-direction:column;">
                 <button onclick="sendPrivateMessage('${userName}')" style="padding:10px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.2s;${isBlocked ? 'opacity:0.5;cursor:not-allowed;' : ''}" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'" ${isBlocked ? 'disabled' : ''}>
@@ -16168,7 +16181,6 @@ function openUserProfile(userName, weiboIndex, commentIndex) {
     `;
     
     document.body.appendChild(modal);
-    
     modal.addEventListener('click', function(e) {
         if (e.target === modal) modal.remove();
     });
@@ -16177,7 +16189,6 @@ function openUserProfile(userName, weiboIndex, commentIndex) {
     modal._weiboIndex = weiboIndex;
     modal._commentIndex = commentIndex;
 }
-
 
 // ================= 拉黑/取消拉黑 =================
 function toggleBlockUser(userName) {
@@ -16334,7 +16345,7 @@ var forumData = [
         type: 'normal',
         likes: 15,
         replies: [
-            { author: '素萌萌的我呀', text: '练不出来 别观望了 直接告诉你答案' },
+            { author: '素萌萌的我呀', text: '练不出来 别观望了 我用最直观最不拖泥带水最简洁的语言直接告诉你答案' },
             { author: '进击的老爹汉堡', text: '我相信他一定可以的！！' },
             { author: '路人乙', text: '我觉得说得挺中肯的' }
         ]
@@ -16359,6 +16370,24 @@ var forumLoadedHtml = '';
 var forumAllLoaded = false;
 
 function renderForum(showMore) {
+    var container = document.getElementById('weiboContent');
+    if (!container) return;
+
+    // ✅ 清空容器，防止残留
+    if (!showMore || forumLoadedHtml === '') {
+        container.innerHTML = '';
+        forumIndex = 0;
+        forumLoadedHtml = '';
+        forumAllLoaded = false;
+        // 打乱数据
+        for (var i = forumData.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = forumData[i];
+            forumData[i] = forumData[j];
+            forumData[j] = temp;
+        }
+    }
+
     var container = document.getElementById('weiboContent');
     if (!container) return;
 
@@ -16849,7 +16878,7 @@ function showBalance() {
     });
 }
 
-// ================= 添加收支记录（工具函数） =================
+// ================= 添加收支记录 =================
 function addTransaction(type, amount, desc) {
     var transactions = [];
     try {
@@ -17434,9 +17463,19 @@ function updateStaminaDisplay() {
     }
 }
 // ================= 任务页面 =================
+// ================= 任务页面 =================
 function openTaskPage() {
-    // 每次都重新读取 localStorage，确保数据最新
-    var chatDone = localStorage.getItem('zhang_dialogue_done') === 'true';
+    // ✅ 检查张桂源对话是否真正完成（检查是否有"等我回来"这条消息）
+    var chatDone = false;
+    if (chatData['张桂源'] && chatData['张桂源'].messages) {
+        for (var i = 0; i < chatData['张桂源'].messages.length; i++) {
+            var msg = chatData['张桂源'].messages[i];
+            if (msg.text && msg.text.indexOf('等我回来') !== -1) {
+                chatDone = true;
+                break;
+            }
+        }
+    }
 
     var wiseDone = player.wise >= 30;
     var moneyDone = player.money >= 120;
@@ -17444,6 +17483,17 @@ function openTaskPage() {
     var stressDone = player.stress < 50;
 
     var allDone = wiseDone && moneyDone && meetDone && stressDone && chatDone;
+
+    // 如果所有任务完成，触发张桂源发消息（只触发一次）
+    if (allDone) {
+        var triggerKey = 'chapter1_all_tasks_triggered';
+        if (!localStorage.getItem(triggerKey)) {
+            localStorage.setItem(triggerKey, 'true');
+            setTimeout(function() {
+                triggerZhangCustomChat();
+            }, 500);
+        }
+    }
 
     var modal = document.createElement("div");
     modal.className = "full-modal";
@@ -17491,7 +17541,6 @@ function openTaskPage() {
         if (e.target === modal) modal.remove();
     });
 }
-
 // ================= 关闭任务并检查触发 =================
 function closeTaskAndCheckTrigger() {
     // 关闭任务弹窗
@@ -17591,7 +17640,7 @@ function triggerZhangCustomChat() {
         }
     );
 }
-// ================= 发送自定义消息（带 AI 回复） =================
+// ================= 发送自定义消息 =================
 function sendCustomMessage() {
     var inputBox = document.getElementById('chatInputBox');
     if (!inputBox) return;
@@ -17622,14 +17671,20 @@ function sendCustomMessage() {
     renderChatMessages();
     renderChatList();
 
+    inputBox.onkeydown = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendCustomMessage();
+    }
+};
+
     // 调用 AI
     callZhangGuiyuanAI(userMessage, function(aiReply) {
-        // 清理 AI 回复：去掉"张桂源："前缀
+        // ... 原有 AI 回复逻辑 ...
         var cleanReply = aiReply;
         cleanReply = cleanReply.replace(/^张桂源[：:]\s*/g, '');
         cleanReply = cleanReply.replace(/张桂源[：:]\s*/g, '');
 
-        // 按行分割成多条消息
         var lines = cleanReply.split('\n').filter(function(line) {
             return line.trim() !== '';
         });
@@ -17638,11 +17693,20 @@ function sendCustomMessage() {
             lines = [cleanReply];
         }
 
-        // 逐条发送消息，每条前显示"正在输入..."
         var msgIndex = 0;
 
         function sendNextMessage() {
             if (msgIndex >= lines.length) {
+                // ✅ 所有消息发完后，重新绑定回车
+                var inputBox2 = document.getElementById('chatInputBox');
+                if (inputBox2) {
+                    inputBox2.onkeydown = function(e) {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendCustomMessage();
+                        }
+                    };
+                }
                 return;
             }
 
@@ -17655,7 +17719,6 @@ function sendCustomMessage() {
                 return;
             }
 
-            // ✅ 显示"对方正在输入..."
             var container = document.getElementById('chatMessages');
             var typingRow = document.createElement('div');
             typingRow.className = 'message-row';
@@ -17664,20 +17727,16 @@ function sendCustomMessage() {
             container.appendChild(typingRow);
             container.scrollTop = container.scrollHeight;
 
-            // ✅ 随机延迟 500-1200ms，模拟真实打字速度
             var typingDelay = Math.floor(Math.random() * 700) + 500;
 
             setTimeout(function() {
-                // 移除"正在输入..."
                 if (typingRow && typingRow.parentNode) {
                     typingRow.remove();
                 }
 
-                // ✅ 获取当前时间作为发送时间
                 var now = new Date();
                 var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
-                // 发送消息
                 chatData['张桂源'].messages.push({
                     from: 'other',
                     text: msgText,
@@ -17694,7 +17753,6 @@ function sendCustomMessage() {
                     container2.scrollTop = container2.scrollHeight;
                 }
 
-                // ✅ 下一条消息间隔 800-1500ms
                 msgIndex++;
                 var nextDelay = Math.floor(Math.random() * 700) + 800;
                 setTimeout(sendNextMessage, nextDelay);
@@ -17702,7 +17760,6 @@ function sendCustomMessage() {
             }, typingDelay);
         }
 
-        // 开始发送第一条
         sendNextMessage();
     });
 }
@@ -18058,6 +18115,189 @@ function sendWXYzNextReplies() {
         }, 700);
     }
     sendNext();
+}
+// ================= 关注系统 =================
+
+// 关注状态
+var followedArtists = {
+    '张桂源': false,
+    '左奇函': false,
+    '杨博文': false,
+    '陈奕恒': false
+};
+
+// 我的关注列表
+var myFollowingList = [];
+
+// 添加关注
+function addToFollowing(name) {
+    if (myFollowingList.indexOf(name) === -1) {
+        myFollowingList.push(name);
+        localStorage.setItem('myFollowingList', JSON.stringify(myFollowingList));
+        renderWeibo();
+    }
+}
+
+// 取消关注
+function removeFromFollowing(name) {
+    var idx = myFollowingList.indexOf(name);
+    if (idx !== -1) {
+        myFollowingList.splice(idx, 1);
+        localStorage.setItem('myFollowingList', JSON.stringify(myFollowingList));
+        renderWeibo();
+    }
+}
+
+// 加载关注列表
+function loadFollowingList() {
+    try {
+        var saved = localStorage.getItem('myFollowingList');
+        if (saved) {
+            myFollowingList = JSON.parse(saved);
+            // 同步 followedArtists 状态
+            myFollowingList.forEach(function(name) {
+                if (followedArtists[name] !== undefined) {
+                    followedArtists[name] = true;
+                }
+            });
+        } else {
+            myFollowingList = [];
+        }
+    } catch(e) {
+        myFollowingList = [];
+    }
+}
+
+function getArtistBigWeibo(name) {
+    if (name === '张桂源') {
+        return [
+            {
+                id: 'big1',
+                author: 'TF家族-张桂源',
+                avatar: '<img src="zgywb.jpg" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">',
+                time: '2022年10月26日 19:47',
+                content: '欢迎来到桂源时间(•_•)v',
+                likes: '1.1万',
+                comments: [
+                    { level: 'gold', user: '桂圆不圆', text: '桂源时间！！！我准时来了！！！', vip: '金粉' },
+                    { level: 'blue', user: '源来是你呀', text: '这个表情符号哈哈哈哈好呆', vip: '铁粉' },
+                    { level: 'purple', user: '今天也想吃桂圆', text: '弟弟头发怎么又湿了，训练辛苦了', vip: '钻粉' },
+                    { level: 'gold', user: '源源的篮球', text: '(•_•)v 这个表情跟你好像', vip: '金粉' },
+                    { level: 'blue', user: '一颗桂圆糖', text: '欢迎欢迎！以后每天都要更新好吗', vip: '铁粉' },
+                    { level: 'gold', user: '桂源的小跟班', text: '终于发微博了！等了好久！', vip: '金粉' },
+                    { level: 'purple', user: '圆滚滚的源', text: '这个嘴角哈哈哈哈好憨好可爱', vip: '钻粉' },
+                    { level: 'gold', user: '桂圆味的冰淇淋', text: '已存图！期待下一次桂源时间！', vip: '金粉' },
+                    { level: 'blue', user: '源来是饭', text: '弟弟今天状态不错！', vip: '铁粉' },
+                    { level: 'gold', user: '桂源的小太阳', text: '好可爱啊啊啊啊啊', vip: '金粉' },
+                    { level: 'purple', user: '奶萌兔兔酱', text: '好乖好乖好乖', vip: '钻粉' },
+                    { level: 'gold', user: '一筐小蟹', text: '这个表情包我收了', vip: '金粉' },
+                    { level: 'blue', user: '与鑫热恋中', text: '好帅好帅好帅', vip: '铁粉' },
+                    { level: 'gold', user: '真源不圆', text: '重庆崽儿加油！奶奶粉支持你！', vip: '金粉' },
+                    { level: 'purple', user: '极禹糖铺', text: '小桂圆加油！', vip: '钻粉' }
+                ]
+            },
+            {
+                id: 'big2',
+                author: 'TF家族-张桂源',
+                avatar: '<img src="zgywb.jpg" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">',
+                time: '2023年3月20日 21:15',
+                content: '哈哈哈今天训练老师夸我了，会继续努力的，你们最近有没有开心的事呢',
+                likes: '4255',
+                comments: [
+                    { level: 'gold', user: '桂圆不圆', text: '老师夸你啥子了！快说快说！', vip: '金粉' },
+                    { level: 'blue', user: '源源的篮球', text: '我的开心事就是看到你发微博了', vip: '铁粉' },
+                    { level: 'purple', user: '一颗桂圆糖', text: '弟弟加油！你是最棒的！', vip: '钻粉' },
+                    { level: 'gold', user: '圆滚滚的源', text: '最近开心的事是考试及格了哈哈哈', vip: '金粉' },
+                    { level: 'blue', user: '源来是饭', text: '你开心我就开心！', vip: '铁粉' },
+                    { level: 'gold', user: '桂源的小跟班', text: '老师夸你跳舞进步了吗？我也要夸你！', vip: '金粉' },
+                    { level: 'purple', user: '源源不绝', text: '今天吃了好吃的火锅！开心！', vip: '钻粉' },
+                    { level: 'gold', user: '源来是你呀', text: '看到你进步我就很开心了', vip: '金粉' },
+                    { level: 'blue', user: '桂圆味的冰淇淋', text: '你开心我们就开心！', vip: '铁粉' },
+                    { level: 'gold', user: '奶萌兔兔酱', text: '宝宝好棒！', vip: '金粉' },
+                    { level: 'purple', user: '小桂圆冲鸭', text: '努力的小孩最帅！', vip: '钻粉' },
+                    { level: 'gold', user: '源来是饭', text: '期待你更多舞台！', vip: '金粉' }
+                ]
+            },
+            {
+                id: 'big3',
+                author: 'TF家族-张桂源',
+                avatar: '<img src="zgywb.jpg" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">',
+                time: '2023年4月1日 20:03',
+                content: '哈哈哈哈，真香！<br><br><img src="wbzx.jpg" style="width:100%; border-radius:12px; margin-top:8px;">',
+                likes: '3876',
+                comments: [
+                    { level: 'gold', user: '桂圆不圆', text: '哈哈哈哈哈哈你终于吃到了！', vip: '金粉' },
+                    { level: 'blue', user: '源源的篮球', text: '看把你高兴的', vip: '铁粉' },
+                    { level: 'purple', user: '一颗桂圆糖', text: '好吃吗宝宝', vip: '钻粉' },
+                    { level: 'gold', user: '圆滚滚的源', text: 'sdfj能不能给我儿吃点好的', vip: '金粉' },
+                    { level: 'blue', user: '源来是饭', text: '真香警告！', vip: '铁粉' },
+                    { level: 'gold', user: '桂源的小跟班', text: '我也想吃了', vip: '金粉' },
+                    { level: 'purple', user: '桂圆味的冰淇淋', text: '好萌好萌呀宝宝', vip: '钻粉' },
+                    { level: 'gold', user: '源来是你呀', text: '哈哈哈哈哈哈就三个字都能感受到你的快乐', vip: '金粉' },
+                    { level: 'blue', user: '奶萌兔兔酱', text: '吃得好开心！', vip: '铁粉' },
+                    { level: 'gold', user: '一筐小蟹', text: '这个表情太真实了', vip: '金粉' },
+                    { level: 'purple', user: '小桂圆冲鸭', text: '笑死我了哈哈哈哈', vip: '钻粉' },
+                    { level: 'gold', user: '真源不圆', text: '桂圆儿好可爱！', vip: '金粉' },
+                    { level: 'blue', user: '与鑫热恋中', text: '太好笑了吧', vip: '铁粉' },
+                    { level: 'gold', user: '极禹糖铺', text: '哈哈哈我也想吃', vip: '金粉' },
+                    { level: 'purple', user: '源源不绝', text: '宝宝开心就好！', vip: '钻粉' }
+                ]
+            }
+        ];
+    }
+    return [];
+}
+// ================= 查看关注艺人全部评论 =================
+function showWeiboDetailFromFollowing(weiboIdx, name) {
+    var weibos = getArtistBigWeibo(name);
+    if (!weibos || weibos.length <= weiboIdx) return;
+    var w = weibos[weiboIdx];
+    
+    var modal = document.createElement('div');
+    modal.className = 'full-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    
+    var commentsHtml = '';
+    if (w.comments && w.comments.length > 0) {
+        w.comments.forEach(function(c) {
+            var vipClass = "";
+            var vipText = "";
+            if (c.level === "gold") {
+                vipClass = "vip-gold";
+                vipText = '<span class="vip-badge ' + vipClass + '" style="margin-left: 6px;">金粉</span>';
+            } else if (c.level === "blue") {
+                vipClass = "vip-blue";
+                vipText = '<span class="vip-badge ' + vipClass + '" style="margin-left: 6px;">铁粉</span>';
+            } else if (c.level === "purple") {
+                vipClass = "vip-purple";
+                vipText = '<span class="vip-badge ' + vipClass + '" style="margin-left: 6px;">钻粉</span>';
+            }
+            commentsHtml += '<div style="padding:6px 0;border-bottom:1px solid #F0F0F0;display:flex;gap:4px;font-size:13px;">';
+            commentsHtml += '<span style="font-weight:600;color:#1A1A1A;flex-shrink:0;">' + c.user + '</span>';
+            commentsHtml += vipText;
+            commentsHtml += '<span style="color:#333;">：' + c.text + '</span>';
+            commentsHtml += '</div>';
+        });
+    }
+    
+    modal.innerHTML = `
+        <div style="background:white;border-radius:24px;padding:20px;width:100%;max-width:400px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <div style="font-size:16px;font-weight:700;color:#1A1A1A;">${w.author}</div>
+                <button onclick="this.closest('.full-modal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">×</button>
+            </div>
+            <div style="font-size:13px;color:#999;margin-bottom:8px;">${w.time}</div>
+            <div style="font-size:14px;color:#333;margin-bottom:12px;padding:8px 0;border-bottom:1px solid #EFEFEF;">${w.content}</div>
+            <div style="font-size:14px;font-weight:600;color:#666;margin-bottom:8px;">💬 全部评论 (${w.comments.length})</div>
+            <div style="max-height:300px;overflow-y:auto;">${commentsHtml}</div>
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:12px;width:100%;padding:10px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;">关闭</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.remove();
+    });
 }
 </script>
 </body>
