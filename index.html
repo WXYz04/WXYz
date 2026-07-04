@@ -8656,7 +8656,7 @@ function sendMultipleReplies(replies, date, callback) {
 // ================= 共通分支 =================
 function showCommonBranch() {
     showChatOptions([
-        { text: "不好", next: 'branch_a' },
+        { text: "不好（建议）", next: 'branch_a' },
         { text: "好", next: 'branch_b' }
     ]);
 }
@@ -14516,7 +14516,7 @@ function showChatOptions(options) {
                 msgTime = "14:34";
             } else if (selected.text === "你下午不回来？" || selected.text === "谁要你接了") {
                 msgTime = "14:37";
-            } else if (selected.text === "好" || selected.text === "不好") {
+            } else if (selected.text === "好" || selected.text === "不好（建议）") {
                 msgTime = "14:39";
             } else if (selected.text === "我逗你的" || selected.text === "你为啥来接我") {
                 msgTime = "14:41";
@@ -14750,7 +14750,7 @@ function handleChapter1Next(step) {
     } else if (step === 'pickup_b') {
         showPickupBReply();
     } else if (step === 'branch_a') {
-        // 选择"不好"后，执行 executeBranchA
+        // 选择"不好（建议）"后，执行 executeBranchA
         // executeBranchA 内部会继续弹出"我逗你的"和"你为啥来接我"的选项
         executeBranchA();
     } else if (step === 'branch_b') {
