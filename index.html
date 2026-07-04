@@ -3723,7 +3723,7 @@ function renderChatList() {
         var friend = friends[i];
         var data = chatData[friend] || { messages: [], newMsg: false };
         
-        // 获取最后一条消息（只取对方发的）
+        // 获取最后一条消息
         var lastMsg = "";
         if (data.messages && data.messages.length > 0) {
             for (var j = data.messages.length - 1; j >= 0; j--) {
@@ -3736,12 +3736,11 @@ function renderChatList() {
             lastMsg = "暂无消息";
         }
 
-        // ✅ 计算未读数量（只统计对方发的且 read === false）
+        // 计算未读数量
         var unreadCount = 0;
         if (data.messages && data.messages.length > 0) {
             for (var k = 0; k < data.messages.length; k++) {
-                var msg = data.messages[k];
-                if (msg.from === "other" && msg.read === false) {
+                if (data.messages[k].from === "other" && !data.messages[k].read) {
                     unreadCount++;
                 }
             }
@@ -4355,7 +4354,6 @@ function openChat(contact) {
             }
         }
         data.newMsg = false;
-        
         renderChatList();
         if (chapterCompleted) {
             updateNextChapterButton();
@@ -13785,7 +13783,6 @@ achievements = [
     document.getElementById("chatBackBtn").onclick = function() {
         document.getElementById("chatListScreen").style.display = "block";
         document.getElementById("chatDetailScreen").style.display = "none";
-        renderChatList(); 
         
         // 如果是第二章且聊天已完成，显示分支后续剧情
         if (chapter2ChatDone) {
@@ -14568,53 +14565,59 @@ function insertChatText(text) {
     toggleChatExtra();
 }
 function showChatOptions(options) {
-    var inputBox = document.getElementById('chatInputBox');
-    if (!inputBox) return;
+    var extraArea = document.getElementById('chatExtraArea');
+    if (!extraArea) {
+        console.log('❌ chatExtraArea 不存在');
+        return;
+    }
 
-    // 清空输入框
-    inputBox.innerHTML = '';
-    
-    // 创建选项容器（在输入框内部）
-    var optionsContainer = document.createElement('div');
-    optionsContainer.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;width:100%;';
-    
+    var html = '<div style="display:flex;flex-direction:column;gap:6px;padding:4px 0;">';
     options.forEach(function(opt, idx) {
-        var btn = document.createElement('span');
-        btn.textContent = opt.text;
-        btn.style.cssText = 'background:#F0F0F0;padding:4px 12px;border-radius:14px;font-size:13px;color:#333;cursor:pointer;display:inline-block;margin:2px 0;';
-        btn.dataset.idx = idx;
-        btn.onclick = function(e) {
-            e.stopPropagation();
-            var idx2 = parseInt(this.dataset.idx);
-            var selected = options[idx2];
+        html += '<button class="chat-option-btn" data-idx="' + idx + '" style="background:white;border:1px solid #EFEFEF;border-radius:12px;padding:10px 14px;font-size:14px;color:#333;cursor:pointer;text-align:left;transition:all 0.2s;width:100%;" onmouseenter="this.style.background=\'#f5f5f5\'" onmouseleave="this.style.background=\'white\'">' + opt.text + '</button>';
+    });
+    html += '</div>';
+    extraArea.innerHTML = html;
+    extraArea.style.display = 'block';
+    setTimeout(function() {
+        extraArea.style.maxHeight = '200px';
+    }, 10);
+
+    extraArea.querySelectorAll('.chat-option-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var idx = parseInt(this.dataset.idx);
+            var selected = options[idx];
             var isQuote = !!currentQuoteText;
             
-            // 发送玩家消息
-            sendPlayerMessage(selected.text, isQuote, "14:26");
+            // 根据选项内容匹配时间
+            var msgTime = "14:26";
+            if (selected.text === "没有，我们在上体育课") {
+                msgTime = "14:34";
+            } else if (selected.text === "你下午不回来？" || selected.text === "谁要你接了") {
+                msgTime = "14:37";
+            } else if (selected.text === "好" || selected.text === "不好") {
+                msgTime = "14:39";
+            } else if (selected.text === "我逗你的" || selected.text === "你为啥来接我") {
+                msgTime = "14:41";
+            } else if (selected.text === "好好好，我等你") {
+                msgTime = "14:42";
+            }
             
-            // 清空输入框
-            inputBox.innerHTML = '';
-            inputBox.contentEditable = 'true';
-            inputBox.focus();
-            
-            // 执行下一步
+            sendPlayerMessage(selected.text, isQuote, msgTime);
+
+            var area = document.getElementById('chatExtraArea');
+            if (area) {
+                area.style.display = 'none';
+                area.style.maxHeight = '0';
+                area.innerHTML = '';
+            }
+
             if (selected.next) {
                 setTimeout(function() {
                     handleChapter1Next(selected.next);
                 }, 500);
             }
-        };
-        optionsContainer.appendChild(btn);
-        // 添加空格分隔
-        optionsContainer.appendChild(document.createTextNode(' '));
+        });
     });
-    
-    inputBox.appendChild(optionsContainer);
-    inputBox.contentEditable = 'false';
-    inputBox.style.cursor = 'default';
-    
-    // 聚焦到输入框（虽然不可编辑，但保持视觉效果）
-    inputBox.focus();
 }
 function sendPlayerMessage(text, isQuote, time) {
     var date = new Date().toLocaleDateString();
