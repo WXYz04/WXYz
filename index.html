@@ -4460,41 +4460,23 @@ function openChat(contact) {
 
 // ========== 张桂源 ==========
 if (contact === "张桂源") {
-    // ✅ 检测是否有"想我没"消息，有则解锁自定义聊天
-    var hasXiangWoMei = false;
-    if (chatData["张桂源"] && chatData["张桂源"].messages) {
+    // 检查是否有"你今天放学旁边那个人是谁"这条消息
+    var hasFirstMsg = false;
+    if (chatData["张桂源"].messages) {
         for (var i = 0; i < chatData["张桂源"].messages.length; i++) {
-            if (chatData["张桂源"].messages[i].text && chatData["张桂源"].messages[i].text.indexOf("想我没") !== -1) {
-                hasXiangWoMei = true;
+            if (chatData["张桂源"].messages[i].text && chatData["张桂源"].messages[i].text.indexOf("你今天放学旁边那个人是谁") !== -1) {
+                hasFirstMsg = true;
                 break;
             }
         }
     }
     
-    if (hasXiangWoMei) {
-        var inputBoxCustom = document.getElementById('chatInputBox');
-        if (inputBox) {
-            inputBox.innerText = '';
-            inputBox.style.cssText = 'flex:1;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:18px;background:rgba(255,255,255,0.85);color:#333;font-size:14px;outline:none;min-height:32px;cursor:text;pointer-events:auto;';
-            inputBox.contentEditable = 'true';
-            inputBox.onclick = null;
-            inputBox.onkeydown = function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendCustomMessage();
-                }
-            };
-        }
-        var plusBtn = document.getElementById('chatPlusBtn');
-        if (plusBtn) {
-            var newPlusBtn = plusBtn.cloneNode(true);
-            plusBtn.parentNode.replaceChild(newPlusBtn, plusBtn);
-            newPlusBtn.onclick = function() {
-                sendCustomMessage();
-            };
-        }
+    if (chatData["张桂源"].roundCompleted) {
+        inputBox.innerText = "本章聊天已完成，好感度+" + zhangLoveTotal;
+        inputBox.onclick = function() {
+            alert("本章聊天已完成");
+        };
         renderChatMessages();
-        // ✅ 绑定三个点按钮
         var moreBtn = document.getElementById('chatMoreBtn');
         if (moreBtn) {
             var newMoreBtn = moreBtn.cloneNode(true);
@@ -4504,7 +4486,7 @@ if (contact === "张桂源") {
                 showChatMoreMenu(contact);
             });
         }
-        return;  // ✅ 直接返回，不再执行后面的任何代码
+        return;
     }
     
     if (hasFirstMsg && chatData["张桂源"].messages.length === 1) {
@@ -4517,7 +4499,6 @@ if (contact === "张桂源") {
                 startZhangChat();
             }
         };
-        // ✅ 绑定三个点按钮
         var moreBtn = document.getElementById('chatMoreBtn');
         if (moreBtn) {
             var newMoreBtn = moreBtn.cloneNode(true);
@@ -4532,8 +4513,18 @@ if (contact === "张桂源") {
     
     // 如果没有任何消息，正常情况
     if (!hasFirstMsg && chatData["张桂源"].messages.length === 0) {
-        // ✅ 自定义聊天模式下不显示"暂无消息"
-        if (localStorage.getItem('chapter1_all_tasks_triggered') === 'true') {
+        // ✅ 检测是否有"想我没"，有则解锁输入框
+        var hasXiang = false;
+        if (chatData["张桂源"] && chatData["张桂源"].messages) {
+            for (var k = 0; k < chatData["张桂源"].messages.length; k++) {
+                if (chatData["张桂源"].messages[k].text && chatData["张桂源"].messages[k].text.indexOf("想我没") !== -1) {
+                    hasXiang = true;
+                    break;
+                }
+            }
+        }
+        
+        if (hasXiang) {
             inputBox.innerText = '';
             inputBox.style.cssText = 'flex:1;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:18px;background:rgba(255,255,255,0.85);color:#333;font-size:14px;outline:none;min-height:32px;cursor:text;pointer-events:auto;';
             inputBox.contentEditable = 'true';
@@ -4544,12 +4535,15 @@ if (contact === "张桂源") {
                     sendCustomMessage();
                 }
             };
-        } else {
-            inputBox.innerText = "暂无消息";
-            inputBox.onclick = function() {
-                alert("💬 还没有对话");
-            };
-        }
+            var plusBtn = document.getElementById('chatPlusBtn');
+            if (plusBtn) {
+                var newPlusBtn = plusBtn.cloneNode(true);
+                plusBtn.parentNode.replaceChild(newPlusBtn, plusBtn);
+                newPlusBtn.onclick = function() {
+                    sendCustomMessage();
+                };
+            }
+        } 
         renderChatMessages();
         var moreBtn = document.getElementById('chatMoreBtn');
         if (moreBtn) {
@@ -4563,37 +4557,6 @@ if (contact === "张桂源") {
         return;
     }
     
-    // ✅ 检测是否有"想我没"消息，决定是否解锁自定义聊天
-var hasXiangWoMei = false;
-if (chatData["张桂源"] && chatData["张桂源"].messages) {
-    for (var idx = 0; idx < chatData["张桂源"].messages.length; idx++) {
-        if (chatData["张桂源"].messages[idx].text && chatData["张桂源"].messages[idx].text.indexOf("想我没") !== -1) {
-            hasXiangWoMei = true;
-            break;
-        }
-    }
-}
-
-if (hasXiangWoMei) {
-    inputBox.innerText = '';
-    inputBox.style.cssText = 'flex:1;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:18px;background:rgba(255,255,255,0.85);color:#333;font-size:14px;outline:none;min-height:32px;cursor:text;pointer-events:auto;';
-    inputBox.contentEditable = 'true';
-    inputBox.onclick = null;
-    inputBox.onkeydown = function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendCustomMessage();
-        }
-    };
-    var plusBtn = document.getElementById('chatPlusBtn');
-    if (plusBtn) {
-        var newPlusBtn = plusBtn.cloneNode(true);
-        plusBtn.parentNode.replaceChild(newPlusBtn, plusBtn);
-        newPlusBtn.onclick = function() {
-            sendCustomMessage();
-        };
-    }
-} else {
     inputBox.innerText = "输入内容";
     inputBox.onclick = function() {
         if (zhangWaitingForOption) {
@@ -4602,35 +4565,7 @@ if (hasXiangWoMei) {
             alert("请等待对方说完话，选项会自动弹出");
         }
     };
-}
-renderChatMessages();
-
-    // ✅ 自定义聊天模式：解锁输入框
-    if (localStorage.getItem('chapter1_all_tasks_triggered') === 'true') {
-        var inputBox2 = document.getElementById('chatInputBox');
-        if (inputBox2) {
-            inputBox2.innerText = '';
-            inputBox2.style.cssText = 'flex:1;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:18px;background:rgba(255,255,255,0.85);color:#333;font-size:14px;outline:none;min-height:32px;cursor:text;pointer-events:auto;';
-            inputBox2.contentEditable = 'true';
-            inputBox2.onclick = null;
-            inputBox2.onkeydown = function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendCustomMessage();
-                }
-            };
-        }
-        var plusBtn = document.getElementById('chatPlusBtn');
-        if (plusBtn) {
-            var newPlusBtn = plusBtn.cloneNode(true);
-            plusBtn.parentNode.replaceChild(newPlusBtn, plusBtn);
-            newPlusBtn.onclick = function() {
-                sendCustomMessage();
-            };
-        }
-    }
-
-    // ✅ 绑定三个点按钮
+    renderChatMessages();
     var moreBtn = document.getElementById('chatMoreBtn');
     if (moreBtn) {
         var newMoreBtn = moreBtn.cloneNode(true);
@@ -4639,6 +4574,51 @@ renderChatMessages();
             e.stopPropagation();
             showChatMoreMenu(contact);
         });
+    }
+
+    // ✅ 检测是否有"想我没"消息，有则解锁自定义聊天（放在最后）
+    var hasXiangWoMei = false;
+    if (chatData["张桂源"] && chatData["张桂源"].messages) {
+        for (var j = 0; j < chatData["张桂源"].messages.length; j++) {
+            if (chatData["张桂源"].messages[j].text && chatData["张桂源"].messages[j].text.indexOf("想我没") !== -1) {
+                hasXiangWoMei = true;
+                break;
+            }
+        }
+    }
+    
+    if (hasXiangWoMei) {
+        var inputBoxCustom = document.getElementById('chatInputBox');
+        if (inputBoxCustom) {
+            inputBoxCustom.innerText = '';
+            inputBoxCustom.style.cssText = 'flex:1;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:18px;background:rgba(255,255,255,0.85);color:#333;font-size:14px;outline:none;min-height:32px;cursor:text;pointer-events:auto;';
+            inputBoxCustom.contentEditable = 'true';
+            inputBoxCustom.onclick = null;
+            inputBoxCustom.onkeydown = function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendCustomMessage();
+                }
+            };
+        }
+        var plusBtnCustom = document.getElementById('chatPlusBtn');
+        if (plusBtnCustom) {
+            var newPlusBtn = plusBtnCustom.cloneNode(true);
+            plusBtnCustom.parentNode.replaceChild(newPlusBtn, plusBtnCustom);
+            newPlusBtn.onclick = function() {
+                sendCustomMessage();
+            };
+        }
+        // ✅ 绑定三个点按钮
+        var moreBtn2 = document.getElementById('chatMoreBtn');
+        if (moreBtn2) {
+            var newMoreBtn2 = moreBtn2.cloneNode(true);
+            moreBtn2.parentNode.replaceChild(newMoreBtn2, moreBtn2);
+            newMoreBtn2.addEventListener('click', function(e) {
+                e.stopPropagation();
+                showChatMoreMenu(contact);
+            });
+        }
     }
 }
     // ========== 三个好友 ==========
@@ -4708,12 +4688,6 @@ renderChatMessages();
         
 }
 
-    // ========== 其他 ==========
-    inputBox.innerText = "暂无新消息";
-    inputBox.onclick = function() {
-        alert("暂无新对话");
-    };
-    renderChatMessages();
 }
 // ================= 好友聊天选项处理 =================
 function showFriendChatOptions(contact) {
