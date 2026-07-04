@@ -4396,33 +4396,52 @@ if (contact === "张桂源") {
         }
     }
     
-    if (!chatData["张桂源"].roundCompleted) {
-        // 如果有第一条消息，保留它，启动聊天
-        if (hasFirstMsg && chatData["张桂源"].messages.length === 1) {
-            if (!chatData["张桂源"]._flowStarted) {
-                chatData["张桂源"]._flowStarted = true;
-                startZhangChat();
-            }
-        } else if (!hasFirstMsg && chatData["张桂源"].messages.length === 0) {
-            startZhangChat();
-        }
-        
-        inputBox.innerText = "输入内容";
-        inputBox.onclick = function() {
-            if (zhangWaitingForOption) {
-                alert("请直接点击上面的选项按钮");
-            } else {
-                alert("请等待对方说完话，选项会自动弹出");
-            }
-        };
-    } else {
+    // 如果聊天已完成
+    if (chatData["张桂源"].roundCompleted) {
         inputBox.innerText = "本章聊天已完成，好感度+" + zhangLoveTotal;
         inputBox.onclick = function() {
             alert("本章聊天已完成");
         };
+        renderChatMessages();
+        return;
     }
+    
+    // 如果已经有第一条消息，显示它，等用户点击输入框才启动聊天
+    if (hasFirstMsg && chatData["张桂源"].messages.length === 1) {
+        // 显示消息，不启动聊天
+        renderChatMessages();
+        inputBox.innerText = "点击开始对话";
+        inputBox.style.color = "#999";
+        inputBox.onclick = function() {
+            // 用户点击输入框后才启动聊天
+            if (!chatData["张桂源"]._flowStarted) {
+                chatData["张桂源"]._flowStarted = true;
+                startZhangChat();
+            }
+        };
+        return;
+    }
+    
+    // 如果没有任何消息，正常情况
+    if (!hasFirstMsg && chatData["张桂源"].messages.length === 0) {
+        inputBox.innerText = "暂无消息";
+        inputBox.onclick = function() {
+            alert("💬 还没有对话");
+        };
+        renderChatMessages();
+        return;
+    }
+    
+    // 其他情况（聊天进行中）
+    inputBox.innerText = "输入内容";
+    inputBox.onclick = function() {
+        if (zhangWaitingForOption) {
+            alert("请直接点击上面的选项按钮");
+        } else {
+            alert("请等待对方说完话，选项会自动弹出");
+        }
+    };
     renderChatMessages();
-    return;
 }
     // ========== 三个好友 ==========
     if (contact === "陈太帅" || contact === "哈哈哈" || contact === "zhang憨蜹") {
