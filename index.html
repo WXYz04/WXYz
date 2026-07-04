@@ -3447,7 +3447,81 @@ function sendWXYzNextReplies() {
     }
     sendNext();
 }
+// ================= 辅助：发送 WXYz 多条回复 =================
+function sendWXYzReplies(replies, callback) {
+    console.log('sendWXYzReplies 被调用, 回复数量:', replies.length);
+    var date = new Date().toLocaleDateString();
+    var idx = 0;
+    
+    function sendNext() {
+        if (idx >= replies.length) {
+            console.log('所有回复发送完毕，调用 callback');
+            if (callback) callback();
+            return;
+        }
+        
+        var container = document.getElementById("chatMessages");
+        var typingRow = document.createElement("div");
+        typingRow.className = "message-row";
+        typingRow.style.justifyContent = "flex-start";
+        typingRow.innerHTML = '<div class="message-avatar"><img src="WXYz.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        container.appendChild(typingRow);
+        container.scrollTop = container.scrollHeight;
+        
+        setTimeout(function() {
+            typingRow.remove();
+            chatData['WXYz'].messages.push({
+                from: "other",
+                text: replies[idx].text,
+                time: replies[idx].time,
+                avatar: replies[idx].avatar || "👯",
+                date: date,
+                read: false
+            });
+            renderChatMessages();
+            renderChatList();
+            idx++;
+            setTimeout(sendNext, 600);
+        }, 700);
+    }
+    sendNext();
+}
 
+// ================= 辅助：弹出玩家回复选项 =================
+function showPlayerReply2(options, callback) {
+    console.log('showPlayerReply2 被调用, 选项数量:', options.length);
+    var existing = document.querySelector('.option-modal');
+    if (existing) existing.remove();
+    
+    var modal = document.createElement("div");
+    modal.className = "option-modal";
+    var html = '<div style="margin-bottom:12px; font-weight:600;">选择回复</div>';
+    options.forEach(function(opt, idx) {
+        html += '<button class="option-btn" data-choice="' + idx + '">「' + opt.text + '」</button>';
+    });
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+    
+    modal.querySelectorAll(".option-btn").forEach(function(btn, idx) {
+        btn.onclick = function() {
+            modal.remove();
+            var date = new Date().toLocaleDateString();
+            var selected = options[idx];
+            chatData['WXYz'].messages.push({
+                from: "me",
+                text: selected.text,
+                time: selected.time || "现在",
+                avatar: "🐰",
+                date: date,
+                read: true
+            });
+            renderChatMessages();
+            renderChatList();
+            console.log('玩家选择了:', selected.text);
+            if (callback) callback();
+        };
+    });
+}
 // ================= WXYz 分支选项 =================
 function showWXYZBranchOptions() {
     var existing = document.querySelector('.option-modal');
@@ -3512,7 +3586,7 @@ function showWXYZBranchOptions() {
                                         { text: "你看不到我的脸", time: "22:38" }
                                     ], function() {
                                         var replies4 = [
-                                            { from: "WXYz", text: "啧啧啧", time: "22:38", avatar: "👯" }
+                                            { from: "WXYz", text: "我看不到也晓得", time: "22:38", avatar: "👯" }
                                         ];
                                         sendWXYzReplies(replies4, function() {
                                             chatData['WXYz'].roundCompleted = true;
