@@ -2881,7 +2881,10 @@ function doBeg() {
 }
 // ================= 才艺 =================
 function doTalent() {
+     // ✅ 消耗1点体力
+    if (!consumeStamina(1)) return;
     if (player.wise < 30) {
+        
         alert("❌ 智慧不够哦，好好学习，daydayup！\n（当前智慧：" + player.wise + "/30）");
         return;
     }
@@ -2977,7 +2980,8 @@ function closeResultModal(hasCallback) {
     money: 100,    // 金钱/余额（初始100）
     stress: 10,  // ✅ 新增压力值
     fans: 500 ,
-    stamina: 25
+    stamina: 25,
+     transactions: []
 };
 // 关注状态
 var followedArtists = {
@@ -2986,6 +2990,9 @@ var followedArtists = {
     '杨博文': false,
     '陈奕恒': false
 };
+// 自动存档ID
+var AUTO_SAVE_ID = 5;
+var autoSaveTriggered = false;
 // ================= 压力状态判断 =================
 function getStressMultiplier() {
     // 压力大于50时，好属性减半，坏属性翻倍
@@ -3027,6 +3034,57 @@ if (!localStorage.getItem('transactions')) {
     "zhang憨蜹": false
 };
     // ================= 多存档系统 =================
+    // ================= IndexedDB 操作函数 =================
+
+function openDB() {
+    return new Promise(function(resolve, reject) {
+        var request = indexedDB.open('SisterSimulatorDB', 1);
+        request.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('saves')) {
+                db.createObjectStore('saves', { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = function(e) { resolve(e.target.result); };
+        request.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+function saveToIndexedDB(slotId, data) {
+    return openDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('saves', 'readwrite');
+            var store = tx.objectStore('saves');
+            store.put({ id: 'save_' + slotId, data: data, time: new Date().toISOString() });
+            tx.oncomplete = function() { resolve(); };
+            tx.onerror = function() { reject(tx.error); };
+        });
+    });
+}
+
+function loadFromIndexedDB(slotId) {
+    return openDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('saves', 'readonly');
+            var store = tx.objectStore('saves');
+            var request = store.get('save_' + slotId);
+            request.onsuccess = function() { resolve(request.result); };
+            request.onerror = function() { reject(request.error); };
+        });
+    });
+}
+
+function getAllSavesFromIndexedDB() {
+    return openDB().then(function(db) {
+        return new Promise(function(resolve, reject) {
+            var tx = db.transaction('saves', 'readonly');
+            var store = tx.objectStore('saves');
+            var request = store.getAll();
+            request.onsuccess = function() { resolve(request.result); };
+            request.onerror = function() { reject(request.error); };
+        });
+    });
+}
     const MAX_SAVES = 5;
         let savedOptions = null;      // 保存当前选项
     let savedOptionsCallback = null;  // 保存回调
@@ -3062,6 +3120,7 @@ if (!localStorage.getItem('transactions')) {
                 danger: player.danger,
                 fans: player.fans,
                 allMyWeibo: allMyWeibo || [],
+                 transactions: player.transactions || [] 
             },
             currentChapter: currentChapter,
             chapterCompleted: chapterCompleted,
@@ -3150,7 +3209,8 @@ if (!localStorage.getItem('transactions')) {
                 chatData["WXYz"].roundCompleted = data.chatData["WXYz"].roundCompleted;
             }
         }
-
+// 恢复收支记录
+player.transactions = data.player.transactions || [];
         // 恢复朋友圈
         if (data.allMoments) allMoments = data.allMoments;
         if (data.myMoments) myMoments = data.myMoments;
@@ -3236,88 +3296,183 @@ if (data.allMyWeibo) {
         }
         // 注意：不设置 zhangWaitingForOption = false
     }
-    // 显示存档管理弹窗
-    function renderSaveManagerModal() {
-        let modal = document.createElement("div");
-        modal.className = "save-manager-modal";
-        
-        let saves = getAllSaves();
-        let savesHtml = `<div class="save-manager-content">
-            <div class="modal-header" style="margin-bottom:16px;">
-                <h3>存档管理</h3>
-                <button class="close-modal" style="background:none; border:none; font-size:24px; cursor:pointer;">×</button>
-            </div>`;
-        
-        for (let save of saves) {
-            if (save.data) {
-                savesHtml += `
-                    <div class="save-slot" data-slot="${save.id}">
-                        <div class="slot-title">存档 ${save.id}</div>
-                        <div class="slot-info">第${save.data.currentChapter}章 · ${save.data.chapterTitle || ""}</div>
-                        <div class="slot-info">爱意值：${save.data.player.love}</div>
-                        <div class="slot-info">保存时间：${save.data.savedAt}</div>
-                        <div class="save-slot-buttons">
-                            <button class="btn-load" data-slot="${save.id}" data-action="load">读取</button>
-                            <button class="btn-overwrite" data-slot="${save.id}" data-action="overwrite">覆盖</button>
-                            <button class="btn-delete" data-slot="${save.id}" data-action="delete">删除</button>
-                        </div>
-                    </div>
-                `;
-            } else {
-                savesHtml += `
-                    <div class="save-slot empty" data-slot="${save.id}">
-                        <div class="slot-title">存档 ${save.id}</div>
-                        <div class="slot-info">空存档</div>
-                        <div class="save-slot-buttons">
-                            <button class="btn-overwrite" data-slot="${save.id}" data-action="overwrite">保存到此</button>
-                        </div>
-                    </div>
-                `;
+   function renderSaveManagerModal() {
+    var modal = document.createElement("div");
+    modal.className = "save-manager-modal";
+
+    // ✅ 异步读取 IndexedDB 和 localStorage
+    var saves = [];
+    
+    // 先检查 localStorage 的存档1-4
+    for (var i = 1; i <= 4; i++) {
+        var data = localStorage.getItem('sisterSimulatorSave_' + i);
+        if (data) {
+            try {
+                saves.push({ id: i, data: JSON.parse(data), source: 'localStorage' });
+            } catch(e) {
+                saves.push({ id: i, data: null, source: 'localStorage' });
             }
+        } else {
+            saves.push({ id: i, data: null, source: 'localStorage' });
         }
-        
-        savesHtml += `</div>`;
-        modal.innerHTML = savesHtml;
-        document.body.appendChild(modal);
-        
-        // 绑定关闭按钮
-        modal.querySelector(".close-modal").onclick = () => modal.remove();
-        
-        // 绑定按钮事件
-        modal.querySelectorAll("[data-action='load']").forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                let slot = parseInt(btn.dataset.slot);
-                if (confirm(`确定要读取存档 ${slot} 吗？当前未保存的进度将会丢失。`)) {
-                    loadFromSlot(slot);
-                    modal.remove();
-                }
-            });
-        });
-        
-        modal.querySelectorAll("[data-action='overwrite']").forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                let slot = parseInt(btn.dataset.slot);
-                if (confirm(`确定要保存到存档 ${slot} 吗？`)) {
-                    saveToSlot(slot);
-                    modal.remove();
-                }
-            });
-        });
-        
-        modal.querySelectorAll("[data-action='delete']").forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                let slot = parseInt(btn.dataset.slot);
-                deleteSlot(slot);
-                modal.remove();
-            });
-        });
-        
-        // 点击背景关闭
-        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
     }
+    
+    // 检查存档5（自动存档）先从 IndexedDB 读取
+    if (typeof loadFromIndexedDB === 'function') {
+        loadFromIndexedDB(5).then(function(result) {
+            if (result && result.data) {
+                saves.push({ id: 5, data: result.data, source: 'IndexedDB' });
+            } else {
+                // IndexedDB 没有，检查 localStorage
+                var autoData = localStorage.getItem('sisterSimulatorAutoSave');
+                if (autoData) {
+                    try {
+                        saves.push({ id: 5, data: JSON.parse(autoData), source: 'localStorage' });
+                    } catch(e) {
+                        saves.push({ id: 5, data: null, source: 'localStorage' });
+                    }
+                } else {
+                    saves.push({ id: 5, data: null, source: 'localStorage' });
+                }
+            }
+            buildSaveManagerUI(modal, saves);
+        }).catch(function() {
+            // IndexedDB 出错，走 localStorage
+            var autoData = localStorage.getItem('sisterSimulatorAutoSave');
+            if (autoData) {
+                try {
+                    saves.push({ id: 5, data: JSON.parse(autoData), source: 'localStorage' });
+                } catch(e) {
+                    saves.push({ id: 5, data: null, source: 'localStorage' });
+                }
+            } else {
+                saves.push({ id: 5, data: null, source: 'localStorage' });
+            }
+            buildSaveManagerUI(modal, saves);
+        });
+    } else {
+        // 没有 IndexedDB，走 localStorage
+        var autoData = localStorage.getItem('sisterSimulatorAutoSave');
+        if (autoData) {
+            try {
+                saves.push({ id: 5, data: JSON.parse(autoData), source: 'localStorage' });
+            } catch(e) {
+                saves.push({ id: 5, data: null, source: 'localStorage' });
+            }
+        } else {
+            saves.push({ id: 5, data: null, source: 'localStorage' });
+        }
+        buildSaveManagerUI(modal, saves);
+    }
+}
+
+function buildSaveManagerUI(modal, saves) {
+    var savesHtml = '<div class="save-manager-content">' +
+        '<div class="modal-header" style="margin-bottom:16px;">' +
+        '<h3>📂 存档管理</h3>' +
+        '<button class="close-modal" style="background:none; border:none; font-size:24px; cursor:pointer;">×</button>' +
+        '</div>';
+
+    for (var i = 0; i < saves.length; i++) {
+        var save = saves[i];
+        var id = save.id;
+        var data = save.data;
+        var source = save.source || 'localStorage';
+        var isAutoSave = (id === 5);
+        
+        if (data) {
+            var sourceLabel = source === 'IndexedDB' ? '📦 IndexedDB' : '💾 localStorage';
+            savesHtml += '<div class="save-slot" data-slot="' + id + '" style="' + (isAutoSave ? 'border:2px solid #E85D75;' : '') + '">' +
+                '<div class="slot-title">' + (isAutoSave ? '💾 自动存档' : '📁 存档 ' + id) + '</div>' +
+                '<div class="slot-info">📖 第' + (data.currentChapter || 1) + '章 · ' + (data.chapterTitle || "") + '</div>' +
+                '<div class="slot-info">❤️ 爱意值：' + (data.player ? data.player.love : 0) + '</div>' +
+                '<div class="slot-info">📅 保存时间：' + (data.savedAt || "未知") + '</div>' +
+                (isAutoSave ? '<div class="slot-info" style="color:#E85D75;">🤖 触发"想我没"时自动保存</div>' : '') +
+                '<div class="slot-info" style="color:#999;font-size:11px;">📍 ' + sourceLabel + '</div>' +
+                '<div class="save-slot-buttons">' +
+                '<button class="btn-load" data-slot="' + id + '" data-action="load">读取</button>' +
+                (isAutoSave ? '' : '<button class="btn-overwrite" data-slot="' + id + '" data-action="overwrite">覆盖</button>') +
+                (isAutoSave ? '' : '<button class="btn-delete" data-slot="' + id + '" data-action="delete">删除</button>') +
+                '</div>' +
+                '</div>';
+        } else {
+            savesHtml += '<div class="save-slot empty" data-slot="' + id + '">' +
+                '<div class="slot-title">' + (isAutoSave ? '💾 自动存档' : '📁 存档 ' + id) + '</div>' +
+                '<div class="slot-info">' + (isAutoSave ? '等待自动存档触发' : '空存档') + '</div>' +
+                (isAutoSave ? '' : '<div class="save-slot-buttons"><button class="btn-overwrite" data-slot="' + id + '" data-action="overwrite">保存到此</button></div>') +
+                '</div>';
+        }
+    }
+
+    savesHtml += '</div>';
+    modal.innerHTML = savesHtml;
+    document.body.appendChild(modal);
+
+    modal.querySelector(".close-modal").onclick = function() {
+        modal.remove();
+    };
+
+    modal.querySelectorAll("[data-action='load']").forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+            e.stopPropagation();
+            var slot = parseInt(btn.dataset.slot);
+            if (slot === 5) {
+                loadAutoSave().then(function(data) {
+                    restoreAutoSave(data);
+                    document.getElementById("startScreen").style.display = "none";
+                    document.getElementById("gameScreen").style.display = "flex";
+                    renderChapterList();
+                    updateStaminaDisplay();
+                    alert('✅ 读取自动存档成功！');
+                    modal.remove();
+                }).catch(function() {
+                    alert('自动存档不存在');
+                });
+            } else {
+                if (confirm('确定要读取存档 ' + slot + ' 吗？')) {
+                    loadFromSlot(slot);
+                    document.getElementById("startScreen").style.display = "none";
+                    document.getElementById("gameScreen").style.display = "flex";
+                    renderChapterList();
+                    updateStaminaDisplay();
+                    modal.remove();
+                }
+            }
+        });
+    });
+
+    modal.querySelectorAll("[data-action='overwrite']").forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+            e.stopPropagation();
+            var slot = parseInt(btn.dataset.slot);
+            if (slot === 5) {
+                alert('自动存档由系统自动保存');
+                return;
+            }
+            if (confirm('确定要保存到存档 ' + slot + ' 吗？')) {
+                saveToSlot(slot);
+                modal.remove();
+            }
+        });
+    });
+
+    modal.querySelectorAll("[data-action='delete']").forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+            e.stopPropagation();
+            var slot = parseInt(btn.dataset.slot);
+            if (slot === 5) {
+                alert('自动存档不可手动删除');
+                return;
+            }
+            deleteSlot(slot);
+            modal.remove();
+        });
+    });
+
+    modal.onclick = function(e) {
+        if (e.target === modal) modal.remove();
+    };
+}
     let currentChapter = 1;
     let chapterCompleted = false;
      // 章节数据
@@ -8076,7 +8231,7 @@ function initMomentsData() {
 
     const chapterNames = [
         "重庆的夏天永远不会结束",
-        "生日和新的名字",
+        "他和他的朋友",
         "第三章（预留）",
         "第四章（预留）"
     ];
@@ -8121,7 +8276,7 @@ function initMomentsData() {
             <div class="chapter-card ${isLocked ? 'locked' : ''}" data-index="${i}" ${isLocked ? 'style="cursor:not-allowed;"' : ''}>
                 <div>
                     <div class="chapter-title-text">第${i+1}章 · ${chapterNames[i]}</div>
-                    <div class="chapter-sub">${i === 0 ? '2021年 重庆' : i === 1 ? '2022年 重庆' : '（预留）'}</div>
+                    <div class="chapter-sub">${i === 0 ? '2022年 重庆' : i === 1 ? '2022年 重庆' : '（预留）'}</div>
                     ${extraHint}
                 </div>
                 <div class="chapter-status ${statusClass}">${statusText}</div>
@@ -13792,6 +13947,25 @@ function showResultModal(title, content, infoLines) {
     // ================= 事件绑定 =================
     document.getElementById("favorabilityBtn")?.addEventListener("click", showFavorability);
     document.getElementById("startBtn").onclick = () => {
+        // ===== 检查自动存档 =====
+    var autoSaveData = localStorage.getItem('sisterSimulatorAutoSave');
+    if (autoSaveData) {
+        try {
+            var data = JSON.parse(autoSaveData);
+            if (data && data.isAutoSave) {
+                if (confirm('检测到自动存档（第' + (data.currentChapter || 1) + '章，' + (data.savedAt || '') + '），是否恢复？')) {
+                    restoreAutoSave(data);
+                    document.getElementById("startScreen").style.display = "none";
+                    document.getElementById("gameScreen").style.display = "flex";
+                    renderChapterList();
+                    updateStaminaDisplay();
+                    return;
+                }
+            }
+        } catch(e) {
+            console.log('自动存档读取失败:', e);
+        }
+    }
          // ========== 清除所有章节相关数据 ==========
         localStorage.removeItem("chapter1_ended");
         localStorage.removeItem("chapter2_ended");
@@ -16980,37 +17154,20 @@ function showCompanySchedule() {
         if (e.target === modal) modal.remove();
     });
 }
-// ================= 我的余额（完整版） =================
 function showBalance() {
     var modal = document.createElement("div");
     modal.className = "full-modal";
     modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
 
-    // 从 localStorage 读取收支记录
-    var transactions = [];
-    try {
-        var saved = localStorage.getItem('transactions');
-        if (saved) {
-            transactions = JSON.parse(saved);
-        }
-    } catch(e) {
-        transactions = [];
-    }
-
-    // 如果没有记录，显示默认示例
-    if (transactions.length === 0) {
-        transactions = [
-            { type: '收入', amount: 100, desc: '初始资金', time: '2024-01-01 00:00' }
-        ];
-    }
+    // ✅ 从 player.transactions 读取
+    var transactions = player.transactions || [];
 
     // 按时间倒序排列（最新的在前）
-    transactions.sort(function(a, b) {
+    var sorted = transactions.slice().sort(function(a, b) {
         return new Date(b.time) - new Date(a.time);
     });
 
-    // 只显示最近20条
-    var displayTransactions = transactions.slice(0, 20);
+    var displayTransactions = sorted.slice(0, 20);
 
     var transactionsHtml = displayTransactions.map(function(t) {
         var color = t.type === '收入' ? '#4CAF50' : '#E85D75';
@@ -17059,7 +17216,7 @@ function showBalance() {
 
             <div style="font-size:14px;font-weight:600;color:#666;margin-bottom:8px;">📋 收支记录</div>
             <div style="background:#F8F8F8;border-radius:12px;padding:8px 12px;max-height:250px;overflow-y:auto;">
-                ${transactionsHtml}
+                ${transactionsHtml || '<div style="text-align:center;padding:20px;color:#999;">暂无收支记录</div>'}
             </div>
 
             <button onclick="this.closest('.full-modal').remove()" style="margin-top:16px;width:100%;padding:10px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;">知道了</button>
@@ -17071,17 +17228,10 @@ function showBalance() {
         if (e.target === modal) modal.remove();
     });
 }
-
-// ================= 添加收支记录 =================
 function addTransaction(type, amount, desc) {
-    var transactions = [];
-    try {
-        var saved = localStorage.getItem('transactions');
-        if (saved) {
-            transactions = JSON.parse(saved);
-        }
-    } catch(e) {
-        transactions = [];
+    // 确保 player.transactions 存在
+    if (!player.transactions) {
+        player.transactions = [];
     }
 
     var now = new Date();
@@ -17091,7 +17241,7 @@ function addTransaction(type, amount, desc) {
                   String(now.getHours()).padStart(2, '0') + ':' +
                   String(now.getMinutes()).padStart(2, '0');
 
-    transactions.push({
+    player.transactions.push({
         type: type,
         amount: amount,
         desc: desc,
@@ -17099,11 +17249,13 @@ function addTransaction(type, amount, desc) {
     });
 
     // 只保留最近100条
-    if (transactions.length > 100) {
-        transactions = transactions.slice(-100);
+    if (player.transactions.length > 100) {
+        player.transactions = player.transactions.slice(-100);
     }
 
-    localStorage.setItem('transactions', JSON.stringify(transactions));
+    // ✅ 自动保存到当前存档（如果有存档功能）
+    // 注意：这里不保存到 localStorage，而是存在 player 对象里
+    // 存档时会随 player 一起保存
 }
 // ================= 地图点击处理 =================
 function handleMapClick(location) {
@@ -17723,7 +17875,7 @@ function openTaskPage() {
             </div>
             <div style="text-align:center;padding:12px;background:${allDone ? '#E8F5E9' : '#FFF3E0'};border-radius:12px;margin-top:8px;">
                 <span style="font-weight:600;color:${allDone ? '#4CAF50' : '#FF9800'};">
-                    ${allDone ? '🎉 恭喜！所有任务已完成！张桂源会联系你哦~ 💬' : '📌 继续加油完成所有任务吧！'}
+                    ${allDone ? '🎉 所有任务已完成！点击知道了张桂源会联系你哦~ 💬' : '📌 继续加油完成所有任务吧！'}
                 </span>
             </div>
             <button onclick="closeTaskAndCheckTrigger()" style="margin-top:16px;width:100%;padding:10px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;">知道了</button>
@@ -17764,6 +17916,13 @@ function closeTaskAndCheckTrigger() {
     }
 }
 function triggerZhangCustomChat() {
+    // 在函数开头添加防重复标记
+if (window._zhangTriggered) {
+    console.log('弹窗已触发过，跳过');
+    return;
+}
+window._zhangTriggered = true;
+
     // 先把"想我没"消息添加到聊天记录
     var date = new Date().toLocaleDateString();
     var hasMsg = false;
@@ -17789,6 +17948,14 @@ function triggerZhangCustomChat() {
         renderChatList();
     }
 
+    // ✅ 触发自动存档（只触发一次）
+    if (!autoSaveTriggered) {
+        autoSaveTriggered = true;
+        setTimeout(function() {
+            autoSaveGame();
+            console.log('✅ 已触发自动存档（档位5）');
+        }, 1000);
+    }
     var displayName = getContactDisplayName('张桂源');
     showMessageNotification(
         '张桂源',
@@ -18511,6 +18678,217 @@ function openCustomChat() {
             }
         }, 300);
     }, 300);
+}
+// ================= 自动存档（档位5） =================
+
+function autoSaveGame() {
+    console.log('🔄 自动存档中...');
+    
+    var saveData = {
+        player: {
+            name: player.name,
+            nickname: player.nickname,
+            wechatName: player.wechatName,
+            weiboName: player.weiboName,
+            love: player.love,
+            wise: player.wise,
+            expose: player.expose,
+            dark: player.dark,
+            money: player.money,
+            stress: player.stress,
+            fans: player.fans,
+            stamina: player.stamina || 15
+        },
+        currentChapter: currentChapter,
+        chapterCompleted: chapterCompleted,
+        meetCount: meetCount,
+        usedMeetIndices: usedMeetIndices || [],
+        unlockedChapters: unlockedChapters,
+        completedChapters: completedChapters,
+        // 聊天数据
+        chatData: chatData,
+        // 朋友圈
+        allMoments: allMoments || [],
+        myMoments: myMoments || [],
+        momentsData: momentsData || [],
+        // 微博
+        allArtistWeibo: allArtistWeibo || [],
+        allMyWeibo: allMyWeibo || [],
+        // 物品
+        gifts: gifts || [],
+        diaryEntries: diaryEntries || [],
+        letters: letters || [],
+        // 好友
+        friendRequests: friendRequests,
+        hasNewFriendRequest: hasNewFriendRequest,
+        friends: friends,
+        contactRemarks: contactRemarks || {},
+        // 小卡
+        myCards: myCards || [],
+        cardSets: cardSets || [],
+        // 任务完成标记
+        zhang_dialogue_done: localStorage.getItem('zhang_dialogue_done') === 'true',
+        chapter1_all_tasks_triggered: localStorage.getItem('chapter1_all_tasks_triggered') === 'true',
+        custom_chat_unlocked: localStorage.getItem('custom_chat_unlocked') === 'true',
+        // 时间
+        savedAt: new Date().toLocaleString(),
+        chapterTitle: currentChapter === 1 ? "重庆的夏天永远不会结束" : (currentChapter === 2 ? "生日和新的名字" : "心动"),
+        // 自动存档标记
+        isAutoSave: true
+    };
+
+    // 使用 IndexedDB 保存（如果可用）
+    if (typeof saveToIndexedDB === 'function') {
+        saveToIndexedDB(AUTO_SAVE_ID, saveData).then(function() {
+            console.log('✅ 自动存档成功（IndexedDB）');
+        }).catch(function(err) {
+            console.log('IndexedDB 自动存档失败，降级到 localStorage:', err);
+            try {
+                localStorage.setItem('sisterSimulatorAutoSave', JSON.stringify(saveData));
+                console.log('✅ 自动存档成功（localStorage）');
+            } catch(e) {
+                console.log('❌ 自动存档失败:', e);
+            }
+        });
+    } else {
+        // 降级到 localStorage
+        try {
+            localStorage.setItem('sisterSimulatorAutoSave', JSON.stringify(saveData));
+            console.log('✅ 自动存档成功（localStorage）');
+        } catch(e) {
+            console.log('❌ 自动存档失败:', e);
+        }
+    }
+}
+
+// ================= 读取自动存档 =================
+
+function loadAutoSave() {
+    return new Promise(function(resolve, reject) {
+        // 先尝试 IndexedDB
+        if (typeof loadFromIndexedDB === 'function') {
+            loadFromIndexedDB(AUTO_SAVE_ID).then(function(result) {
+                if (result && result.data) {
+                    resolve(result.data);
+                } else {
+                    // IndexedDB 没有，尝试 localStorage
+                    var fallback = localStorage.getItem('sisterSimulatorAutoSave');
+                    if (fallback) {
+                        try {
+                            resolve(JSON.parse(fallback));
+                        } catch(e) {
+                            reject(e);
+                        }
+                    } else {
+                        reject('没有自动存档');
+                    }
+                }
+            }).catch(function() {
+                var fallback = localStorage.getItem('sisterSimulatorAutoSave');
+                if (fallback) {
+                    try {
+                        resolve(JSON.parse(fallback));
+                    } catch(e) {
+                        reject(e);
+                    }
+                } else {
+                    reject('没有自动存档');
+                }
+            });
+        } else {
+            var fallback = localStorage.getItem('sisterSimulatorAutoSave');
+            if (fallback) {
+                try {
+                    resolve(JSON.parse(fallback));
+                } catch(e) {
+                    reject(e);
+                }
+            } else {
+                reject('没有自动存档');
+            }
+        }
+    });
+}
+
+// ================= 恢复自动存档 =================
+
+function restoreAutoSave(data) {
+    console.log('📂 恢复自动存档...');
+    
+    // 恢复玩家数据
+    if (data.player) {
+        player.name = data.player.name || '';
+        player.nickname = data.player.nickname || '';
+        player.wechatName = data.player.wechatName || '';
+        player.weiboName = data.player.weiboName || '';
+        player.love = data.player.love || 30;
+        player.wise = data.player.wise || 10;
+        player.expose = data.player.expose || 0;
+        player.dark = data.player.dark || 0;
+        player.money = data.player.money || 100;
+        player.stress = data.player.stress || 10;
+        player.fans = data.player.fans || 500;
+        if (data.player.stamina !== undefined) {
+            player.stamina = data.player.stamina;
+        }
+    }
+    
+    // 恢复进度
+    if (data.currentChapter !== undefined) currentChapter = data.currentChapter;
+    if (data.chapterCompleted !== undefined) chapterCompleted = data.chapterCompleted;
+    if (data.meetCount !== undefined) meetCount = data.meetCount;
+    if (data.usedMeetIndices) usedMeetIndices = data.usedMeetIndices;
+    if (data.unlockedChapters) unlockedChapters = data.unlockedChapters;
+    if (data.completedChapters) completedChapters = data.completedChapters;
+    
+    // 恢复聊天
+    if (data.chatData) chatData = data.chatData;
+    
+    // 恢复朋友圈
+    if (data.allMoments) allMoments = data.allMoments;
+    if (data.myMoments) myMoments = data.myMoments;
+    if (data.momentsData) momentsData = data.momentsData;
+    
+    // 恢复微博
+    if (data.allArtistWeibo) allArtistWeibo = data.allArtistWeibo;
+    if (data.allMyWeibo) allMyWeibo = data.allMyWeibo;
+    
+    // 恢复物品
+    if (data.gifts) gifts = data.gifts;
+    if (data.diaryEntries) diaryEntries = data.diaryEntries;
+    if (data.letters) letters = data.letters;
+    
+    // 恢复好友
+    if (data.friendRequests) friendRequests = data.friendRequests;
+    if (data.hasNewFriendRequest !== undefined) hasNewFriendRequest = data.hasNewFriendRequest;
+    if (data.friends) friends = data.friends;
+    if (data.contactRemarks) contactRemarks = data.contactRemarks;
+    
+    // 恢复小卡
+    if (data.myCards) myCards = data.myCards;
+    if (data.cardSets) cardSets = data.cardSets;
+    
+    // 恢复任务标记
+    if (data.zhang_dialogue_done) {
+        localStorage.setItem('zhang_dialogue_done', 'true');
+    }
+    if (data.chapter1_all_tasks_triggered) {
+        localStorage.setItem('chapter1_all_tasks_triggered', 'true');
+    }
+    if (data.custom_chat_unlocked) {
+        localStorage.setItem('custom_chat_unlocked', 'true');
+    }
+    
+    // 刷新界面
+    renderChatList();
+    renderMoments();
+    renderWeibo();
+    renderMyPage();
+    renderChapterList();
+    updateLetterRedDot();
+    updateStaminaDisplay();
+    
+    console.log('✅ 自动存档恢复完成！');
 }
 </script>
 </body>
