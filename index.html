@@ -7834,13 +7834,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 function renderMyPage() {
-    // 获取当前头像
-    var avatarData = localStorage.getItem("player_avatar");
-    var avatarHtml = "";
+    // ===== 获取当前头像 =====
+var avatarData = localStorage.getItem("player_avatar");
+var avatarHtml = "";
 if (avatarData && avatarData.startsWith("data:image")) {
-    avatarHtml = '<img src="' + avatarData + '" style="width:80px; height:80px; border-radius:50%; object-fit:cover; cursor:pointer;">';
+    avatarHtml = '<img src="' + avatarData + '" style="width:80px; height:80px; border-radius:50%; object-fit:cover; cursor:pointer;" onclick="event.stopPropagation();changeAvatar()">';
 } else {
-    avatarHtml = '<div style="width:80px; height:80px; background:#F0F0F0; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:40px; cursor:pointer;">🐰</div>';
+    avatarHtml = '<div style="width:80px; height:80px; background:#F0F0F0; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:40px; cursor:pointer;" onclick="event.stopPropagation();changeAvatar()">🐰</div>';
 }
 // 加载自定义背景
 var bgData = localStorage.getItem('profile_bg');
@@ -10357,6 +10357,7 @@ function switchPage(pageId) {
     let chapter2Step = 0;
 
     function loadChapter2() {
+         currentChapter = 2;
         document.getElementById("chapterSelectPage").style.display = "none";
         document.getElementById("storyDetailPage").style.display = "block";
         document.getElementById("chapterTitle").innerText = "第2章 · 他和他的朋友";
@@ -10484,6 +10485,7 @@ function switchPage(pageId) {
     }
     
         function showChapter2SecondOption() {
+            currentChapter = 2;  // 确保章节正确
         let date = "2023年5月10日 周二";
         
         // 先清空可能存在的旧选项
@@ -10540,6 +10542,7 @@ function switchPage(pageId) {
 }
            
            function showChapter2ContinuedStory() {
+              currentChapter = 2;  // 确保章节正确
     var storyContent = `
 你等着他回。等了五分钟，没回。你想想，这个点他应该在训练，手机可能不在手边。你把手机揣回兜里，继续走。
 
