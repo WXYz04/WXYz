@@ -13969,46 +13969,74 @@ function showFriendRequestsPopup() {
             }
         }, 3000);
 
-        // ===== 第三条弹窗（第二条消失后3秒） =====
+        // ===== 第三条弹窗 =====
+setTimeout(function() {
+    var modal3 = document.createElement("div");
+    modal3.className = "message-notification";
+    modal3.style.cssText = `
+        position: fixed;
+        top: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 32px);
+        max-width: 400px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 12px 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        border: 1px solid rgba(232,93,117,0.3);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        z-index: 9999;
+        animation: slideDown 0.3s ease-out;
+    `;
+
+    modal3.innerHTML = `
+        <div style="width:48px; height:48px; border-radius:50%; overflow:hidden; flex-shrink:0; background:#F0F0F0; display:flex; align-items:center; justify-content:center;">
+            <img src="zgyweixin.png" style="width:48px; height:48px; object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🏀'">
+        </div>
+        <div style="flex:1;">
+            <div style="font-weight:600; font-size:15px; color:#1A1A1A; margin-bottom:2px;">张桂源</div>
+            <div style="font-size:13px; color:#333;">你怎么不给我点赞</div>
+            <div style="font-size:11px; color:#999; margin-top:2px;">刚刚</div>
+        </div>
+    `;
+
+    var thirdMessageAdded = false;
+
+    modal3.onclick = function() {
+        modal3.remove();
+        chatData["张桂源"].messages.push({
+            from: "other",
+            text: "你怎么不给我点赞",
+            time: "23:31",
+            avatar: "🏀",
+            date: date,
+            read: false
+        });
+        chatData["张桂源"].newMsg = true;
+        renderChatMessages();
+        renderChatList();
+        
+        // ===== 跳转到聊天并解锁输入框 =====
+        switchPage("chat");
         setTimeout(function() {
-            var modal3 = document.createElement("div");
-            modal3.className = "message-notification";
-            modal3.style.cssText = `
-                position: fixed;
-                top: 70px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: calc(100% - 32px);
-                max-width: 400px;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(10px);
-                border-radius: 16px;
-                padding: 12px 16px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-                border: 1px solid rgba(232,93,117,0.3);
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                cursor: pointer;
-                z-index: 9999;
-                animation: slideDown 0.3s ease-out;
-            `;
+            openChat("张桂源");
+            unlockChatInput();
+        }, 300);
+        
+        thirdMessageAdded = true;
+    };
+    document.body.appendChild(modal3);
 
-            modal3.innerHTML = `
-                <div style="width:48px; height:48px; border-radius:50%; overflow:hidden; flex-shrink:0; background:#F0F0F0; display:flex; align-items:center; justify-content:center;">
-                    <img src="zgyweixin.png" style="width:48px; height:48px; object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🏀'">
-                </div>
-                <div style="flex:1;">
-                    <div style="font-weight:600; font-size:15px; color:#1A1A1A; margin-bottom:2px;">张桂源</div>
-                    <div style="font-size:13px; color:#333;">你怎么不给我点赞</div>
-                    <div style="font-size:11px; color:#999; margin-top:2px;">刚刚</div>
-                </div>
-            `;
-
-            var thirdMessageAdded = false;
-
-            modal3.onclick = function() {
-                modal3.remove();
+    // 第三条弹窗3秒后自动消失
+    setTimeout(function() {
+        if (modal3.parentNode) {
+            modal3.remove();
+            if (!thirdMessageAdded) {
                 chatData["张桂源"].messages.push({
                     from: "other",
                     text: "你怎么不给我点赞",
@@ -14020,36 +14048,19 @@ function showFriendRequestsPopup() {
                 chatData["张桂源"].newMsg = true;
                 renderChatMessages();
                 renderChatList();
+                
+                // ===== 跳转到聊天并解锁输入框 =====
                 switchPage("chat");
                 setTimeout(function() {
                     openChat("张桂源");
+                    unlockChatInput();
                 }, 300);
+                
                 thirdMessageAdded = true;
-            };
-            document.body.appendChild(modal3);
-
-            // 第三条弹窗3秒后自动消失
-            setTimeout(function() {
-                if (modal3.parentNode) {
-                    modal3.remove();
-                    if (!thirdMessageAdded) {
-                        chatData["张桂源"].messages.push({
-                            from: "other",
-                            text: "你怎么不给我点赞",
-                            time: "23:31",
-                            avatar: "🏀",
-                            date: date,
-                            read: false
-                        });
-                        chatData["张桂源"].newMsg = true;
-                        renderChatMessages();
-                        renderChatList();
-                        thirdMessageAdded = true;
-                    }
-                }
-            }, 3000);
-        }, 3000);
-
+            }
+        }
+    }, 3000);
+}, 3000);
     }, 4000);
 }
 // ================= 显示物品（小卡 + 礼物分页） =================
@@ -23495,6 +23506,33 @@ function showAutoSaveNotification() {
     setTimeout(function() {
         if (toast.parentNode) toast.remove();
     }, 2000);
+}
+// ===== 解锁聊天输入框 =====
+function unlockChatInput() {
+    var inputBox = document.getElementById("chatInputBox");
+    if (inputBox) {
+        inputBox.innerText = "";
+        inputBox.style.cssText = 'flex:1;padding:6px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:18px;background:rgba(255,255,255,0.85);color:#333;font-size:14px;outline:none;min-height:32px;cursor:text;pointer-events:auto;';
+        inputBox.contentEditable = "true";
+        inputBox.onclick = null;
+        inputBox.onkeydown = function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendCustomMessage();
+            }
+        };
+        inputBox.focus();
+    }
+    
+    // 绑定加号按钮
+    var plusBtn = document.getElementById('chatPlusBtn');
+    if (plusBtn) {
+        var newPlusBtn = plusBtn.cloneNode(true);
+        plusBtn.parentNode.replaceChild(newPlusBtn, plusBtn);
+        newPlusBtn.onclick = function() {
+            sendCustomMessage();
+        };
+    }
 }
 </script>
 </body>
