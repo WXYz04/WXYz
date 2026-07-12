@@ -15380,9 +15380,28 @@ document.getElementById('momentTextInput2').addEventListener('input', function()
     });
         // 聊天返回按钮（统一处理）
 document.getElementById("chatBackBtn").onclick = function() {
+
      // ===== 强制打印日志，方便排查 =====
     console.log('chatBackBtn 被点击，当前返回目标:', localStorage.getItem('chapter2_return_target'));
-    
+    // ===== 强制保护：如果是第二章，绝不跳第一章 =====
+    var savedChapter = parseInt(localStorage.getItem("currentChapter")) || currentChapter || 0;
+    if (savedChapter === 2 || currentChapter === 2) {
+        document.getElementById("chatListScreen").style.display = "block";
+        document.getElementById("chatDetailScreen").style.display = "none";
+        switchPage("story");
+        document.getElementById("chapterSelectPage").style.display = "none";
+        document.getElementById("storyDetailPage").style.display = "block";
+        document.getElementById("chapterTitle").innerText = "第2章 · 生日和新的名字";
+        var target = localStorage.getItem("chapter2_return_target") || "showChapter2ContinuedStory";
+        if (target === "showBranchAEnding" && typeof showBranchAEnding === 'function') {
+            showBranchAEnding();
+        } else if (target === "showBranchBEnding" && typeof showBranchBEnding === 'function') {
+            showBranchBEnding();
+        } else {
+            showChapter2ContinuedStory();
+        }
+        return;
+    }
     document.getElementById("chatListScreen").style.display = "block";
     document.getElementById("chatDetailScreen").style.display = "none";
     document.getElementById("chatListScreen").style.display = "block";
