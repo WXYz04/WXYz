@@ -4980,7 +4980,9 @@ function openChat(contact) {
     applyChatBackground();
 
     var displayName = getContactDisplayName(contact);
-    document.getElementById("chatContactName").innerText = displayName;
+document.getElementById("chatContactName").innerText = displayName;
+document.getElementById("chatContactName").style.marginLeft = "20px";
+document.getElementById("chatContactName").style.paddingLeft = "20px";
 
     let inputBox = document.getElementById("chatInputBox");
 
@@ -8795,6 +8797,25 @@ if (name === "陈太帅") {
     };
 }
 function addNewMoments() {
+      // ===== 检查三个人的朋友圈是否都已存在 =====
+    if (momentsData && momentsData.length > 0) {
+        var hasZqh = momentsData.some(function(m) {
+            return m.id && m.id.indexOf('moment_zqh') !== -1;
+        });
+        var hasCjm = momentsData.some(function(m) {
+            return m.id && m.id.indexOf('moment_cjm') !== -1;
+        });
+        var hasZgy = momentsData.some(function(m) {
+            return m.id && m.id.indexOf('moment_zgy') !== -1;
+        });
+        
+        if (hasZqh && hasCjm && hasZgy) {
+            console.log('⚠️ 三个好友的朋友圈都已存在，跳过添加');
+            return;
+        }
+    }
+    
+    console.log("addNewMoments 被调用了");
     console.log("addNewMoments 被调用了");
     if (typeof momentsData === 'undefined') {
         console.log("momentsData 未定义，尝试初始化");
