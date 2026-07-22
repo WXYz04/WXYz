@@ -26557,7 +26557,7 @@ function startCivilianSpectatorVote(round) {
     if (oldVA) oldVA.remove();
     var va = document.createElement('div');
     va.id = 'civilianVoteArea';
-    va.style.cssText = 'position:absolute;bottom:18px;left:0;right:0;text-align:center;z-index:150;padding:0 16px;';
+    va.style.cssText = 'position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);text-align:center;z-index:150;padding:0 16px;';
     var button = document.createElement('button');
     button.textContent = '查看投票结果';
     button.style.cssText = 'padding:9px 24px;background:#E85D75;color:white;border:none;border-radius:0;font-size:13px;font-weight:600;cursor:pointer;';
