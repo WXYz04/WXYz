@@ -1591,13 +1591,13 @@ onclick="showCompanySchedule()">
 <script>
     // ================= 商业街功能 =================
 function openStreetPage() {
-
-    
-    // 创建弹窗
     var modal = document.createElement("div");
     modal.className = "full-modal";
     modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
-    
+
+    // 判断是否已加入群聊
+    var hasJoinedGroup = localStorage.getItem('chapter3_group_joined') === 'true';
+
     modal.innerHTML = `
         <div style="background:white;border-radius:28px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
             <div style="text-align:center;margin-bottom:20px;">
@@ -1618,34 +1618,37 @@ function openStreetPage() {
                     <span style="font-size:22px;">💰</span>
                     <span>挣钱</span>
                 </button>
+                ${hasJoinedGroup ? `
+                <button class="street-option" data-action="boardgame" style="background:#FFF5F5;border:1px solid #FFE0D4;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:500;color:#333;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all 0.1s;">
+                    <span style="font-size:22px;">🎲</span>
+                    <span>桌游店</span>
+                </button>
+                ` : ''}
             </div>
             <button onclick="this.closest('.full-modal').remove()" style="margin-top:16px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">关闭</button>
         </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
-    // ===== 点击选项的反馈 =====
+
     modal.querySelectorAll(".street-option").forEach(function(btn) {
         btn.addEventListener("click", function() {
             var action = this.dataset.action;
             modal.remove();
-            
             if (action === 'earn') {
                 openEarnPage();
             } else if (action === 'shop') {
                 openShopPage();
             } else if (action === 'eat') {
                 alert('📍 商业街 - 🍜 就餐\n\n功能开发中，敬请期待~');
+            } else if (action === 'boardgame') {
+                openBoardGamePage();
             }
         });
     });
-    
-    // 点击背景关闭
+
     modal.addEventListener("click", function(e) {
-        if (e.target === modal) {
-            modal.remove();
-        }
+        if (e.target === modal) modal.remove();
     });
 }
 // ================= 商店 =================
@@ -4392,13 +4395,132 @@ function renderChatList() {
         html += '</div>';
     }
 
+    // ===== 群聊（插入在这里，for循环之后，container.innerHTML之前） =====
+    if (chatData["我玩狼人杀不骗人"] && chatData["我玩狼人杀不骗人"].messages.length > 0) {
+        var groupData = chatData["我玩狼人杀不骗人"] || { messages: [], newMsg: false };
+        var lastMsg = "";
+        if (groupData.messages && groupData.messages.length > 0) {
+            lastMsg = groupData.messages[groupData.messages.length - 1].text || "暂无消息";
+        }
+        var groupAvatarHtml = '<div style="width:52px;height:52px;border-radius:12px;overflow:hidden;flex-shrink:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:1px;background:#E5E5E5;">';
+        groupAvatarHtml += '<img src="cyhwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+        groupAvatarHtml += '<img src="wzcwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+        groupAvatarHtml += '<img src="ybwwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+        groupAvatarHtml += '<img src="cshwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+        groupAvatarHtml += '<img src="nwcwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+        groupAvatarHtml += '<img src="zqhwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+        groupAvatarHtml += '<img src="lydwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+        groupAvatarHtml += '<img src="zhrwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+        groupAvatarHtml += '<img src="wljwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+        groupAvatarHtml += '</div>';
+        html += '<div class="chat-contact" data-contact="我玩狼人杀不骗人" style="display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid #EFEFEF;cursor:pointer;position:relative;">';
+        html += '<div class="chat-avatar" style="width:52px;height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:12px;background:#F0F0F0;">' + groupAvatarHtml + '</div>';
+        html += '<div class="chat-info" style="flex:1;min-width:0;">';
+        html += '<div class="chat-name" style="font-weight:600;">我玩狼人杀不骗人</div>';
+        html += '<div class="chat-preview" style="font-size:12px;color:#999;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + lastMsg + '</div>';
+        html += '</div>';
+        html += '</div>';
+    }
+
     container.innerHTML = html;
 
     document.querySelectorAll(".chat-contact").forEach(function(el) {
         el.addEventListener("click", function() {
-            openChat(el.dataset.contact);
+            var contact = this.dataset.contact;
+            if (contact === "我玩狼人杀不骗人") {
+                openGroupChat();
+            } else {
+                openChat(contact);
+            }
         });
     });
+}
+function openGroupChat() {
+    currentChatContact = "我玩狼人杀不骗人";
+    document.getElementById("chatListScreen").style.display = "none";
+    document.getElementById("chatDetailScreen").style.display = "block";
+    document.getElementById("chatContactName").innerText = "我玩狼人杀不骗人";
+
+    // 群聊返回键只返回聊天列表，不触发章节或剧情返回逻辑
+    document.getElementById("chatBackBtn").onclick = function() {
+        document.getElementById("chatDetailScreen").style.display = "none";
+        document.getElementById("chatListScreen").style.display = "block";
+        renderChatList();
+    };
+
+    if (!chatData["我玩狼人杀不骗人"]) {
+        chatData["我玩狼人杀不骗人"] = { messages: [], newMsg: false, roundCompleted: false };
+    }
+
+    var data = chatData["我玩狼人杀不骗人"];
+    if (data.messages) {
+        for (var i = 0; i < data.messages.length; i++) {
+            if (data.messages[i].from === "other") {
+                data.messages[i].read = true;
+            }
+        }
+        data.newMsg = false;
+    }
+
+    renderChatMessages();
+    renderChatList();
+// ===== 进入群聊后，首次选项只显示一次 =====
+    var groupChoiceDone = localStorage.getItem('chapter3_group_choice_done') === 'true' || data.groupEntryChoiceDone === true;
+    window._groupEntryOptionsShown = groupChoiceDone;
+    if (!groupChoiceDone) {
+        setTimeout(function() {
+            showGroupEntryOptions();
+        }, 1000);
+    }
+    // ===== 修复布局：让输入框在底部 =====
+    var detailScreen = document.getElementById("chatDetailScreen");
+    if (detailScreen) {
+        detailScreen.style.display = "flex";
+        detailScreen.style.flexDirection = "column";
+        detailScreen.style.height = "calc(100vh - 70px)";
+    }
+
+    var messagesContainer = document.getElementById("chatMessages");
+    if (messagesContainer) {
+        messagesContainer.style.flex = "1";
+        messagesContainer.style.overflowY = "auto";
+        messagesContainer.style.minHeight = "0";
+    }
+
+    var inputArea = document.querySelector(".chat-input-area");
+    if (inputArea) {
+        inputArea.style.flexShrink = "0";
+        inputArea.style.display = "flex";
+        inputArea.style.alignItems = "center";
+        inputArea.style.gap = "8px";
+        inputArea.style.padding = "6px 12px";
+        inputArea.style.background = "#E8E8E8";
+        inputArea.style.borderTop = "1px solid #ddd";
+        inputArea.style.minHeight = "48px";
+    }
+
+    var inputBox = document.getElementById("chatInputBox");
+    if (inputBox) {
+        inputBox.style.flex = "1";
+        inputBox.style.padding = "6px 12px";
+        inputBox.style.border = "1px solid rgba(255,255,255,0.3)";
+        inputBox.style.borderRadius = "18px";
+        inputBox.style.background = "rgba(255,255,255,0.85)";
+        inputBox.style.color = "#333";
+        inputBox.style.fontSize = "14px";
+        inputBox.style.outline = "none";
+        inputBox.style.minHeight = "32px";
+        inputBox.style.cursor = "text";
+        inputBox.style.pointerEvents = "auto";
+        inputBox.innerText = "群聊功能开发中";
+        inputBox.style.color = "#999";
+        inputBox.style.cursor = "default";
+        inputBox.contentEditable = "false";
+        inputBox.onclick = function() {
+            alert("群聊功能开发中，敬请期待~");
+        };
+    }
+
 }
 // ================= 备注和拉黑功能 =================
 
@@ -4706,11 +4828,73 @@ function blockContact(contact) {
         return;
     }
 
+    // ===== 群聊昵称映射表 =====
+    var groupNicknames = {
+        "陈思罕": "憨憨",
+        "魏子辰": "金枪鱼罐头",
+        "李煜东": "东不落",
+        "聂玮辰": "来比个耶",
+        "杨博文": "木易北北",
+        "陈奕恒": "恒里",
+        "王橹杰": "Reflection",
+        "张桂源": "三点水的yuan",
+        "张函瑞": "zhang憨蜹",
+        "左奇函": "哈哈哈",
+        "张奕然": "oh my god",
+        "张亦然": "oh my god",
+        "陈浚铭": "陈太帅"
+    };
+
     var html = "";
     var lastDate = "";
 
     for (var i = 0; i < data.messages.length; i++) {
         var msg = data.messages[i];
+
+        // ===== 群聊邀请卡片 =====
+        if (msg.isGroupInvite) {
+            html += '<div style="background:white;border-radius:12px;padding:16px;margin:12px 0;border:1px solid #E5E5E5;box-shadow:0 1px 4px rgba(0,0,0,0.06);">';
+            html += '<div style="display:flex;align-items:flex-start;gap:12px;">';
+            html += '<div style="width:60px;height:60px;border-radius:6px;overflow:hidden;flex-shrink:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:1px;background:#E5E5E5;">';
+            html += '<img src="cyhwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+            html += '<img src="wzcwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+            html += '<img src="ybwwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+            html += '<img src="cshwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+            html += '<img src="nwcwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+            html += '<img src="zqhwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+            html += '<img src="zgyweixin.png" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+            html += '<img src="zhrwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+            html += '<img src="wljwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+            html += '</div>';
+            html += '<div style="flex:1;min-width:0;">';
+            html += '<div style="font-size:15px;font-weight:600;color:#1A1A1A;">邀请你加入群聊</div>';
+            html += '<div style="font-size:13px;color:#333;margin-top:2px;line-height:1.5;">三点水的yuan邀请你加入群聊「我玩狼人杀从不骗人」，进入可查看详情</div>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #EFEFEF;display:flex;justify-content:flex-end;">';
+            html += '<button onclick="joinChapter3Group()" style="padding:4px 20px;background:transparent;color:#576B95;border:none;font-size:14px;font-weight:500;cursor:pointer;">加入</button>';
+            html += '</div>';
+            html += '</div>';
+            continue;
+        }
+
+        // ===== 群聊系统消息：您已加入群聊（灰色长条居中） =====
+        if (currentChatContact === "我玩狼人杀不骗人" && msg.isJoinMessage) {
+            html += '<div style="text-align:center;padding:8px 0;margin:6px 0;">';
+            html += '<span style="display:inline-block;background:#E5E5E5;color:#333;padding:4px 16px;border-radius:12px;font-size:13px;">您已加入群聊</span>';
+            html += '</div>';
+            continue;
+        }
+
+        // ===== 普通系统消息（如“你已加入群聊”）也可用灰色长条，但只针对群聊且非邀请 =====
+        if (currentChatContact === "我玩狼人杀不骗人" && msg.isSystem && !msg.isJoinMessage && !msg.isGroupInvite) {
+            html += '<div style="text-align:center;padding:8px 0;margin:6px 0;">';
+            html += '<span style="display:inline-block;background:#E5E5E5;color:#333;padding:4px 16px;border-radius:12px;font-size:13px;">' + msg.text + '</span>';
+            html += '</div>';
+            continue;
+        }
+
+        // 日期
         if (msg.date && msg.date !== lastDate) {
             html += '<div class="message-date">' + msg.date + '</div>';
             lastDate = msg.date;
@@ -4719,6 +4903,7 @@ function blockContact(contact) {
         var isMe = msg.from === "me";
         var avatar = "";
 
+        // ===== 头像获取 =====
         if (isMe) {
             var playerAvatar = localStorage.getItem("player_avatar");
             if (playerAvatar && playerAvatar.startsWith("data:image")) {
@@ -4726,39 +4911,71 @@ function blockContact(contact) {
             } else {
                 avatar = "🐰";
             }
-        // 在 renderChatMessages 函数中，非自己的消息头像部分
-} else {
-    if (currentChatContact === "张桂源") {
-        avatar = '<img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'🏀\'">';
-    } else if (currentChatContact === "陈太帅") {
-        avatar = '<img src="cjmwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'👤\'">';
-    } else if (currentChatContact === "哈哈哈") {
-        avatar = '<img src="zqhwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'👤\'">';
-    } else if (currentChatContact === "zhang憨蜹") {
-        avatar = '<img src="zhrwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'👤\'">';
-    } else if (currentChatContact === "WXYz") {
-        avatar = '<img src="WXYz.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'👤\'">';
-    } else {
-        avatar = "🎤";
-    }
-}
+        } else {
+            // 群聊特殊头像映射
+            if (currentChatContact === "我玩狼人杀不骗人") {
+                var from = msg.from || "";
+                if (from === "张桂源") {
+                    avatar = '<img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else if (from === "陈浚铭" || from === "陈太帅") {
+                    avatar = '<img src="cjmwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else if (from === "左奇函" || from === "哈哈哈") {
+                    avatar = '<img src="zqhwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else if (from === "张函瑞" || from === "zhang憨蜹") {
+                    avatar = '<img src="zhrwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else if (from === "陈奕恒") {
+                    avatar = '<img src="cyhwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else if (from === "聂玮辰") {
+                    avatar = '<img src="nwcwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else if (from === "杨博文") {
+                    avatar = '<img src="ybwwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else if (from === "陈思罕") {
+                    avatar = '<img src="cshwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else if (from === "王橹杰") {
+                    avatar = '<img src="wljwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else if (from === "张奕然" || from === "张亦然") {
+                    avatar = '<img src="zyrwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else if (from === "魏子宸") {
+                    avatar = '<img src="wzcwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else if (from === "李煜东") {
+                    avatar = '<img src="lydwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                } else {
+                    avatar = '<span style="font-size:28px;">👤</span>';
+                }
+            } else {
+                // 普通聊天头像
+                if (currentChatContact === "张桂源") {
+                    avatar = '<img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'🏀\'">';
+                } else if (currentChatContact === "陈太帅") {
+                    avatar = '<img src="cjmwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'👤\'">';
+                } else if (currentChatContact === "哈哈哈") {
+                    avatar = '<img src="zqhwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'👤\'">';
+                } else if (currentChatContact === "zhang憨蜹") {
+                    avatar = '<img src="zhrwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'👤\'">';
+                } else if (currentChatContact === "WXYz") {
+                    avatar = '<img src="WXYz.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'👤\'">';
+                } else {
+                    avatar = "🎤";
+                }
+            }
+        }
 
         var longPressAttr = "";
         if (!isMe && currentChatContact === "张桂源") {
             var textContent = msg.text.replace(/<[^>]*>/g, '').trim();
-if (textContent.includes("但是忘了你在上课了")) {
-    longPressAttr = 'data-quote="forgot" style="cursor:pointer;" oncontextmenu="event.preventDefault();showQuoteMenu(this, \'forgot\', ' + i + ')" ontouchstart="handleTouchStart(event, this, \'forgot\', ' + i + ')" ontouchend="handleTouchEnd(event)"';
-} else if (textContent.includes("我来接你，有话跟你说")) {
-    longPressAttr = 'data-quote="pickup" style="cursor:pointer;" oncontextmenu="event.preventDefault();showQuoteMenu(this, \'pickup\', ' + i + ')" ontouchstart="handleTouchStart(event, this, \'pickup\', ' + i + ')" ontouchend="handleTouchEnd(event)"';
-}
+            if (textContent.includes("但是忘了你在上课了")) {
+                longPressAttr = 'data-quote="forgot" style="cursor:pointer;" oncontextmenu="event.preventDefault();showQuoteMenu(this, \'forgot\', ' + i + ')" ontouchstart="handleTouchStart(event, this, \'forgot\', ' + i + ')" ontouchend="handleTouchEnd(event)"';
+            } else if (textContent.includes("我来接你，有话跟你说")) {
+                longPressAttr = 'data-quote="pickup" style="cursor:pointer;" oncontextmenu="event.preventDefault();showQuoteMenu(this, \'pickup\', ' + i + ')" ontouchstart="handleTouchStart(event, this, \'pickup\', ' + i + ')" ontouchend="handleTouchEnd(event)"';
+            }
         }
 
-        // ✅ 判断是否是图片消息
         var isImage = msg.text && msg.text.includes('<img');
 
+        // ===== 渲染消息 =====
         if (isImage) {
-            // 图片消息：只显示头像 + 图片，不加气泡
-            html += '<div class="message-row" style="justify-content: ' + (isMe ? 'flex-end' : 'flex-start') + ';">';
+            // 图片消息
+            html += '<div class="message-row" style="justify-content: ' + (isMe ? 'flex-end' : 'flex-start') + '; margin-top: 4px;">';
             if (!isMe) {
                 html += '<div class="message-avatar">' + avatar + '</div>';
             }
@@ -4768,16 +4985,34 @@ if (textContent.includes("但是忘了你在上课了")) {
             }
             html += '</div>';
         } else {
-            // 普通文字消息：显示气泡
-            html += '<div class="message-row" style="justify-content: ' + (isMe ? 'flex-end' : 'flex-start') + ';">';
+            // 文字消息
+            var rowStyle = 'justify-content: ' + (isMe ? 'flex-end' : 'flex-start') + '; margin-top: 4px;';
+            html += '<div class="message-row" style="' + rowStyle + '">';
             if (!isMe) {
                 html += '<div class="message-avatar">' + avatar + '</div>';
-            }
-            html += '<div class="message-bubble">';
-            html += '<div class="' + (isMe ? 'bubble-me' : 'bubble-other') + '" ' + longPressAttr + ' style="background:white;">' + msg.text + '</div>';
-            html += '<div class="message-time">' + msg.time + '</div>';
-            html += '</div>';
-            if (isMe) {
+                // 群聊时在气泡上方显示昵称
+                // 群聊时在气泡上方显示昵称
+if (currentChatContact === "我玩狼人杀不骗人") {
+    var displayName = msg.from || "";
+    var nickname = groupNicknames[displayName] || displayName;
+    html += '<div style="display:flex;flex-direction:column;align-items:flex-start;max-width:80%;flex-shrink:0;">';
+    html += '<span style="font-size:11px;color:#999;margin-bottom:2px;padding-left:4px;">' + nickname + '</span>';
+    html += '<div class="message-bubble" style="margin-top:0;max-width:100%;width:auto;display:inline-block;">';
+    html += '<div class="bubble-other" ' + longPressAttr + ' style="background:white;white-space:nowrap;word-break:normal;display:inline-block;width:auto;max-width:none;">' + msg.text + '</div>';
+    html += '<div class="message-time">' + msg.time + '</div>';
+    html += '</div></div>';
+}else {
+                    html += '<div class="message-bubble">';
+                    html += '<div class="bubble-other" ' + longPressAttr + ' style="background:white;">' + msg.text + '</div>';
+                    html += '<div class="message-time">' + msg.time + '</div>';
+                    html += '</div>';
+                }
+            } else {
+                // 自己的消息
+                html += '<div class="message-bubble">';
+                html += '<div class="bubble-me" ' + longPressAttr + ' style="background:white;">' + msg.text + '</div>';
+                html += '<div class="message-time">' + msg.time + '</div>';
+                html += '</div>';
                 html += '<div class="message-avatar">' + avatar + '</div>';
             }
             html += '</div>';
@@ -4796,24 +5031,26 @@ if (textContent.includes("但是忘了你在上课了")) {
             el.style.background = '#DCF8C6';
         }
     });
+
     // 强制设置输入框区域背景为浅灰色
-var inputArea = document.querySelector('.chat-input-area');
-if (inputArea) {
-    inputArea.style.background = '#E8E8E8';
-    inputArea.style.padding = '6px 12px';
-    inputArea.style.borderTop = '1px solid #ddd';
-}
-// 点击聊天区域收回灰色功能区
-var messages = document.getElementById('chatMessages');
-if (messages) {
-    messages.onclick = function() {
-        var extraArea = document.getElementById('chatExtraArea');
-        if (extraArea && extraArea.style.display !== 'none') {
-            extraArea.style.display = 'none';
-            extraArea.style.maxHeight = '0';
-        }
-    };
-}
+    var inputArea = document.querySelector('.chat-input-area');
+    if (inputArea) {
+        inputArea.style.background = '#E8E8E8';
+        inputArea.style.padding = '6px 12px';
+        inputArea.style.borderTop = '1px solid #ddd';
+    }
+
+    // 点击聊天区域收回灰色功能区
+    var messages = document.getElementById('chatMessages');
+    if (messages) {
+        messages.onclick = function() {
+            var extraArea = document.getElementById('chatExtraArea');
+            if (extraArea && extraArea.style.display !== 'none') {
+                extraArea.style.display = 'none';
+                extraArea.style.maxHeight = '0';
+            }
+        };
+    }
 }
 // ================= 长按引用功能 =================
 var longPressTimer = null;
@@ -9020,35 +9257,40 @@ function initMomentsData() {
     ];
 
     var html = "";
-    for (var i = 0; i < totalChapters; i++) {
-        var isLocked = !unlockedChapters[i];
-        var isCompleted = completedChapters[i];
-        var statusText = "";
-        var statusClass = "";
+for (var i = 0; i < totalChapters; i++) {
+    var isLocked = !unlockedChapters[i];
+    var isCompleted = completedChapters[i];
+    var statusText = "";
+    var statusClass = "";
 
-        if (isLocked) {
-            // 第一章默认解锁
-            if (i === 0) {
-                isLocked = false;
-            }
-            // 第二章通过任务解锁
-            if (i === 1 && allDone) {
-                isLocked = false;
-                unlockedChapters[1] = true;
-            }
+    if (isLocked) {
+        // 第一章默认解锁
+        if (i === 0) {
+            isLocked = false;
         }
-
-        if (isLocked) {
-            statusText = "🔒 未解锁";
-            statusClass = "locked";
-        } else if (isCompleted) {
-            statusText = "✅ 已完成";
-            statusClass = "completed";
-        } else {
-            statusText = "📖 进行中";
-            statusClass = "unlocked";
+        // 第二章通过任务解锁
+        if (i === 1 && allDone) {
+            isLocked = false;
+            unlockedChapters[1] = true;
         }
+        // 第三章默认解锁
+        if (i === 2) {
+            isLocked = false;
+            unlockedChapters[2] = true;
+        }
+    }
 
+    if (isLocked) {
+        statusText = "🔒 未解锁";
+        statusClass = "locked";
+    } else if (isCompleted) {
+        statusText = "✅ 已完成";
+        statusClass = "completed";
+    } else {
+        statusText = "📖 进行中";
+        statusClass = "unlocked";
+    }
+    // ... 后面的代码不变
         // 第二章显示任务解锁提示
         var extraHint = "";
         if (i === 1 && isLocked) {
@@ -9105,22 +9347,27 @@ if (index === 1) {
     return;
 }
 
-    // ========== 第三章、第四章 ==========
-    if (index >= 2) {
-        document.getElementById("storyContent").innerHTML = `
-            <div style="text-align:center;padding:60px 20px;color:#999;">
-                <div style="font-size:48px;margin-bottom:16px;">🚧</div>
-                <div style="font-size:18px;font-weight:600;color:#666;">第${index+1}章正在更新中</div>
-                <div style="font-size:14px;color:#999;margin-top:8px;">敬请期待~</div>
-            </div>
-        `;
-        document.getElementById("branchArea").innerHTML = "";
-        document.getElementById("endChapterBtn").style.display = "none";
-        document.getElementById("nextChapterBtn").style.display = "none";
-        document.getElementById("nextHint").innerHTML = "";
-        document.getElementById("chapterTitle").innerText = `第${index+1}章 · ${["重庆的夏天永远不会结束","生日和新的名字","第三章（预留）","第四章（预留）"][index]}`;
-        return;
-    }
+   // ========== 第三章 ==========
+if (index === 2) {
+    document.getElementById("chapterTitle").innerText = "第3章 · 狼人杀之夜";
+    
+    // 直接触发弹窗和消息
+    triggerChapter3Message();
+    
+    // 显示等待内容
+    document.getElementById("storyContent").innerHTML = `
+        <div style="text-align:center;padding:60px 20px;color:#999;">
+            <div style="font-size:48px;margin-bottom:16px;">🐺</div>
+            <div style="font-size:16px;color:#666;">张桂源给你发了一条消息，请查看微信</div>
+        </div>
+    `;
+    
+    document.getElementById("branchArea").innerHTML = "";
+    document.getElementById("endChapterBtn").style.display = "none";
+    document.getElementById("nextChapterBtn").style.display = "none";
+    document.getElementById("nextHint").innerHTML = "";
+    return;
+}
 
     // ========== 第一章 ==========
     if (index === 0) {
@@ -14224,6 +14471,606 @@ setTimeout(function() {
 }, 3000);
     }, 4000);
 }
+// ===== 第三章：触发张桂源消息 =====
+function triggerChapter3Message() {
+    var date = "2023年10月13日";
+    var time = "20:30";
+    
+    if (!chatData["张桂源"]) {
+        chatData["张桂源"] = { messages: [], roundCompleted: false };
+    }
+    
+    var exists = chatData["张桂源"].messages.some(function(m) {
+        return m.text === "周六晚上八点狼人杀缺个人，你来吗";
+    });
+    if (!exists) {
+        chatData["张桂源"].messages.push({
+            from: "other",
+            text: "周六晚上八点狼人杀缺个人，你来吗",
+            time: time,
+            avatar: "🏀",
+            date: date,
+            read: false
+        });
+        chatData["张桂源"].newMsg = true;
+    }
+    
+    renderChatList();
+    renderChatMessages();
+    
+    showMessageNotification(
+        "张桂源",
+        '<img src="zgyweixin.png" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">',
+        "张桂源",
+        "周六晚上八点狼人杀缺个人，你来吗",
+        function() {
+            switchPage("chat");
+            setTimeout(function() {
+                openChat("张桂源");
+                startChapter3Chat();
+            }, 300);
+        }
+    );
+    
+    localStorage.setItem("chapter3_return_target", "triggerChapter3Message");
+}
+function joinChapter3Group() {
+    // 玩家实际点击“加入”时，开启本次群聊的首次入群选项
+    localStorage.removeItem('chapter3_group_choice_done');
+    window._groupEntryOptionsShown = false;
+    // 1. 显示加入成功提示
+    alert('✅ 你已加入群聊！');
+
+    // 2. 移除群聊邀请卡片（从DOM中移除）
+    var cards = document.querySelectorAll('#chatMessages div[style*="background:white;border-radius:12px;padding:16px;margin:12px 0;border:1px solid #E5E5E5;"]');
+    cards.forEach(function(card) {
+        card.remove();
+    });
+
+    // 3. 在 chatData 中创建群聊
+    if (!chatData["我玩狼人杀不骗人"]) {
+        chatData["我玩狼人杀不骗人"] = {
+            messages: [],
+            newMsg: false,
+            roundCompleted: false
+        };
+    }
+    delete chatData["我玩狼人杀不骗人"].groupEntryChoiceDone;
+    delete chatData["我玩狼人杀不骗人"].groupEntryChoice;
+
+    // 4. 添加历史消息到群聊
+    var historyMessages = [
+        { from: "陈浚铭", text: "周六晚上狼人杀 谁来", time: "20:00", avatar: "cjmwx.jpg" },
+        { from: "陈浚铭", text: "@所有人", time: "20:00", avatar: "cjmwx.jpg" },
+        { from: "张桂源", text: "你又想被虐了是吧", time: "20:01", avatar: "zgyweixin.png" },
+        { from: "陈浚铭", text: "上次是意外，这次我认真的", time: "20:01", avatar: "cjmwx.jpg" },
+        { from: "陈思罕", text: "1", time: "20:02", avatar: "cshwx.jpg" },
+        { from: "左奇函", text: "1", time: "20:02", avatar: "zqhwx.jpg" },
+        { from: "张函瑞", text: "11", time: "20:02", avatar: "zhrwx.jpg" },
+        { from: "王橹杰", text: "1吧", time: "20:03", avatar: "wljwx.jpg" },
+        { from: "陈奕恒", text: "111111111", time: "20:03", avatar: "cyhwx.jpg" },
+        { from: "聂玮辰", text: "来啊", time: "20:03", avatar: "nwcwx.jpg" },
+        { from: "陈浚铭", text: "其他人呢？就这么几个人啊", time: "20:04", avatar: "cjmwx.jpg" },
+        { from: "张桂源", text: "锁手机了吧@杨博文", time: "20:04", avatar: "zgyweixin.png" },
+        { from: "左奇函", text: "有可能", time: "20:04", avatar: "zqhwx.jpg" },
+        { from: "张奕然", text: "补课，勿念", time: "20:05", avatar: "zyrwx.jpg" },
+        { from: "张桂源", text: "还在卷", time: "20:05", avatar: "zgyweixin.png" },
+        { from: "魏子宸", text: "和小官涵博之前约好了", time: "20:06", avatar: "wzcwx.jpg" },
+        { from: "李煜东", text: "我爸不让我晚上出门", time: "20:06", avatar: "lydwx.jpg" },
+        { 
+    from: "陈浚铭", 
+    text: '？？？<div style="margin-top:4px;padding-top:4px;border-top:1px solid #E8E8E8;font-size:12px;color:#999;">东不落：我爸不让我晚上出门</div>', 
+    time: "20:06", 
+    avatar: "cjmwx.jpg" 
+},
+        { from: "杨博文", text: "啊，刚刚在看书", time: "20:07", avatar: "ybwwx.jpg" },
+        { 
+    from: "杨博文", 
+    text: '写完作业应该能过来<div style="margin-top:4px;padding-top:4px;border-top:1px solid #E8E8E8;font-size:12px;color:#999;">陈太帅：周六晚上狼人杀 谁来</div>', 
+    time: "20:07", 
+    avatar: "ybwwx.jpg" 
+},
+        { from: "左奇函", text: "你直接带来写得了", time: "20:08", avatar: "zqhwx.jpg" },
+        { from: "张桂源", text: "顺便辅导一下陈浚铭", time: "20:08", avatar: "zgyweixin.png" },
+        { from: "陈浚铭", text: "不是哥们谁还带作业去", time: "20:08", avatar: "cjmwx.jpg" },
+        { from: "王橹杰", text: "那就玩9人局吧", time: "20:09", avatar: "wljwx.jpg" },
+        { from: "左奇函", text: "想玩丘比特局@陈浚铭", time: "20:09", avatar: "zqhwx.jpg" },
+        { from: "陈思罕", text: "那你拉个人", time: "20:10", avatar: "cshwx.jpg" },
+        { from: "陈奕恒", text: "丘比特又是什么玩意？", time: "20:10", avatar: "cyhwx.jpg" },
+        { from: "陈浚铭", text: "张桂圆你认识人多", time: "20:10", avatar: "cjmwx.jpg" },
+        { from: "张桂源", text: "我不认识", time: "20:11", avatar: "zgyweixin.png" },
+        { from: "左奇函", text: "那你手机里那个置顶是谁啊", time: "20:11", avatar: "zqhwx.jpg" },
+        { from: "聂玮辰", text: "？我去谁啊", time: "20:11", avatar: "nwcwx.jpg" },
+        { from: "左奇函", text: "你问他呗", time: "20:12", avatar: "zqhwx.jpg" },
+        { from: "聂玮辰", text: "@张桂源，谁啊", time: "20:12", avatar: "nwcwx.jpg" },
+        { from: "王橹杰", text: "演都不演了这是", time: "20:12", avatar: "wljwx.jpg" },
+        { from: "聂玮辰", text: "@左奇函，谁啊", time: "20:13", avatar: "nwcwx.jpg" },
+        { from: "张桂源", text: "……", time: "20:13", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "我问问", time: "20:13", avatar: "zgyweixin.png" },
+        { from: "左奇函", text: "问问？几个字打了两分钟了吧", time: "20:14", avatar: "zqhwx.jpg" },
+        { from: "张桂源", text: "你话怎么这么多", time: "20:14", avatar: "zgyweixin.png" },
+        { from: "陈奕恒", text: "不是，谁啊", time: "20:15", avatar: "cyhwx.jpg" },
+        { 
+    from: "左奇函", 
+    text: '私<div style="margin-top:4px;padding-top:4px;border-top:1px solid #E8E8E8;font-size:12px;color:#999;">恒里：不是，谁啊</div>', 
+    time: "20:15", 
+    avatar: "zqhwx.jpg" 
+},
+        { from: "陈浚铭", text: "她来不来啊，你问这么久", time: "20:16", avatar: "cjmwx.jpg" },
+        { from: "张桂源", text: "来", time: "20:16", avatar: "zgyweixin.png" },
+        { from: "左奇函", text: "恭喜恭喜啊", time: "20:17", avatar: "zqhwx.jpg" },
+        { from: "张桂源", text: "恭喜什么", time: "20:17", avatar: "zgyweixin.png" },
+        { from: "左奇函", text: "恭喜组局成功 不然你说呢", time: "20:17", avatar: "zqhwx.jpg" },
+        { from: "system", text: "您已加入群聊", time: "20:18", avatar: "📢", isSystem: true, isJoinMessage: true }
+    ];
+
+    // 添加历史消息
+    historyMessages.forEach(function(msg) {
+        chatData["我玩狼人杀不骗人"].messages.push({
+            from: msg.from,
+            text: msg.text,
+            time: msg.time,
+            avatar: msg.avatar || "👤",
+            date: "2023年10月13日",
+            read: true,
+            isSystem: msg.isSystem || false
+        });
+    });
+
+    // 5. 保存群聊已加入标记
+    localStorage.setItem('chapter3_group_joined', 'true');
+
+    // 6. 跳转到聊天列表
+document.getElementById("chatDetailScreen").style.display = "none";
+document.getElementById("chatListScreen").style.display = "block";
+renderChatList();
+// 不在这里显示选项，等用户点进群聊再显示
+}
+// ===== 第三章对话流程 =====
+function startChapter3Chat() {
+    setTimeout(function() {
+        showChapter3Options([
+            { text: "有哪些人啊", next: "chapter3_ask_who" }
+        ]);
+    }, 500);
+}
+
+// ===== 第三章选项系统 =====
+function showChapter3Options(options) {
+    var existing = document.querySelector('.option-modal');
+    if (existing) existing.remove();
+    
+    var modal = document.createElement("div");
+    modal.className = "option-modal";
+    var html = '<div style="margin-bottom:12px; font-weight:600;">选择回复</div>';
+    options.forEach(function(opt, idx) {
+        html += '<button class="option-btn" data-choice="' + idx + '" style="background:#F0F0F0;border:none;padding:12px;border-radius:16px;margin:8px 0;width:100%;text-align:left;font-size:14px;cursor:pointer;">' + opt.text + '</button>';
+    });
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+    
+    modal.querySelectorAll(".option-btn").forEach(function(btn) {
+        btn.onclick = function() {
+            var idx = parseInt(this.dataset.choice);
+            var selected = options[idx];
+            modal.remove();
+            
+            var playerName = player.wechatName || player.name || '用户';
+            chatData["张桂源"].messages.push({
+                from: "me",
+                text: selected.text,
+                time: getCurrentTime(),
+                avatar: "🐰",
+                date: "2023年10月13日",
+                read: true
+            });
+            renderChatMessages();
+            renderChatList();
+            
+            if (selected.next && typeof window[selected.next] === 'function') {
+                setTimeout(function() {
+                    window[selected.next]();
+                }, 500);
+            }
+        };
+    });
+}
+
+// ===== 分支1：有哪些人啊 =====
+function chapter3_ask_who() {
+    var replies = [
+        { from: "other", text: "都是我一起训练的好朋友", time: "20:31", avatar: "🏀" },
+        { from: "other", text: "还有陈浚铭，你上次见过的", time: "20:31", avatar: "🏀" }
+    ];
+    
+    sendChapter3Replies(replies, function() {
+        showChapter3Options([
+            { text: "可是我都不认识啊，好尴尬啊", next: "chapter3_option1" },
+            { text: "算了吧，我不认识他们", next: "chapter3_option2" }
+        ]);
+    });
+}
+
+// ===== 选项1 =====
+function chapter3_option1() {
+    var replies = [
+        { from: "other", text: "哎呀你来嘛", time: "20:32", avatar: "🏀" },
+        { from: "other", text: "陈浚铭说你不来他也不来了", time: "20:32", avatar: "🏀" }
+    ];
+    
+    sendChapter3Replies(replies, function() {
+        showChapter3Options([
+            { text: "？真的假的", next: "chapter3_really" }
+        ]);
+    });
+}
+
+// ===== 选项2 =====
+function chapter3_option2() {
+    var replies = [
+        { from: "other", text: "哎呀你来嘛", time: "20:32", avatar: "🏀" },
+        { from: "other", text: "陈浚铭说你不来他也不来了", time: "20:32", avatar: "🏀" }
+    ];
+    
+    sendChapter3Replies(replies, function() {
+        showChapter3Options([
+            { text: "？真的假的", next: "chapter3_really" }
+        ]);
+    });
+}
+
+// ===== 真的假的 =====
+function chapter3_really() {
+    var replies = [
+        { from: "other", text: "真的啊", time: "20:33", avatar: "🏀" },
+        { from: "other", text: '"姐姐不来我也不来了"', time: "20:33", avatar: "🏀" },
+        { from: "other", text: "他原话", time: "20:33", avatar: "🏀" }
+    ];
+    
+    sendChapter3Replies(replies, function() {
+        showChapter3Options([
+            { text: "那他为什么不自己来和我说", next: "chapter3_why_not_him" }
+        ]);
+    });
+}
+
+// ===== 那他为什么不自己来和我说 =====
+function chapter3_why_not_him() {
+    var replies = [
+        { from: "other", text: "你知道的他小孩脸皮薄", time: "20:34", avatar: "🏀" },
+        { from: "other", text: "来嘛来嘛来嘛来嘛", time: "20:34", avatar: "🏀" }
+    ];
+    
+    sendChapter3Replies(replies, function() {
+        showChapter3Options([
+            { text: "行", next: "chapter3_agree" }
+        ]);
+    });
+}
+
+// ===== 行（同意） =====
+function chapter3_agree() {
+    if (window._chapter3_agree_done) return;
+    window._chapter3_agree_done = true;
+    
+    // 玩家发送 "行"
+    chatData["张桂源"].messages.push({
+        from: "me",
+        text: "行",
+        time: getCurrentTime(),
+        avatar: "🐰",
+        date: "2023年10月13日",
+        read: true
+    });
+    renderChatMessages();
+    renderChatList();
+    
+    setTimeout(function() {
+        var replies = [
+            { from: "other", text: "太好了，我拉你进群", time: "20:35", avatar: "🏀" }
+        ];
+        
+        sendChapter3Replies(replies, function() {
+            // ===== 把群聊邀请存进 chatData =====
+            chatData["张桂源"].messages.push({
+                from: "system",
+                text: "群聊邀请",
+                time: "20:35",
+                avatar: "📢",
+                date: "2023年10月13日",
+                read: true,
+                isSystem: true,
+                isGroupInvite: true
+            });
+            
+            renderChatMessages();
+            renderChatList();
+            
+            var inputBox = document.getElementById("chatInputBox");
+            if (inputBox) {
+                inputBox.innerText = "请点击上方「加入」按钮进群";
+                inputBox.style.color = "#999";
+                inputBox.style.cursor = "default";
+                inputBox.contentEditable = "false";
+                inputBox.onclick = function() {
+                    alert("请点击上方的「加入」按钮进群");
+                };
+            }
+        });
+    }, 500);
+}
+
+// ===== 把群聊邀请文本替换成卡片 =====
+function replaceGroupInviteWithCard() {
+    var container = document.getElementById("chatMessages");
+    // 找到群聊邀请消息（包含"群聊邀请"文本的条目）
+    var items = container.querySelectorAll('.message-row, .message-bubble, .bubble-other, .bubble-me');
+    var targetItem = null;
+    
+    // 遍历查找包含"群聊邀请"的消息
+    items.forEach(function(item) {
+        if (item.textContent && item.textContent.indexOf('群聊邀请') !== -1) {
+            targetItem = item;
+        }
+    });
+    
+    if (targetItem) {
+        // 替换成卡片
+        var cardDiv = document.createElement("div");
+        cardDiv.style.cssText = "background:white;border-radius:12px;padding:16px;margin:8px 0;border:1px solid #E5E5E5;box-shadow:0 1px 4px rgba(0,0,0,0.06);";
+        cardDiv.innerHTML = `
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="width:60px;height:60px;border-radius:6px;overflow:hidden;flex-shrink:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:1px;background:#E5E5E5;">
+                    <img src="cyhwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display='none'">
+                    <img src="wzcwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display='none'">
+                    <img src="ybwwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display='none'">
+                    <img src="cshwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display='none'">
+                    <img src="nwcwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display='none'">
+                    <img src="zqhwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display='none'">
+                    <img src="lydwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display='none'">
+                    <img src="zhrwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display='none'">
+                    <img src="wljwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display='none'">
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:15px;font-weight:600;color:#1A1A1A;">邀请你加入群聊</div>
+                    <div style="font-size:13px;color:#333;margin-top:2px;line-height:1.5;">
+                        三点水的yuan邀请你加入群聊「我玩狼人杀从不骗人」，进入可查看详情
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid #EFEFEF;display:flex;justify-content:flex-end;">
+                <button onclick="joinChapter3Group()"  style="padding:4px 20px;background:transparent;color:#576B95;border:none;font-size:14px;font-weight:500;cursor:pointer;">加入</button>
+            </div>
+        `;
+        targetItem.replaceWith(cardDiv);
+    }
+}
+function showGroupEntryOptions() {
+    // 先检查是否已经选择过
+    var groupData = chatData["我玩狼人杀不骗人"];
+    if (window._groupEntryOptionsShown || localStorage.getItem('chapter3_group_choice_done') === 'true' || (groupData && groupData.groupEntryChoiceDone === true)) {
+        window._groupEntryOptionsShown = true;
+        return;
+    }
+    
+    var existing = document.querySelector('.option-modal');
+    if (existing) existing.remove();
+    
+    var modal = document.createElement("div");
+    modal.className = "option-modal";
+    modal.style.cssText = "position:fixed;bottom:70px;left:0;right:0;max-width:500px;margin:0 auto;background:white;border-radius:20px 20px 20px 20px;box-shadow:0 -2px 20px rgba(0,0,0,0.1);padding:16px;z-index:200;max-height:50vh;overflow-y:auto;";
+    
+    modal.innerHTML = `
+        <div style="margin-bottom:12px; font-weight:600; font-size:15px;">你已加入群聊，要打招呼吗？</div>
+        <button class="option-btn" data-choice="hello" style="background:#F0F0F0;border:none;padding:12px;border-radius:16px;margin:8px 0;width:100%;text-align:left;font-size:14px;cursor:pointer;">打个招呼</button>
+        <button class="option-btn" data-choice="lurk" style="background:#F0F0F0;border:none;padding:12px;border-radius:16px;margin:8px 0;width:100%;text-align:left;font-size:14px;cursor:pointer;">窥屏</button>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelectorAll(".option-btn").forEach(function(btn) {
+        btn.onclick = function() {
+            var choice = this.dataset.choice;
+            modal.remove();
+            window._groupEntryOptionsShown = true;
+            localStorage.setItem('chapter3_group_choice_done', 'true');
+            if (chatData["我玩狼人杀不骗人"]) {
+                chatData["我玩狼人杀不骗人"].groupEntryChoiceDone = true;
+                chatData["我玩狼人杀不骗人"].groupEntryChoice = choice;
+            }
+            
+            if (choice === "hello") {
+                groupChatHello();
+            } else {
+                groupChatLurk();
+            }
+        };
+    });
+}
+// 补上 groupChatHello 函数
+groupChatHello = function() {
+    var playerName = player.wechatName || player.name || '用户';
+    var date = "2023年10月13日";
+    
+    chatData["我玩狼人杀不骗人"].messages.push({
+        from: "me",
+        text: "hi~",
+        time: getCurrentTime(),
+        avatar: "🐰",
+        date: date,
+        read: true
+    });
+    renderChatMessages();
+    renderChatList();
+    
+    var replies = [
+        { from: "张桂源", text: "我朋友 " , time: getCurrentTime(), avatar: "zgyweixin.png" },
+        { from: "左奇函", text: "终于进来了", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "陈思罕", text: "欢迎欢迎", time: getCurrentTime(), avatar: "cshwx.jpg" },
+        { from: "陈浚铭", text: "耶！齐了！", time: getCurrentTime(), avatar: "cjmwx.jpg" },
+        { from: "陈浚铭", text: "周六晚上八点，谁迟到谁请奶茶", time: getCurrentTime(), avatar: "cjmwx.jpg" },
+        { from: "聂玮辰", text: "左奇函迟到的话请两杯", time: getCurrentTime(), avatar: "nwcwx.jpg" },
+        { from: "左奇函", text: "我从来不迟到，你先把你自己管好", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "王橹杰", text: "天呐，终于凑齐了", time: getCurrentTime(), avatar: "wljwx.jpg" },
+        { from: "聂玮辰", text: "不是，是女生啊？", time: getCurrentTime(), avatar: "nwcwx.jpg" },
+        { from: "左奇函", text: "嘘", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "左奇函", text: "懂的都懂", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "陈浚铭", text: "懂的都懂", time: getCurrentTime(), avatar: "cjmwx.jpg" },
+        { from: "张函瑞", text: "懂的都懂，冒个泡", time: getCurrentTime(), avatar: "zhrwx.jpg" },
+        { from: "陈奕恒", text: "我不懂", time: getCurrentTime(), avatar: "cyhwx.jpg" },
+        { from: "陈奕恒", text: "张桂源你朋友为啥用女生头像", time: getCurrentTime(), avatar: "cyhwx.jpg" },
+        { from: "左奇函", text: "哎呀别问了等下张桂源害羞了", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "张桂源", text: "？", time: getCurrentTime(), avatar: "zgyweixin.png" },
+        { from: "张桂源", text: '<img src="bqb1.jpg" style="width:120px; border-radius:8px; max-width:100%; display:block;">', time: getCurrentTime(), avatar: "zgyweixin.png", isImage: true },
+        { from: "左奇函", text: "哎我去这表情包谁啊感觉有点小帅", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "左奇函", text: "你挺有眼光的", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "张桂源", text: "？？", time: getCurrentTime(), avatar: "zgyweixin.png" }
+    ];
+    
+    sendGroupReplies(replies);
+};
+
+console.log('✅ groupChatHello 已补上');
+function groupChatLurk() {
+    var date = "2023年10月13日";
+    
+    // 窥屏分支：玩家不发言，直接显示群聊后续消息
+    var replies = [
+        { from: "陈浚铭", text: "耶！齐了！", time: getCurrentTime(), avatar: "cjmwx.jpg" },
+        { from: "陈浚铭", text: "周六晚上八点，谁迟到谁请奶茶", time: getCurrentTime(), avatar: "cjmwx.jpg" },
+        { from: "聂玮辰", text: "左奇函迟到的话请两杯", time: getCurrentTime(), avatar: "nwcwx.jpg" },
+        { from: "左奇函", text: "我从来不迟到，你先把你自己管好", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "王橹杰", text: "天呐，终于凑齐了", time: getCurrentTime(), avatar: "wljwx.jpg" },
+        { from: "聂玮辰", text: "不是，是女生啊？", time: getCurrentTime(), avatar: "nwcwx.jpg" },
+        { from: "左奇函", text: "嘘", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "左奇函", text: "懂的都懂", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "陈浚铭", text: "懂的都懂", time: getCurrentTime(), avatar: "cjmwx.jpg" },
+        { from: "张函瑞", text: "懂的都懂，冒个泡", time: getCurrentTime(), avatar: "zhrwx.jpg" },
+        { from: "陈奕恒", text: "我不懂", time: getCurrentTime(), avatar: "cyhwx.jpg" },
+        { from: "陈奕恒", text: "张桂源你朋友为啥用女生头像", time: getCurrentTime(), avatar: "cyhwx.jpg" },
+        { from: "左奇函", text: "哎呀别问了等下张桂源害羞了", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "张桂源", text: "？", time: getCurrentTime(), avatar: "zgyweixin.png" },
+        { from: "张桂源", text: '<img src="bqb1.jpg" style="width:120px; border-radius:8px; max-width:100%; display:block;">', time: getCurrentTime(), avatar: "zgyweixin.png", isImage: true },
+        { from: "左奇函", text: "哎我去这表情包谁啊感觉有点小帅", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "左奇函", text: "你挺有眼光的", time: getCurrentTime(), avatar: "zqhwx.jpg" },
+        { from: "张桂源", text: "？？", time: getCurrentTime(), avatar: "zgyweixin.png" }
+    ];
+    
+    sendGroupReplies(replies);
+}
+function sendGroupReplies(replies) {
+    var idx = 0;
+    var avatarMap = {
+        "张桂源": "zgyweixin.png",
+        "陈浚铭": "cjmwx.jpg",
+        "左奇函": "zqhwx.jpg",
+        "张函瑞": "zhrwx.jpg",
+        "陈奕恒": "cyhwx.jpg",
+        "聂玮辰": "nwcwx.jpg",
+        "杨博文": "ybwwx.jpg",
+        "陈思罕": "cshwx.jpg",
+        "王橹杰": "wljwx.jpg",
+        "张奕然": "zyrwx.jpg",
+        "张亦然": "zyrwx.jpg",
+        "魏子宸": "wzcwx.jpg",
+        "李煜东": "lydwx.jpg"
+    };
+    
+   function sendNext() {
+        if (idx >= replies.length) {
+            // ===== 所有消息发送完毕，显示系统提示 =====
+            setTimeout(function() {
+                chatData["我玩狼人杀不骗人"].messages.push({
+    from: "system",
+    text: "请前往地图-商业街-桌游店进行狼人杀",
+    time: getCurrentTime(),
+    avatar: "📢",
+    date: "2023年10月13日",
+    read: true,
+    isSystem: true,
+    isJoinMessage: false
+});
+                renderChatMessages();
+                renderChatList();
+            }, 1500);
+            return;
+        }
+        
+        var r = replies[idx];
+        var container = document.getElementById("chatMessages");
+        var typingRow = document.createElement("div");
+        typingRow.className = "message-row";
+        typingRow.style.justifyContent = "flex-start";
+        
+        var avatarSrc = avatarMap[r.from] || "default_avatar.png";
+        var avatarHtml = '<img src="' + avatarSrc + '" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+        typingRow.innerHTML = '<div class="message-avatar">' + avatarHtml + '</div><div class="typing-indicator">' + r.from + ' 正在输入...</div>';
+        container.appendChild(typingRow);
+        container.scrollTop = container.scrollHeight;
+        
+        // ===== 随机间隔 1.5~3 秒 =====
+        var typingDelay = Math.floor(Math.random() * 1500) + 1500;
+        setTimeout(function() {
+            typingRow.remove();
+            
+            var date = "2023年10月13日";
+            chatData["我玩狼人杀不骗人"].messages.push({
+                from: r.from,
+                text: r.text,
+                time: r.time || getCurrentTime(),
+                avatar: r.avatar || "👤",
+                date: date,
+                read: true,
+                isImage: r.isImage || false
+            });
+            renderChatMessages();
+            renderChatList();
+            idx++;
+            // ===== 下一条随机间隔 1.5~3 秒 =====
+            var nextDelay = Math.floor(Math.random() * 1500) + 1000;
+            setTimeout(sendNext, nextDelay);
+        }, typingDelay);
+    }
+    sendNext();
+}
+// ===== 发送第三章多条回复 =====
+function sendChapter3Replies(replies, callback) {
+    var date = "2023年10月13日";
+    var idx = 0;
+    
+    function sendNext() {
+        if (idx >= replies.length) {
+            if (callback) setTimeout(callback, 300);
+            return;
+        }
+        var r = replies[idx];
+        var container = document.getElementById("chatMessages");
+        var typingRow = document.createElement("div");
+        typingRow.className = "message-row";
+        typingRow.style.justifyContent = "flex-start";
+        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        container.appendChild(typingRow);
+        container.scrollTop = container.scrollHeight;
+        
+        setTimeout(function() {
+            typingRow.remove();
+            chatData["张桂源"].messages.push({
+                from: r.from,
+                text: r.text,
+                time: r.time,
+                avatar: r.avatar || "🏀",
+                date: date,
+                read: false
+            });
+            renderChatMessages();
+            renderChatList();
+            idx++;
+            setTimeout(sendNext, 600);
+        }, 700);
+    }
+    sendNext();
+}
+
 // ================= 显示物品（小卡 + 礼物分页） =================
 let currentGiftTab = 'cards';
 let batchMode = false; // 是否处于批量模式
@@ -15274,6 +16121,17 @@ function showResultModal(title, content, infoLines) {
     // ================= 事件绑定 =================
     document.getElementById("favorabilityBtn")?.addEventListener("click", showFavorability);
     document.getElementById("startBtn").onclick = () => {
+         // ===== 重置群聊状态 =====
+    // 读档后，如果 chatData 里有群聊，恢复标记
+if (chatData["我玩狼人杀不骗人"] && chatData["我玩狼人杀不骗人"].messages.length > 0) {
+    localStorage.setItem('chapter3_group_joined', 'true');
+} else {
+    localStorage.removeItem('chapter3_group_joined');
+}
+renderChatList();
+    if (chatData["我玩狼人杀不骗人"]) {
+        delete chatData["我玩狼人杀不骗人"];
+    }
         // ===== 检查自动存档 =====
     var autoSaveData = localStorage.getItem('sisterSimulatorAutoSave');
     if (autoSaveData) {
@@ -15399,13 +16257,12 @@ document.getElementById('momentTextInput2').addEventListener('input', function()
     document.getElementById("saveGameBtn")?.addEventListener("click", () => {
         renderSaveManagerModal();
     });
-        // 聊天返回按钮（统一处理）
-document.getElementById("chatBackBtn").onclick = function() {
+       document.getElementById("chatBackBtn").onclick = function() {
+    console.log('chatBackBtn 被点击');
 
-     // ===== 强制打印日志，方便排查 =====
-    console.log('chatBackBtn 被点击，当前返回目标:', localStorage.getItem('chapter2_return_target'));
-    // ===== 强制保护：如果是第二章，绝不跳第一章 =====
-    var savedChapter = parseInt(localStorage.getItem("currentChapter")) || currentChapter || 0;
+    var savedChapter = parseInt(localStorage.getItem("currentChapter")) || currentChapter || 1;
+
+    // ===== 第二章 =====
     if (savedChapter === 2 || currentChapter === 2) {
         document.getElementById("chatListScreen").style.display = "block";
         document.getElementById("chatDetailScreen").style.display = "none";
@@ -15413,6 +16270,7 @@ document.getElementById("chatBackBtn").onclick = function() {
         document.getElementById("chapterSelectPage").style.display = "none";
         document.getElementById("storyDetailPage").style.display = "block";
         document.getElementById("chapterTitle").innerText = "第2章 · 生日和新的名字";
+
         var target = localStorage.getItem("chapter2_return_target") || "showChapter2ContinuedStory";
         if (target === "showBranchAEnding" && typeof showBranchAEnding === 'function') {
             showBranchAEnding();
@@ -15423,36 +16281,11 @@ document.getElementById("chatBackBtn").onclick = function() {
         }
         return;
     }
-    document.getElementById("chatListScreen").style.display = "block";
-    document.getElementById("chatDetailScreen").style.display = "none";
-    document.getElementById("chatListScreen").style.display = "block";
-    document.getElementById("chatDetailScreen").style.display = "none";
-    
-    // 先尝试从 localStorage 读取保存的返回目标
-    var savedChapter = parseInt(localStorage.getItem("currentChapter")) || currentChapter || 1;
-    var target = localStorage.getItem("chapter2_return_target") || "default";
-    
-    if (savedChapter === 2 || currentChapter === 2) {
-        switchPage("story");
-        document.getElementById("chapterSelectPage").style.display = "none";
-        document.getElementById("storyDetailPage").style.display = "block";
-        document.getElementById("chapterTitle").innerText = "第2章 · 生日和新的名字";
-        
-        // 根据保存的目标跳转
-        if (target === "showBranchAEnding" && typeof showBranchAEnding === 'function') {
-            showBranchAEnding();
-        } else if (target === "showBranchBEnding" && typeof showBranchBEnding === 'function') {
-            showBranchBEnding();
-        } else if (target === "showChapter2ContinuedStory" && typeof showChapter2ContinuedStory === 'function') {
-            showChapter2ContinuedStory();
-        } else {
-            // 默认
-            showChapter2ContinuedStory();
-        }
-        return;
-    }
-    
+
+    // ===== 第一章 =====
     if (savedChapter === 1 || currentChapter === 1) {
+        document.getElementById("chatListScreen").style.display = "block";
+        document.getElementById("chatDetailScreen").style.display = "none";
         switchPage("story");
         document.getElementById("chapterSelectPage").style.display = "none";
         document.getElementById("storyDetailPage").style.display = "block";
@@ -15460,8 +16293,18 @@ document.getElementById("chatBackBtn").onclick = function() {
         loadChapter1();
         return;
     }
-    
-    // 默认返回章节列表
+
+    // ===== 群聊返回 =====
+    if (currentChatContact === "我玩狼人杀不骗人") {
+        document.getElementById("chatDetailScreen").style.display = "none";
+        document.getElementById("chatListScreen").style.display = "block";
+        renderChatList();
+        return;
+    }
+
+    // ===== 默认返回章节列表 =====
+    document.getElementById("chatListScreen").style.display = "block";
+    document.getElementById("chatDetailScreen").style.display = "none";
     document.getElementById("chapterSelectPage").style.display = "block";
     document.getElementById("storyDetailPage").style.display = "none";
     renderChapterList();
@@ -23761,6 +24604,2452 @@ function restoreGameData(data) {
     }
     
     console.log('✅ 游戏数据恢复完成');
+}
+function openBoardGamePage() {
+    var modal = document.createElement("div");
+    modal.className = "full-modal";
+    modal.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;";
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:28px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <div style="text-align:center;margin-bottom:16px;">
+                <div style="font-size:48px;margin-bottom:8px;">🎲</div>
+                <div style="font-size:18px;font-weight:700;color:#1A1A1A;">桌游店</div>
+            </div>
+            <div style="background:#FFF5F5;border-radius:12px;padding:14px 16px;margin-bottom:16px;border-left:3px solid #E85D75;">
+                <div style="font-size:13px;color:#666;line-height:1.7;">
+                    ⚠️ 狼人杀局内<b>不可以存档</b><br>
+                    逻辑上肯定会有不严谨的地方，仅供娱乐！
+                </div>
+            </div>
+            <button onclick="enterWerewolf()" style="width:100%;padding:14px;background:#E85D75;color:white;border:none;border-radius:30px;font-size:16px;font-weight:600;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#d14a60'" onmouseleave="this.style.background='#E85D75'">
+                🐺 进入狼人杀
+            </button>
+            <button onclick="this.closest('.full-modal').remove()" style="margin-top:10px;width:100%;padding:10px;background:transparent;border:none;color:#999;font-size:13px;cursor:pointer;">关闭</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+// ===== 狼人杀剧情段落（全局共享函数，修改剧情只需改这一处）=====
+function getWerewolfParagraphs() {
+    return [
+    "天已经完全黑了。巷子里的路灯隔很远才有一盏，光线断断续续的，走到中段的时候确实暗下来。桌游吧暖黄色灯在黑暗里特别显眼，像一小块暖色被嵌进夜里。墙上爬着的藤蔓被灯照出细碎的影子，风一吹就晃。\n你推开门。\n门口挂着的小铃铛轻轻响了一声。",
+    "屋里比外面暖和不少，空调开得有点低，混着薯片、奶茶和木质桌游盒淡淡的味道。\n最先传出来的是陈浚铭的声音。\n\"张桂源！\"",
+    "\"你还我！\"\n你循着声音望过去。\n茶几旁边，陈浚铭整个人几乎扑到了张桂源身上，双手死死抱着一包番茄味薯片，另一头却被张桂源攥在手里。",
+    "两个人谁也不肯松手。\n\"我就吃一片。\"\n张桂源嘴里已经嚼着薯片，说话都有点含糊，还一本正经地强调：\"最后一片。\"",
+    "\"你上一片也是最后一片！\"\n陈浚铭气得耳朵都红了，整个人挂在薯片袋子上往回拽，偏偏张桂源比他高一截，胳膊一抬，他踮着脚都够不到。\n旁边几个人像是早就习惯了，连头都懒得抬。",
+    "张函瑞坐在地毯上，腿边散着一小叠纸巾，正低着头慢慢叠花。纸巾被他折成一层一层的花瓣，整整齐齐摆在桌角，已经排了好几朵。\n听见门口的动静，他抬起头，对你弯了弯眼睛。\n\"晚上好呀。\"",
+    "王橹杰半边身子陷在张函瑞旁边那张沙发里，戴着有线耳机，低头看着手机，耳机线顺着袖口垂下来。听见张函瑞打招呼，他才摘下一只耳机，看了你一眼，抬手挥了挥，又重新戴了回去。\n另一边靠墙的位置。\n左奇函和陈奕恒肩并肩坐着，两个人各捧着一部手机，正专心打游戏。",
+    "陈奕恒皱着眉，嘴里一会儿蹦一句中文，一会儿蹦一句英文。\n\"Behind！Behind！\"\n\"左奇函！左边！\"",
+    "左奇函眼睛都没离开屏幕，只\"嗯\"了一声，手指飞快在屏幕上划了几下。\n几秒钟后，两个人的手机同时传来失败的音效。\n陈奕恒盯着屏幕沉默了一会儿，忽然偏头看向左奇函，认真总结。",
+    "\"我们刚刚……\"\n\"配合不是很好。\"\n左奇函没忍住笑了一下。",
+    "\"有没有一种可能，是你刚刚拿雷把我炸了？？？？\"\n旁边沙发上。\n陈思罕和聂玮辰靠在一起，也低着头玩游戏，不知道谁输了，陈思罕忽然笑得往后一倒，差点把手机扔出去。",
+    "聂玮辰一边笑一边去抢他手机。\n\"给我看看。\"\n\"不给！\"",
+    "\"你刚刚绝对干蠢事了。\"\n\"没有！\"\n声音闹成一团。",
+    "只有角落里还安安静静的。\n杨博文戴着耳机坐在单人桌旁，面前摊着一本练习册，旁边放着草稿纸和笔。外面闹成这样，他像一点没受影响，他写着写着忽然叼着笔开始思考，抬头就与刚进来的你视线撞上了，歪头对你笑了笑\n就在这时。",
+    "陈浚铭终于看见了站在门口的你。\n眼睛一下亮了。\n\"姐姐！\"",
+    "他松开薯片就朝你跑过来，跑到一半又想起自己的薯片，回头看了一眼，发现张桂源已经趁机又拿走了两片。\n\"张桂源！\"\n陈浚铭气得原地跺了一下脚，又立刻跑回来，一脸委屈地站到你旁边告状。",
+    "\"姐姐，他抢我吃的。\"\n他说着，还伸手指了指张桂源。\n\"他已经抢半包了。\"",
+    "张桂源正把薯片往嘴里塞，闻言动作顿了一下，低头看看手里的薯片袋，又看看陈浚铭。\n\"给你了给你了。\"\n陈浚铭抱着薯片，冲他做了个鬼脸。",
+    "张桂源走到你旁边，接过你手里的包放到一边，回头看向屋里的人。\n\"介绍一下。\"\n\"我特别好的朋友。\"",
+    "他说得很坦荡。\n可话音刚落，屋里忽然安静了一秒。\n左奇函最先抬起头，嘴角一点一点弯起来。",
+    "聂玮辰偏头看看张桂源，又看看你，忍笑忍得肩膀都在抖。\n陈思罕和王橹杰对视了一眼，谁也没说话，只是不约而同露出了一副\"懂了\"的表情。\n张函瑞看看你，又看看张桂源，小声\"哇\"了一下。",
+    "空气里安静了两秒。\n不知道是谁先笑出了声。\n紧接着，整个屋子都笑了起来。",
+    "张桂源原本还挺自然，结果被他们笑得耳朵一点点红起来。\n\"你们笑什么？\"\n左奇函靠在沙发背上，拖长声音应了一句。",
+    "\"没笑什么啊。\"\n\"特别好的朋、友。\"\n他把\"朋友\"两个字咬得格外重。",
+    "张桂源瞪了他一眼。\n\"左奇函，你今天最好别让我拿狼。不然第一个刀你\"\n左奇函笑着举了举手，没再逗他。",
+    "就在大家笑闹的时候，你忽然察觉到有一道视线一直落在自己身上。\n你顺着感觉望过去。\n陈奕恒一个手靠在左奇函肩膀上，很认真的看着你。",
+    "像是在认认真真记住你的样子。\n四目相对的那一刻，他明显愣了一下，随即有些不自然地移开视线\n张桂源顺着你的目光介绍过去。",
+    "\"陈奕恒。\"\n他张了张嘴，像是在脑子里组织中文。\n过了两秒，才有些生涩地笑了一下。",
+    "\"hi\"\n顿了顿，又赶紧补了一句。\n\"你好你好。\"",
+    "说完以后，他自己倒先不好意思地笑了\n老板轻轻拍了拍桌子。\n\"过来坐。\"",
+    "大家陆陆续续围到桌边。\n十个人围着圆桌坐满，原本还宽敞的桌游吧一下子热闹了不少。\n老板把一叠身份牌放到桌中央，自己站在桌边，双手撑着桌沿，语气不紧不慢，像说了很多遍的台词。",
+    "\"十人局。狼人三个，普通村民三个，神职三个——预言家、女巫、守卫。再加一个丘比特。\"\n他顿了顿，目光扫过桌边一圈人。\n\"神职和村民属于好人阵营，狼人属于狼人阵营。本局是屠神局或者屠民局，狼人把三个神全部杀光，或者三个平民全部杀光，就算狼人获胜。\"",
+    "规则一条一条讲下来。\n陈浚铭起初还听得挺认真，没过多久，下巴就撑到了桌面上。\n张函瑞倒是一直点头，时不时还小声重复一句，像是在帮自己记规则。",
+    "王橹杰眼神放空，不知道在想什么。\n左奇函撑着下巴，一边听一边转着桌上的杯子\n只有杨博文从头到尾都听得很认真，偶尔还会微微点一下头。",
+    "“守卫每晚可以守一个人，被守的那个人当晚不会被狼人杀死。但不能连续两晚守同一个人。”\n“女巫有一瓶解药和一瓶毒药。解药可以救一个人，毒药可以杀一个人。整局游戏各只能用一次。女巫第一晚可以用解药救自己——这是规则允许的——但如果你选择了救别人，那后面就不能再救自己了。”\n左奇函笑了一声：“所以女巫第一晚得好好想想救不救。”",
+    "老板点头：“对。然后是预言家。预言家每晚可以查验一个人的身份，但看不到具体是什么神职，只知道阵营。”\n老板：“预言家验出来好人是金水，验出来狼人是查杀。女巫救的人是银水。”\n老板继续说：“丘比特这张牌比较特殊。他第一晚选两个人连成恋人。其中一个人死了另一个会跟着殉情。如果连的是一狼一人，那这两个人脱离原来的阵营，组成第三方阵营。”",
+    "他顿了顿，扫了一圈：“第三方要赢，必须把不属于自己阵营的所有人都驱逐出去。也就是说，除了情侣丘比特三个人之外，其他七个人全部出局，他们俩才能赢。”\n陈浚铭倒吸一口凉气：“七个人全出局？那得打多久。”\n“所以一般很少打到第三阵营赢，但存在这个可能性。丘比特自己输了也没关系——他是独立阵营，情侣赢了他也跟着赢，情侣输了他也输。”",
+    "陈浚铭：“那丘比特可以把自己连进去吗？”\n“可以，丘比特可以连自己。”\n“哇——”",
+    "老板敲了敲桌子：“胜负判定标准：狼人杀光所有神职或者所有平民，狼人赢。好人阵营把狼人全部投出去，好人赢。第三方情侣活到最后，第三方赢。就这么简单。”\n等规则全部讲完，老板把身份牌重新洗了一遍。\n纸牌在他手里翻飞了几下，最后整整齐齐扣在桌子中央。",
+    "\"现在发牌。\"\n\"每个人抽一张，看完以后扣好，不要让别人知道自己的身份。\"\n刚刚还热热闹闹的一群人，不约而同安静下来。",
+    "桌上的身份牌静静放在那里。\n左奇函离得最近，第一个伸出手。\n他随手抽了一张，低头看了一眼，神情几乎没什么变化，只是眼尾很轻地弯了一下，随后便把牌扣回桌上，像什么都没发生过。",
+    "张桂源一直盯着他。\n左奇函察觉到视线，抬头笑了一下。\n\"一直看我干嘛？\"",
+    "\"谁看你了。\"\n张桂源嘴硬地收回目光，伸手也抽了一张。\n他低头扫了一眼，眉梢几不可察地动了一下，很快便恢复平时那副样子，把身份牌压在掌心下面，一句话也没说。",
+    "杨博文紧接着拿了一张。\n他只是低头看了两秒，就平静地把牌放回桌面，神色和刚才写作业的时候几乎没有区别，谁也猜不出他抽到了什么。\n陈思罕抽牌的时候挑了挑眉。",
+    "他把牌翻回来，又重新扣住，靠在椅背上，开始慢悠悠打量起桌上的其他人。\n像是在提前观察每个人的反应。\n王橹杰最后才把牌拿起来。",
+    "他低头扫了一眼，眼皮都没抬，脸上还是那副淡淡的表情。\n陈思罕没忍住看他。\n\"你就这反应？\"",
+    "王橹杰一本正经地点头。\n\"命运如此。\"\n一句话把旁边几个人都逗笑了。",
+    "轮到陈浚铭的时候，他几乎是扑过去把牌抢到了自己手里。\n他低着头，看清牌面的那一瞬，肩膀忽然轻轻抖了一下。\n起初还只是嘴角往上扬。",
+    "没过两秒，整个人都开始憋笑。\n最后实在忍不住，把头埋进胳膊里，笑得肩膀一抖一抖。\n所有人都转头看着他。",
+    "左奇函抱着胳膊，慢悠悠开口。\n\"你笑什么？\"\n\"没有。\"",
+    "陈浚铭立刻把身份牌往怀里一藏，拼命摇头。\n\"我就是……\"\n\"今天特别开心。\"",
+    "他说着说着，又没忍住笑了一声。\n张函瑞就在他旁边。\n他深吸了一口气，像做什么重大决定一样，把身份牌轻轻翻开。",
+    "低头看清以后，整个人明显僵了一下。\n过了两秒，他慢慢把牌扣回去，眉毛一点一点皱起来，嘴巴也跟着瘪了。\n\"怎么了？\"",
+    "聂玮辰偏头看他。\n张函瑞摇摇头，小声嘀咕了一句。\n\"就是呢……\"",
+    "\"张函瑞觉得不太妙。\"\n他说完，又赶紧捂住嘴，像是怕自己说漏了什么。\n王橹杰看了他一眼，语气平静。",
+    "\"你再这样，别人都知道你是狼了。\"\n张函瑞愣了一下，立刻坐直，把表情收了回去，只是耳朵已经红透了。\n剩下的人也依次抽好了身份牌。",
+    "聂玮辰看完以后吹了声口哨，把牌扣在桌上，笑着靠回椅背。\n陈奕恒低头看着自己的身份牌，看了好一会儿，像是在确认自己有没有看错。\n\"OK。\"",
+    "桌面中央。\n只剩下最后一张身份牌。\n老板抬起头，看向你。",
+    "\"最后一位。\"\n\"请抽取你的身份牌。\"\n桌边所有人的目光，也随着老板的话，一起落到了你面前那张静静扣着的身份牌上。"
+];
+}
+function enterWerewolf() {
+    // ===== 不管有没有存档，每次进入都清空所有缓存，从头开始 =====
+    // 清除可能残留的卡牌显示
+    var existingCards = document.getElementById('identityCardsContainer');
+    if (existingCards) existingCards.remove();
+    var existingIdentity = document.getElementById('identityDisplay');
+    if (existingIdentity) existingIdentity.remove();
+    
+    // 清除狼人杀页面残留
+    var existingPage = document.getElementById('werewolfPage');
+    if (existingPage) existingPage.remove();
+    
+    var modal = document.querySelector('.full-modal');
+    if (modal) modal.remove();
+    
+    var prevPage = document.querySelector('.page.active');
+    if (prevPage) {
+        prevPage.style.display = 'none';
+        prevPage.classList.remove('active');
+    }
+    
+    var werewolfPage = document.createElement('div');
+    werewolfPage.id = 'werewolfPage';
+    werewolfPage.style.cssText = 'position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:450px;height:100vh;aspect-ratio:9/16;z-index:999;background:url(zyd.jpg) center/cover no-repeat;display:flex;flex-direction:column;justify-content:flex-end;padding:0;';
+    
+    // 右上角结局按钮
+    var saveBtn = document.createElement('button');
+    saveBtn.textContent = '结局';
+    saveBtn.style.cssText = 'position:absolute;top:20px;right:16px;z-index:1001;padding:6px 14px;background:rgba(0,0,0,0.6);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;backdrop-filter:blur(8px);transition:all 0.2s;';
+    saveBtn.onmouseenter = function() { this.style.background = 'rgba(0,0,0,0.8)'; };
+    saveBtn.onmouseleave = function() { this.style.background = 'rgba(0,0,0,0.6)'; };
+    saveBtn.onclick = function() {
+        openWerewolfEndingGallery();
+    };
+    werewolfPage.appendChild(saveBtn);
+    
+    // 左上角返回地图按钮
+    var backBtn = document.createElement('button');
+    backBtn.textContent = '← 返回';
+    backBtn.style.cssText = 'position:absolute;top:20px;left:16px;z-index:1001;padding:6px 14px;background:rgba(0,0,0,0.6);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;backdrop-filter:blur(8px);transition:all 0.2s;';
+    backBtn.onmouseenter = function() { this.style.background = 'rgba(0,0,0,0.8)'; };
+    backBtn.onmouseleave = function() { this.style.background = 'rgba(0,0,0,0.6)'; };
+    backBtn.onclick = function() { exitWerewolf(); };
+    werewolfPage.appendChild(backBtn);
+    
+    var textBox = document.createElement('div');
+    textBox.id = 'werewolfTextBox';
+    textBox.style.cssText = 'background:rgba(0,0,0,0.7);height:33.33vh;padding:20px 24px;overflow-y:hidden;color:#E8E8E8;font-size:14px;line-height:1.8;font-family:inherit;cursor:pointer;';
+    textBox.innerHTML = '<div id="werewolfTextContent" style="white-space:pre-line;"></div>';
+    
+    werewolfPage.appendChild(textBox);
+    document.body.appendChild(werewolfPage);
+    
+    var paragraphs = getWerewolfParagraphs();
+    
+    var currentIndex = 0;
+    var isAnimating = false;
+    var preludeFastForward = false;
+    var preludeLongPressTimer = null;
+    var preludeSuppressClick = false;
+    var contentDiv = document.getElementById('werewolfTextContent');
+    textBox.dataset.preludeLongPressActive = '1';
+
+    function showPreludeSpeedBadge() {
+        var badge = document.getElementById('werewolfPreludeSpeedBadge');
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.id = 'werewolfPreludeSpeedBadge';
+            badge.style.cssText = 'position:absolute;top:8px;right:12px;padding:3px 9px;border-radius:12px;background:rgba(232,93,117,.88);color:white;font-size:11px;z-index:180;pointer-events:none;';
+            textBox.style.position = 'relative';
+            textBox.appendChild(badge);
+        }
+        badge.textContent = '剧情加速中 »»';
+    }
+
+    function stopPreludeFastForward() {
+        if (preludeLongPressTimer) {
+            clearTimeout(preludeLongPressTimer);
+            preludeLongPressTimer = null;
+        }
+        preludeFastForward = false;
+        var badge = document.getElementById('werewolfPreludeSpeedBadge');
+        if (badge) badge.remove();
+    }
+
+    textBox.addEventListener('pointerdown', function() {
+        if (textBox.dataset.preludeLongPressActive !== '1') return;
+        if (preludeLongPressTimer) clearTimeout(preludeLongPressTimer);
+        preludeLongPressTimer = setTimeout(function() {
+            if (textBox.dataset.preludeLongPressActive !== '1') return;
+            preludeLongPressTimer = null;
+            preludeFastForward = true;
+            preludeSuppressClick = true;
+            showPreludeSpeedBadge();
+            if (!isAnimating && typeof textBox.onclick === 'function') textBox.onclick();
+        }, 2000);
+    });
+    textBox.addEventListener('pointerup', stopPreludeFastForward);
+    textBox.addEventListener('pointercancel', stopPreludeFastForward);
+    textBox.addEventListener('pointerleave', stopPreludeFastForward);
+    textBox.addEventListener('click', function(e) {
+        if (preludeSuppressClick) {
+            preludeSuppressClick = false;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }
+    }, true);
+    
+    function typeText(text, callback) {
+        isAnimating = true;
+        contentDiv.innerHTML = '';
+        var chars = text.split('');
+        var index = 0;
+        var typingSpeed = 30;
+        
+        function typeChar() {
+            if (index < chars.length) {
+                var char = chars[index];
+                if (char === '\n') {
+                    contentDiv.innerHTML += '<br>';
+                } else {
+                    contentDiv.innerHTML += char;
+                }
+                index++;
+                setTimeout(typeChar, preludeFastForward ? 3 : typingSpeed);
+            } else {
+                isAnimating = false;
+                if (callback) callback();
+            }
+        }
+        typeChar();
+    }
+    
+   function showParagraph(index) {
+    window._werewolfCurrentIndex = index;
+    if (index >= paragraphs.length) {
+        textBox.onclick = showIdentityCards;
+        return;
+    }
+    
+    typeText(paragraphs[index], function() {
+        textBox.onclick = function() {
+            if (!isAnimating) {
+                currentIndex++;
+                showParagraph(currentIndex);
+                if (currentIndex < paragraphs.length) {
+                    textBox.onclick = null;
+                }
+            }
+        };
+        if (preludeFastForward) {
+            setTimeout(function() {
+                if (preludeFastForward && typeof textBox.onclick === 'function') textBox.onclick();
+            }, 25);
+        }
+    });
+}
+    showParagraph(0);
+}
+function showChosenIdentity(identity, subText) {
+    var contentDiv = document.getElementById('werewolfTextContent');
+    if (!contentDiv) return;
+    
+    contentDiv.innerHTML = '';
+    
+    var identityDisplay = document.createElement('div');
+    identityDisplay.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:20px;width:100%;cursor:pointer;';
+    
+    var title = document.createElement('div');
+    title.style.cssText = 'color:#E8E8E8;font-size:24px;font-weight:700;text-shadow:0 2px 20px rgba(0,0,0,0.9);margin-bottom:16px;';
+    title.textContent = '本局身份为' + identity;
+    
+    var cardImg = document.createElement('div');
+    cardImg.style.cssText = 'width:160px;height:240px;border-radius:16px;background:#333;border:3px solid #D4A574;box-shadow:0 8px 40px rgba(0,0,0,0.5);background-size:cover;background-position:center;background-repeat:no-repeat;';
+    var imageMap = {
+        '女巫': 'nw.jpg',
+        '平民': 'pm.jpg',
+        '猎人': 'lr.jpg'
+    };
+    var imgSrc = imageMap[identity] || 'kb.jpg';
+    cardImg.style.backgroundImage = 'url(' + imgSrc + ')';
+    
+    var sub = document.createElement('div');
+    sub.style.cssText = 'color:#CCCCCC;font-size:13px;margin-top:40px;text-shadow:0 2px 20px rgba(0,0,0,0.9);';
+    sub.textContent = subText || '';
+    
+    identityDisplay.appendChild(title);
+    identityDisplay.appendChild(cardImg);
+    identityDisplay.appendChild(sub);
+    
+    // 添加分线入口按钮
+    var branchBtn = document.createElement('button');
+    branchBtn.textContent = '开启' + identity + '线';
+    branchBtn.style.cssText = 'margin-top:30px;padding:12px 40px;background:#1A1A1A;color:white;border:none;border-radius:0;font-size:15px;font-weight:600;cursor:pointer;pointer-events:auto;transition:background 0.2s;';
+    branchBtn.onmouseenter = function() { branchBtn.style.background = '#333'; };
+    branchBtn.onmouseleave = function() { branchBtn.style.background = '#1A1A1A'; };
+    branchBtn.onclick = function() { enterWerewolfBranch(identity); };
+    identityDisplay.appendChild(branchBtn);
+    contentDiv.appendChild(identityDisplay);
+    
+}
+function showIdentityCards() {
+    // 清除之前的文本内容
+    var contentDiv = document.getElementById('werewolfTextContent');
+    if (contentDiv) {
+        contentDiv.innerHTML = '';
+    }
+    
+    // 隐藏文本框的点击翻页功能
+    var textBox = document.getElementById('werewolfTextBox');
+    if (textBox) {
+        textBox.dataset.preludeLongPressActive = '0';
+        textBox.onclick = null;
+    }
+    
+    // 创建三张身份牌容器（屏幕正中间）
+    var cardContainer = document.createElement('div');
+    cardContainer.id = 'identityCardsContainer';
+    cardContainer.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;display:flex;justify-content:center;align-items:center;gap:24px;';
+    
+    // 三张卡牌数据
+    var cards = [
+        { id: 'card1', backImage: 'kb.jpg', frontImage: 'nw.jpg', identity: '女巫', subText: '请利用好你的毒药和解药，并在关键时刻发挥作用' },
+        { id: 'card2', backImage: 'kb.jpg', frontImage: 'pm.jpg', identity: '平民', subText: '请跟随预言家获得胜利' },
+        { id: 'card3', backImage: 'kb.jpg', frontImage: 'lr.jpg', identity: '猎人', subText: '关键时刻发挥作用' }
+    ];
+    
+    var wrappers = [];
+    
+    cards.forEach(function(card, index) {
+        var cardWrapper = document.createElement('div');
+        cardWrapper.id = card.id;
+        cardWrapper.style.cssText = 'width:100px;height:150px;perspective:600px;cursor:pointer;transition:all 0.6s ease;flex-shrink:0;';
+        cardWrapper.dataset.index = index;
+        
+        var cardInner = document.createElement('div');
+        cardInner.style.cssText = 'position:relative;width:100%;height:100%;transition:transform 0.8s ease;transform-style:preserve-3d;';
+        
+        // 卡牌背面
+        var cardBack = document.createElement('div');
+        cardBack.style.cssText = 'position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;background:url(' + card.backImage + ') center/cover no-repeat;border:2px solid #D4A574;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
+        
+        // 卡牌正面
+        var cardFront = document.createElement('div');
+        cardFront.style.cssText = 'position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;background:url(' + card.frontImage + ') center/cover no-repeat;border:2px solid #D4A574;box-shadow:0 4px 20px rgba(0,0,0,0.4);transform:rotateY(180deg);';
+        
+        cardInner.appendChild(cardBack);
+        cardInner.appendChild(cardFront);
+        cardWrapper.appendChild(cardInner);
+        cardContainer.appendChild(cardWrapper);
+        wrappers.push(cardWrapper);
+    });
+    
+    document.body.appendChild(cardContainer);
+    
+    // ===== 洗牌动画：三张牌相互互换位置 =====
+    var positions = [0, 1, 2];
+    var shuffleCount = 0;
+    var maxShuffles = 8;
+    
+    function shuffleCards() {
+        if (shuffleCount >= maxShuffles) {
+            // 洗牌结束，恢复原始位置
+            wrappers.forEach(function(w, i) {
+                w.style.transition = 'all 0.5s ease';
+                w.style.transform = 'translateX(0px)';
+                w.style.order = i;
+            });
+            // 绑定点击事件
+            wrappers.forEach(function(w) {
+                w.onclick = function() {
+                    flipCard(w, cards[parseInt(w.dataset.index)]);
+                };
+            });
+            return;
+        }
+        
+        // 随机交换两张牌的位置
+        var idx1 = Math.floor(Math.random() * 3);
+        var idx2 = Math.floor(Math.random() * 3);
+        while (idx1 === idx2) {
+            idx2 = Math.floor(Math.random() * 3);
+        }
+        
+        // 交换位置
+        var tempPos = positions[idx1];
+        positions[idx1] = positions[idx2];
+        positions[idx2] = tempPos;
+        
+        // 应用位置
+        var spacing = 140; // 间距
+        var offsetX = (positions.length - 1) * spacing / 2;
+        wrappers.forEach(function(w, i) {
+            var pos = positions.indexOf(i);
+            var x = pos * spacing - offsetX;
+            w.style.transition = 'all 0.4s ease';
+            w.style.transform = 'translateX(' + x + 'px)';
+            w.style.order = pos;
+        });
+        
+        shuffleCount++;
+        setTimeout(shuffleCards, 400);
+    }
+    
+    // 开始洗牌
+    setTimeout(shuffleCards, 300);
+    
+    // ===== 卡牌翻转 =====
+    function flipCard(wrapper, cardData) {
+        // 防止重复点击
+        if (wrapper.dataset.flipped === 'true') return;
+        wrapper.dataset.flipped = 'true';
+        
+        // 禁用所有卡牌点击
+        wrappers.forEach(function(w) {
+            w.onclick = null;
+        });
+        
+        // 翻转当前卡牌
+        var inner = wrapper.querySelector('div');
+        inner.style.transform = 'rotateY(180deg)';
+        
+        // 0.8秒后放大卡牌，隐藏其他卡牌
+        setTimeout(function() {
+            // 隐藏其他卡牌
+            wrappers.forEach(function(w) {
+                if (w !== wrapper) {
+                    w.style.opacity = '0';
+                    w.style.transition = 'opacity 0.3s ease';
+                    setTimeout(function() {
+                        w.style.display = 'none';
+                    }, 300);
+                }
+            });
+            
+            // 放大选中的卡牌到中间
+            wrapper.style.transition = 'all 0.6s ease';
+            wrapper.style.transform = 'translateX(0px) scale(1.8)';
+            wrapper.style.zIndex = '10';
+            wrapper.style.position = 'relative';
+            
+            // 显示身份信息
+           // 显示身份信息
+var identityDiv = document.createElement('div');
+identityDiv.id = 'identityDisplay';
+identityDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1001;text-align:center;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+identityDiv.innerHTML = `
+    <div style="color:#E8E8E8;font-size:22px;font-weight:700;text-shadow:0 2px 20px rgba(0,0,0,0.9);margin-bottom:16px;">本局身份为${cardData.identity}</div>
+    <div style="width:180px;height:260px;border-radius:16px;background:url(${cardData.frontImage}) center/cover no-repeat;border:3px solid #D4A574;box-shadow:0 8px 40px rgba(0,0,0,0.5);"></div>
+    <div style="color:#CCCCCC;font-size:13px;margin-top:40px;text-shadow:0 2px 20px rgba(0,0,0,0.9);">${cardData.subText}</div>
+    <button onclick="enterWerewolfBranch('${cardData.identity}')" style="margin-top:30px;padding:12px 40px;background:#1A1A1A;color:white;border:none;border-radius:0;font-size:15px;font-weight:600;cursor:pointer;pointer-events:auto;transition:background 0.2s;" onmouseenter="this.style.background='#333'" onmouseleave="this.style.background='#1A1A1A'">开启${cardData.identity}线</button>
+`;
+            document.body.appendChild(identityDiv);
+        }, 800);
+    }
+}
+// ===== 狼人杀身份分线（占位，后续添加各线剧情）=====
+function enterWerewolfBranch(identity) {
+    if (identity === '女巫') {
+        enterWitchLine();
+    } else if (identity === '平民') {
+        enterCivilianLine();
+    } else if (identity === '猎人') {
+        enterHunterLine();
+    }
+}
+
+function enterWitchLine() {
+    setupWerewolfBranchCommon();
+    // 开始夜间流程
+    var witchMessages = [
+        '天黑请闭眼',
+        '"<b>丘比特请睁眼</b>"',
+        '"<b>丘比特请连情侣</b>"',
+        '上帝轻轻拍了拍两位被连的，不过声音很小并不能判断出方位',
+        '这局你没有被连为情侣',
+        '"<b>丘比特请闭眼</b>"',
+        '天黑请闭眼',
+        '"<b>狼人请睁眼</b>"',
+        '"<b>狼人请确认同伴</b>"',
+        '"<b>狼人请刀人</b>"',
+        '"<b>狼人请闭眼</b>"',
+        '"<b>女巫请睁眼</b>"'
+    ];
+    showWitchMessages(witchMessages, 0);
+}
+
+function showWitchMessages(messages, index) {
+    var contentDiv = document.getElementById('werewolfTextContent');
+    if (!contentDiv) return;
+    
+    if (index >= messages.length) {
+        showWitchSaveDecision();
+        return;
+    }
+    
+    contentDiv.innerHTML = messages[index];
+    
+    var textBox = document.getElementById('werewolfTextBox');
+    if (textBox) {
+        textBox.onclick = function() {
+            textBox.onclick = null;
+            showWitchMessages(messages, index + 1);
+        };
+    }
+}
+
+function showWitchSaveDecision() {
+    var contentDiv = document.getElementById('werewolfTextContent');
+    if (contentDiv) contentDiv.innerHTML = '';
+    
+    var textBox = document.getElementById('werewolfTextBox');
+    if (textBox) textBox.onclick = null;
+    
+    var existing = document.getElementById('witchDecisionPopup');
+    if (existing) existing.remove();
+    
+    var popup = document.createElement('div');
+    popup.id = 'witchDecisionPopup';
+    popup.style.cssText = 'position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);z-index:200;background:rgba(0,0,0,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:16px;padding:28px 24px;text-align:center;color:white;max-width:260px;width:100%;';
+    
+    popup.innerHTML = 
+        '<div style="font-size:16px;font-weight:700;margin-bottom:16px;">今晚被刀的玩家是</div>' +
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:20px;">' +
+            '<div style="width:60px;height:60px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,0.6);">' +
+                '<img src="cjmwx.jpg" style="width:100%;height:100%;object-fit:cover;">' +
+            '</div>' +
+            '<div style="font-size:14px;">陈浚铭</div>' +
+        '</div>' +
+        '<div style="font-size:13px;color:#ccc;margin-bottom:20px;">你要使用你的解药吗</div>' +
+        '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:nowrap;">' +
+            '<button onclick="witchUseSave()" style="padding:8px 20px;background:#E85D75;color:white;border:none;border-radius:0;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background 0.2s;" onmouseenter="this.style.background=\'#d14a60\'" onmouseleave="this.style.background=\'#E85D75\'">使用</button>' +
+            '<button onclick="witchNoSave()" style="padding:8px 20px;background:#333;color:white;border:none;border-radius:0;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background 0.2s;" onmouseenter="this.style.background=\'#555\'" onmouseleave="this.style.background=\'#333\'">不使用</button>' +
+        '</div>';
+    
+    var page = document.getElementById('werewolfPage');
+    if (page) {
+        page.appendChild(popup);
+    }
+}
+
+// ===== 女巫解药分支 =====
+function witchUseSave() {
+    var popup = document.getElementById('witchDecisionPopup');
+    if (popup) popup.remove();
+    showWitchPoisonPrompt();
+}
+
+function witchNoSave() {
+    var popup = document.getElementById('witchDecisionPopup');
+    if (popup) popup.remove();
+    showWitchPoisonPrompt();
+}
+
+// ===== 女巫毒药系统 =====
+function showWitchPoisonPrompt() {
+    var existing = document.getElementById('witchDecisionPopup');
+    if (existing) existing.remove();
+    
+    var popup = document.createElement('div');
+    popup.id = 'witchDecisionPopup';
+    popup.style.cssText = 'position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);z-index:200;background:rgba(0,0,0,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:16px;padding:28px 24px;text-align:center;color:white;max-width:260px;width:100%;';
+    
+    popup.innerHTML = 
+        '<div style="font-size:16px;font-weight:700;margin-bottom:10px;">你还有一瓶毒药，你要使用吗？</div>' +
+        '<div style="font-size:36px;margin-bottom:16px;">\uD83E\uDDEA</div>' +
+        '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:nowrap;">' +
+            '<button onclick="enablePoisonTargetSelection()" style="padding:8px 20px;background:#E85D75;color:white;border:none;border-radius:0;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background 0.2s;" onmouseenter="this.style.background=\'#d14a60\'" onmouseleave="this.style.background=\'#E85D75\'">使用</button>' +
+            '<button onclick="skipPoison()" style="padding:8px 20px;background:#333;color:white;border:none;border-radius:0;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background 0.2s;" onmouseenter="this.style.background=\'#555\'" onmouseleave="this.style.background=\'#333\'">不使用</button>' +
+        '</div>';
+    
+    var page = document.getElementById('werewolfPage');
+    if (page) page.appendChild(popup);
+}
+
+function enablePoisonTargetSelection() {
+    var popup = document.getElementById('witchDecisionPopup');
+    if (popup) popup.remove();
+    
+    // 显示提示文字
+    var contentDiv = document.getElementById('werewolfTextContent');
+    if (contentDiv) {
+        contentDiv.innerHTML = '<div style="color:#1A1A1A;font-size:18px;font-weight:700;text-align:center;margin-top:20px;">请选择你的使用对象</div>';
+    }
+    
+    // 启用头像点击
+    document.querySelectorAll('#werewolfAvatarContainer [data-name]').forEach(function(el) {
+        el.style.cursor = 'pointer';
+        el.onclick = function() {
+            triggerPoison(this.dataset.name, this);
+        };
+    });
+}
+
+function skipPoison() {
+    var popup = document.getElementById('witchDecisionPopup');
+    if (popup) popup.remove();
+    // 不使用毒药——后续剧情
+}
+
+function triggerPoison(name, wrapper) {
+    // 禁用进一步点击
+    document.querySelectorAll('#werewolfAvatarContainer [data-name]').forEach(function(el) {
+        el.onclick = null;
+        el.style.cursor = 'default';
+    });
+    
+    // 清除提示文字
+    var contentDiv = document.getElementById('werewolfTextContent');
+    if (contentDiv) {
+        contentDiv.innerHTML = '<div style="color:#E8E8E8;font-size:14px;text-align:center;padding:10px;">你对' + name + '使用了毒药</div>';
+    }
+    
+    // 找到头像图片容器
+    var avatarImg = wrapper.querySelector('div');
+    if (!avatarImg) return;
+    
+    // 在 wrapper 上放置动画（避免被头像的 border-radius 裁剪）
+    wrapper.style.position = 'relative';
+    wrapper.style.overflow = 'visible';
+    
+    // 创建毒药瓶
+    var bottle = document.createElement('div');
+    bottle.style.cssText = 'position:absolute;top:-28px;left:50%;transform:translateX(-50%) rotate(0deg);font-size:34px;z-index:30;transition:all 1s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;';
+    bottle.textContent = '\uD83E\uDDEA';
+    wrapper.appendChild(bottle);
+    
+    // 创建毒液流柱（初始隐藏）
+    var stream = document.createElement('div');
+    stream.style.cssText = 'position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:6px;height:0;background:linear-gradient(to bottom, #00dd00, #008800);border-radius:3px;z-index:25;opacity:0;transition:height 0.5s ease 0.6s, opacity 0.3s ease 0.6s;';
+    wrapper.appendChild(stream);
+    
+    // 第一步：倾斜瓶身 + 毒液流下
+    var tipTimer = setTimeout(function() {
+        bottle.style.transform = 'translateX(-50%) rotate(-65deg)';
+        bottle.style.top = '0px';
+        
+        stream.style.height = '24px';
+        stream.style.opacity = '1';
+    }, 600);
+    
+    // 第二步：毒液溅到头像上 + 骷髅头
+    var splashTimer = setTimeout(function() {
+        // 毒药瓶和流柱消失
+        bottle.style.opacity = '0';
+        stream.style.opacity = '0';
+        
+        avatarImg.style.position = 'relative';
+        
+        var liquid = document.createElement('div');
+        liquid.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;border-radius:50%;background:radial-gradient(circle, rgba(0,220,0,0.5), rgba(0,120,0,0.3));z-index:2;animation:liquidFlow 0.5s ease forwards;';
+        avatarImg.appendChild(liquid);
+        
+        avatarImg.style.borderColor = '#00ee00';
+        avatarImg.style.boxShadow = '0 0 20px rgba(0,200,0,0.6), inset 0 0 10px rgba(0,200,0,0.3)';
+        
+        var skull = document.createElement('div');
+        skull.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:34px;z-index:6;opacity:0;transition:opacity 0.6s ease;';
+        skull.textContent = '\u2620\uFE0F';
+        avatarImg.appendChild(skull);
+        setTimeout(function() { skull.style.opacity = '1'; }, 200);
+    }, 1300);
+    
+    // 标记名字为中毒
+    var allDivs = wrapper.querySelectorAll('div');
+    var nameEl = allDivs[allDivs.length - 1];
+    if (nameEl && nameEl.tagName !== 'IMG') {
+        nameEl.style.color = '#00cc00';
+        nameEl.textContent = name + ' \u2620\uFE0F';
+    }
+}
+
+function getCivilian1AMessages() {
+var messages = [
+    "左奇函接过话筒，笑了一声。\n“行吧，预言家第一天被抗推出局，也不是第一次了。”\n“我底牌还是预言家，六号是狼，你们今天没信我，那就只能等后面慢慢看了。我唯一想说的就是别把今天的票型看得太重要，第一天信息少，站错边很正常，真正有价值的是明天起来以后，谁最急着往一个方向带节奏。反正我能说的就这些，剩下的靠你们自己盘吧。祝好人好运”",
+    "他说完把话筒放下，站起身准备离开。\n走到张桂源旁边的时候，他脚步顿了一下，偏过头笑着说了一句：\n“七号，下次投票认真点。”",
+    "张桂源一脸无辜地笑了笑：“什么啊，我挺认真的啊。”\n左奇函没再说什么，摆了摆手，转身离场。\n夜色再次降临，房间重新安静下来。",
+    "和昨天一样的流程，你默默等待狼人女巫和语言家的行动\n法官平静地宣布。",
+    "天亮了",
+    "__PLAYER9_OUT__",
+    "杨博文轻轻笑了一下，把笔放到桌上，没有多说什么，只是安静地起身离开了座位。\n所有人的目光都跟着他移动了一瞬，又重新落回了圆桌中央。\n“请十号玩家发言。”",
+    "张函瑞接过话筒，低头看了一眼面前的笔记。\n“我先交身份吧，我是女巫。第一天平安夜是因为狼人刀了王橹杰，我把人救起来了。昨天晚上杨博文倒牌，我没有开毒，因为当时我确实没有把握能毒对，与其赌，不如把毒留到今天。”\n“不过今天要是还有人想跟我对跳女巫的话，也没关系。”",
+    "“那张函瑞这瓶毒，就只能送给你了哈。”\n“留两天了，再不用有点浪费。”\n“预言家我还是站陈奕恒，这一点没有变。左奇函昨天出局以后那段发言，没有让我觉得他是真预，杨博文今天倒牌，我也还是觉得自己的站边没什么问题。”",
+    "“然后说一下我今天想听的位置。陈思罕昨天那轮发言，我到现在还是觉得有一点别扭，不过具体哪里别扭，我一时也说不上来，所以我想再听一轮。陈浚铭也是。昨天那张预言家，我现在还不好下定义，我比较想知道他今天会怎么聊。还有张桂源。昨天那张票我暂时没有看懂，所以我不会这么快把他放掉，今天也会继续听。”\n他说合上笔记本，笑了笑。\n“当然，这几个都只是我现在比较在意的位置，不代表我已经认狼了。今天大家都还没发言，我应该还会改想法。”",
+    "“我差不多就这些，过。”\n法官抬头。\n“请一号玩家发言。”",
+    "王橹杰接过话筒，听完张函瑞的话，动作顿了一下，下意识抬手拨了拨头发。\n“……不是吧，第一天刀的我啊。”\n过了两秒，才重新开口。",
+    "“反正我还是站陈奕恒，这个没变。”\n“张函瑞……我先认个偏好吧，毕竟他说的东西我现在也没法证实，后面再看看有没有人对跳。”\n他低头翻了一页本子。",
+    "“陈思罕昨天我就觉得有点怪，今天还是想听听。”\n“还有张桂源昨天那票，我昨天就有点没看懂，你待会儿解释一下。”\n他把笔放回桌上，慢吞吞地补了一句。",
+    "“先听后面吧。”\n“过。”\n陈浚铭接过话筒，低头看着自己记得乱七八糟的笔记，沉默了几秒，才慢慢开口。",
+    "“哎呀记得太乱了我都看不清楚写的啥了”\n“哦哦，昨天晚上杨博文被刀，我还挺意外的。”\n“我昨天一直以为，今天应该还会围着预言家打，所以这一刀我现在没太搞明白，后面我再听听大家怎么聊。”",
+    "他说完，翻了一页纸，又像突然想起什么似的抬起头。\n“哦，对了，还有昨天张桂源那票。”\n张桂源一听名字，已经开始笑了。",
+    "“你别点我啊。”\n“我要点。”\n陈浚铭也笑了。",
+    "“我昨天就想说了。”\n“不过我知道他。”\n他说着朝张桂源扬了扬下巴。",
+    "“他昨天投我是投着玩的，所以昨天那票……这次我就原谅你了。下次别乱投了哈”\n张桂源笑着摆手。\n“别搞啊陈浚铭。”",
+    "“反正我不会因为这一票去盘他身份，我觉得没必要。”\n“相比这个，我还是更想听昨天发言比较少的人。陈思罕昨天一直说不要轻易站边但是还是投了陈奕恒，今天我想听听他怎么聊。女巫的话我还是比较相信张函瑞的，看看后面还有没有人对跳，哦对了，我退水，昨天跳预言家是为了混淆视线的，现在真的预言家出来就由他带队吧”\n他说完把笔放下，靠回椅子。",
+    "“我这轮就这些，过。”\n陈思罕皱了下眉，刚站起来就忍不住出了声。\n“不是？？？？”",
+    "“怎么今天一个两个都聊我啊？”\n他看看张函瑞，又看看陈浚铭。\n“我真是民啊。”",
+    "“不是，我昨天投陈奕恒怎么了？昨天那个发言，我觉得不像，我投了，现在你们都认他，我认错不就完了吗？”\n他说着说着声音都高了一点。\n“你们不能因为这一票一直盘我吧？”",
+    "他有点郁闷地抓了抓头发。\n“我真服了呀，今天一上来全在问我为什么投陈奕恒，我还以为我干啥了。反正现在女巫出来了，那我今天跟陈奕恒，没意见。”\n他重新坐下，还小声嘀咕了一句。",
+    "“哎呀，我真的是民。”\n“过。”\n聂玮辰靠在椅背上，笑着看了陈思罕一眼，等大家都安静下来才开口：“我感觉今天三号真的快被你们聊急了。其实我不太想因为昨天那一票一直盘他，第一天本来信息就少，我昨天还觉得左奇函像好人呢，现在回头看不是也打脸了吗？所以在我这儿，第一天投错人不算什么，至少现在还不够让我觉得三号有问题。”",
+    "他说着顿了一下，手里的笔轻轻转了个圈。\n“我今天还是更想听后面的发言，尤其是陈奕恒。昨天他的发言我确实没太认下来，但是今天张函瑞跳了女巫，杨博文又倒牌，这两个信息放在一起，我会更偏他一点。七号我暂时也不急着聊，昨天投陈浚铭那个理由我没太听懂，不过也不至于因为这一票就直接打死，后面再听听吧。”\n他笑了一下，把笔放回桌上。",
+    "“我没什么别的想说了，继续听六号。”\n轮到陈奕恒的时候，他先朝聂玮辰那边看了一眼，像是终于等到了自己发言，坐直以后还轻轻拍了下桌子。\n“来吧，哥们，我昨天晚上验了聂玮辰，他是好人，嗯对，是金水。”",
+    "聂玮辰愣了一下，陈奕恒已经笑着朝他点了点头：“你不用害怕了，我昨天验你就是因为你投了我。我当时想，你为什么投我呢？是因为你没听懂，还是因为你是狼，所以我就验了一下，诶？结果你是好人，那你昨天应该就是没听懂对吧兄弟”",
+    "“然后左奇函已经是狼了，这个不用再说了吧？昨天你们四个人投我，我本来还觉得里面肯定有狼，但是聂玮辰现在是好人，那剩下几张我还是要继续听。陈思罕刚刚一直说自己是民，我也不知道，我没有验他；张桂源我也没有验，所以呢，我今天晚上就在他们两个里面验一个。”",
+    "陈奕恒把视线转向陈浚铭，脸上的笑意还没完全收下去：“今天我还是想投陈浚铭。你昨天跳预言家，今天又说自己闹着玩的，我不知道你到底是什么，但是你这样一直搞，我真的看不懂。你说你是民，也可以，可是现在场上每个人都说自己是民，总要先投一个吧？”",
+    "陈浚铭在旁边拖长声音“啊”了一声，陈奕恒立刻看过去：“你别‘啊’，就是你。昨天你跳我的身份，今天又退下来，我觉得你最奇怪。”\n他说完还朝桌边看了一圈，像是在确认大家有没有听明白，最后自己点了点头：“所以今天先投陈浚铭，晚上我验陈思罕或者张桂源。聂玮辰是我的金水，这次不要再投我了，哥们。”\n聂玮辰笑着靠回椅背：“知道了，预言家。”",
+    "陈奕恒这才满意，扬了扬眉：“嗯对，let’s go，过。”\n他刚准备坐下，手已经扶上椅背，又像是突然想起什么，重新站直了身子。\n“啊，对。”他有些不好意思地笑了一下，“我再补一句。”",
+    "大家都抬头看向他。\n“我感觉……我今晚应该活不了了。”他说得很平静，像是在说一件再正常不过的事情，“杨博文昨天都倒了，他们今天应该不会放着我不刀。”\n“所以我把我的想法留一下。剩下两只狼，我现在比较怀疑陈浚铭、陈思罕，还有张桂源。”",
+    "他说完又赶紧补充了一句：“不是说一定啊，我就验了两个人，我也有可能盘错一张。”\n“但是如果我今天晚上真的倒了，你们明天就先从这三个人里面找，不要一下子把他们全放掉。”\n他想了想，又笑着补了一句：“应该……差不多就是这样。”",
+    "说完，他终于坐了下去。\n法官看向七号。\n“请七号玩家发言。”",
+    "张桂源没有第一时间开口。\n他低着头转着手里的笔，听见法官第二次提醒，才抬起眼，有些无奈地笑了一声。\n“不是，今天怎么一个两个都在盘我第一天那票。”",
+    "他摇了摇头。\n“那我先解释这个吧。”\n“因为我是守卫。”",
+    "这句话落下，桌边瞬间安静了不少。\n张桂源却没什么停顿，继续说道：“第一天两个预言家对跳，我一个守卫最忌讳的就是站边站太死。我要第一天就跟着陈奕恒冲，狼人晚上不得直接来找我？”\n“所以我第一天根本没想站边，我投陈浚铭也不是觉得他是狼，就是觉得他那个预言家跳得太离谱了，反正第一天也出不到他，我干脆挂他一票，把自己的票型打乱一点，省得狼人来盘我身份。”",
+    "“结果没想到，你们今天全在研究我那一票，昨天左奇函出局以后，我就基本确定陈奕恒是真预言家了，所以晚上我直接守了陈奕恒。”\n“但是守卫不能连续守同一个人。”\n张桂源抬头看向陈奕恒，冲他扬了扬下巴：“你刚刚留的那些话，我基本认。”",
+    "“狼坑缩得已经很小了，我和你的分歧只有一点。”\n他转头望向陈思罕。\n“我今天更想出陈思罕。”",
+    "“陈浚铭昨天那波操作虽然离谱，但我觉得不像狼，狼没必要第一天把自己架到那个位置去挨打。反倒是陈思罕，今天一直在解释自己为什么站错边，却始终没聊出新的东西。”\n陈思罕皱了皱眉，刚想开口，张桂源却笑着摆了摆手：“你看你又急”\n“如果今天陈思罕翻狼，这局基本就顺了。”",
+    "“这局其实没有你们想的那么复杂。”\n他说靠回椅背，嘴角重新扬了起来，语气里带着一种让人不自觉想相信的笃定。\n“只要今天不出好人，这局我们就已经赢一半了。”",
+    "轮到我发言，",
+    "我的话音落下，张桂源偏头看了我一眼。\n他没有说话，只是轻轻挑了挑眉。\n明明只是一个再普通不过的眼神，我却鬼使神差地觉得，那里面像是在安慰我。",
+    "没事。\n相信我。\n我抿了抿唇，忽然觉得刚才心里那点犹豫淡了不少。",
+    "__SECOND_VOTE__"
+];
+messages._isCivilian1A = true;
+return messages;
+}
+function getCivilian1AaMessages() {
+var messages = [
+    "法官确认完票型，抬起头。\n“3号玩家陈思罕出局，请留遗言。”\n陈思罕整个人愣了两秒，指着自己。",
+    "“我？”\n他左右看看，又指了指自己。\n“真是我啊？”",
+    "没人说话。\n他一下瘫回椅子里，抓了两把头发，整个人都快炸毛了。\n“不是——张桂源！”",
+    "他突然一拍桌子，伸手指向张桂源。\n“你要真是守卫，你今天老盯着我一个民干嘛啊？”\n张桂源被点了名字，一脸无辜地眨了眨眼。",
+    "“我什么时候老盯着你了？”\n“你还没盯？”\n陈思罕眼睛都瞪圆了。",
+    "“昨天投陈浚铭，今天又说听我发言，王橹杰也问我，张函瑞也问我，我今天从坐下来开始就在解释自己！”\n“我是狼吗？”\n“我像狼吗？”",
+    "“我一个平民容易吗我！”\n桌边已经有人憋不住笑了。\n张桂源低着头，嘴角也跟着扬了起来，还装模作样地点了点头。",
+    "“嗯……主要你今天确实有点可疑。”\n“可疑？！”\n陈思罕声音都高了八度。",
+    "“你一个守卫不去找狼，你找我一个民？”\n“那我现在还真不敢认你这个守卫了。”\n陈思罕揉了揉头发，终于稍微认真了一点。",
+    "“你们就那么确定张桂源一定是守卫吗？”\n“有没有一种可能——”\n“之前被刀杨博文才是守卫？要不然为什么第二天就把他刀了？”",
+    "客厅一下安静下来。\n张桂源脸上的笑意也淡了几分，抬眼望着他，没有插话。\n“我不是说张桂源一定是假守，我只是觉得，你们别认得太死。”",
+    "“杨博文昨天倒牌，到现在没人知道他是什么身份。”\n“如果杨博文是守卫，那张桂源这张守卫谁来拍？”\n“如果杨博文不是守卫——”",
+    "他说到这里，忽然像是想到什么，整个人又急了起来。\n“不是！”\n“还有一种可能啊！”",
+    "“万一杨博文就是民，我也是民——”\n他一边说一边掰着手指。\n“昨天一个民。”",
+    "“今天再一个民。”\n“那狼人晚上再刀一个民——”\n“好人直接完啦啊啊啊啊！！”",
+    "他说到最后已经有点崩溃了，抓着自己的脑袋来回晃。\n“我真的服了！！”\n“你们到底在干什么啊！！”",
+    "桌边彻底笑成一团。\n连一直淡定的王橹杰都偏过头，肩膀轻轻抖了两下。\n“哎呀。”",
+    "“差不多得了。”\n左奇函走过来，十分自然地一把勾住陈思罕的肩膀。\n“别说了别说了。”",
+    "“走。”\n“跟我们旁边待着。”\n陈思罕还不服，回头冲着屋里喊。",
+    "“你们认真盘啊！”\n“尤其张桂源！”\n“别他说啥你们就信啥！”",
+    "左奇函一边把人往外带，一边哭笑不得地拍了拍他的脑袋。\n“知道了知道了。”\n“你遗言都快说成第二轮发言了。”",
+    "“走了，小比格。”\n“再不走法官要把你嘴封上了。”\n“我还没说完呢！”",
+    "“外面说。”\n“外面没人听！”\n“我听。”",
+    "“那不一样——”\n法官环视众人。\n法官确认所有人都闭上眼睛以后，房间重新安静下来。",
+    "过了很久，那道平静的声音才再次响起。",
+    "天亮了",
+    "__PLAYER6_OUT__",
+    "客厅安静了一瞬。\n谁都没有立刻说话。\n他终究还是没能等到天亮。",
+    "而他昨晚验了谁，也随着他的离开，一起被埋进了黑夜里。\n坐在我对面的张桂源也轻轻叹了一口气，低下头，神色看起来有些惋惜。\n“可惜了。”",
+    "王橹杰没有接话，只是安静地望着桌面，脸上的神情和平时一样，看不出任何波澜。\n“接下来开始发言。”\n“今天采取逆序发言。”",
+    "“请五号玩家开始发言。”\n聂玮辰抓了两把头发，脸上写满了烦躁。\n“我现在是真有点烦。”",
+    "“昨天陈奕恒还跟我说，‘明天我报验人’。我还寻思着行，反正有预言家在，今天总能再缩一点范围。”\n“结果今天一睁眼，人没了。”\n“你们狼人是真能演。”",
+    "他抬起头，把桌上的人扫了一圈，越看越来气。\n“不是，我们群不是叫《我玩狼人杀不骗人》吗？骗人啊！昨天你们一个个聊得跟真的一样，什么守卫、什么民、什么逻辑，我昨天还能信一点，现在我回头一想，我是真一个都不敢信了。”\n“真的，我现在看谁都像狼。”",
+    "他叹了口气，身体往后一靠。\n“还有昨天陈思罕也是，昨天我听他的时候，我觉得他纯胡说八道。结果今天陈奕恒一死，我又开始想，他最后那句话到底是不是对的。”\n“他说我们凭什么默认张桂源就是守卫。”",
+    "“我现在也不知道。”\n“我是真不知道。”\n“昨天投出去的陈思罕到底是不是狼，我也不知道。”",
+    "“现在场上到底还有一狼还是两狼，我还是不知道。”\n“我发现我玩了两天，今天一睁眼，比昨天还迷。”\n“张桂源，我会一直盯着你的今天”",
+    "张桂源无奈的摊了摊手\n法官看向二号。\n“请二号玩家发言。”",
+    "陈浚铭坐直了些，没有急着开口，而是低头摆弄了一会儿手里的号码牌，像是在整理思路。过了几秒，他才抬起头，目光慢慢扫过桌上的每一个人，脸上依旧挂着那副和平时没什么区别的笑。\n“其实刚才大家说的，我都认真听了。”\n“聂玮辰在说昨天的票型，张函瑞在说今天应该怎么找狼，陈奕恒倒了以后，现在确实没有新的信息，所以我觉得今天再重复那些东西也没啥意义啊，因为每个人都有自己的站边，最后还是谁也说服不了谁。”",
+    "他说着摊了摊手，语气轻松得像是在聊天。\n“我刚刚一直在想，如果我是你们，现在最怀疑谁。”\n“想了半天，我觉得……”",
+    "他停顿了一下，忽然笑了。\n“应该是我吧。”\n桌上的几个人同时抬起了头。",
+    "陈浚铭却像完全没注意到大家的反应一样，继续往下说。\n“昨天很多人觉得我跳预言家，我承认，确实挺奇怪的。我有些话没说，有些想法也没聊出来，所以你们怀疑我，我觉得很正常。”\n“而且说实话，我今天也没有什么特别有价值的信息能告诉大家。继续让我坐在这里发言，感觉也就是跟着大家一起猜来猜去。”",
+    "他说到这里，竟然自己笑了一声。\n“既然这样，那我有一个提议。”\n“今天你们别费劲了。”",
+    "“投我吧。”\n整个客厅瞬间安静了。\n空气仿佛凝固了一样。",
+    "我甚至怀疑自己是不是听错了，下意识抬头看向陈浚铭，却发现他依旧笑眯眯地坐在那里，神情轻松得像是在说今天晚上吃什么。\n他迎着所有人的目光，继续说道：\n“真的，我觉得挺好的。”",
+    "“反正现在大家谁也拿不准谁，与其一直在这里互相怀疑、互相拉扯，不如直接把我投出去。我昨天票型奇怪，今天发言也奇怪，你们把我点出去，也可以快点开始下一局。”\n“万一我真是狼呢？”\n“那你们血赚好吧。”",
+    "“万一我不是狼……”\n他说到这里故意停顿了一下，眼睛弯了弯。\n“那也没关系。”",
+    "“至少你们投出去一个搞乱的”\n他说得一本正经，语气甚至透着几分诚恳，可越是这样，越让人觉得不对劲。\n聂玮辰皱着眉，整张脸都写满了疑惑，像是想打断他，却又不知道该从哪一句开始问。",
+    "张函瑞原本还在纸上写着东西，听到这里，笔尖硬生生停住了。他缓缓抬起头，眉头越皱越紧，盯着陈浚铭看了半天，眼神里全是不可思议。\n王橹杰脸上的笑也一点点消失了。\n他下意识瞥了一眼张桂源，又立刻把目光收回来，重新看向陈浚铭，眼底第一次露出了明显的错愕。",
+    "“我该说的就这么多。”\n“反正今天如果实在不知道投谁，就投我吧。我觉得这样这局结束得还能快一点，大家也不用一直坐在这里头疼了，说不定还能早点开下一把。”\n他说到最后，眉眼弯弯地笑了起来。",
+    "“嘿嘿。”\n我脑子一片空白，完全不知道他到底想干什么。\n聂玮辰张了张嘴，好半天才憋出一句：“……不是，陈浚铭，你今天吃错药了？”",
+    "张函瑞一脸复杂地看着他，似乎想从他的表情里找出一点开玩笑的痕迹，可陈浚铭始终笑着，神情自然得仿佛刚才那番离谱的话根本不是他说出来的一样。\n只有张桂源安静地坐在那里，手指轻轻摩挲着桌沿，眸光微不可察地沉了一瞬，随后又恢复了平静，像是什么都没有发生过。\n“二号玩家，确认结束发言吗？”",
+    "法官忍不住又确认了一遍。\n“确认啊。”\n陈浚铭笑着点点头，冲法官挥了挥手。",
+    "“过。”\n法官的话音落下后，王橹杰慢慢坐直了身子。\n他先看了一眼陈浚铭，忍不住笑了一下。",
+    "“这是在……”\n“可能是一个自爆来的吧，目前我没有想改票的想法。”\n“过。”",
+    "法官看向10号。\n“请10号玩家发言。”\n张函瑞把手里的笔放下，揉了揉太阳穴，像是真的有点头疼。",
+    "“哎哟……”\n他叹了口气。\n“勒个啷个耍嘛。”",
+    "一句重庆话，把桌上紧绷的气氛冲淡了一点。\n可他脸上的表情一点都不轻松。\n“我现在发现一个问题，我们一直在盘昨天、盘前天，可盘来盘去还是那个死循环。”",
+    "“现在场上到底剩一狼还是两狼，不知道，陈浚铭今天这一段，我更不知道。”\n他说着看了一眼陈浚铭。\n“我是真没听懂你什么意思。”",
+    "“你说让我投你，我反而不太想投你了。”\n“因为我觉得正常狼人不会这么聊，正常好人……好人好像也不会这么聊。”\n“你今天给我整得身份都不知道往哪放了。”",
+    "“至于七号，我就在等你。”\n“如果你今天还是讲不通，我这一票大概率不会变。”\n“但如果你真能把我说服，我也不是不能改。”",
+    "他说完停顿了一下，低头看着自己的笔尖，轻轻转了两圈。\n“其实说实话，我现在压力有点大，预言家没了，守卫可能也没了……所以今天大家真的别藏了，有什么逻辑、有身份视角，全拿出来聊。别到最后一个个都说‘我其实昨天就怀疑他’，那有什么用？”\n张函瑞深深吸了一口气，又缓缓吐出来。",
+    "“我现在是真的有点烦。”\n“听谁都像好人，听谁又都像狼。”\n“再这么盘下去，我今天晚上都想闭着眼睛随便毒一个了。”",
+    "“大家一起完蛋吧。”\n“行了。”\n“我说完了。”",
+    "法官的话音落下以后，张桂源没有像昨天那样立刻接过话。\n他只是低着头，安静地看着自己面前那张已经写得密密麻麻的纸。\n上面几乎记满了所有人的发言，谁站了谁，谁踩了谁，谁投了谁，谁昨天说过什么，今天又改了什么。",
+    "刚才所有人发言的时候，他一直没有怎么抬头，只是一边听，一边不停地在纸上写着什么。\n直到现在，他才轻轻把笔放下。\n“我刚才一直没说话。”",
+    "他抬起头，目光缓缓扫过桌上的每一个人，语气没有丝毫急躁，反而带着一种已经把所有事情想明白后的平静。\n“因为我一直在梳理这一局，我发现，我们今天所有人的思路，其实都陷进了同一个地方，包括我，刚开始也陷进去了。”\n“刚才我把所有人的发言重新过了一遍，突然发现了一件很奇怪的事情。”",
+    "他伸出手，指尖轻轻点了点纸面。\n“我们这两天，到底在盘谁？”\n没有等别人回答，他自己便继续说了下去。",
+    "“第一天，我们所有人都围着两个预言家转。左奇函为什么会出局？因为他跳了预言家，因为他站在最前面，因为所有人的注意力都在他身上，所以大家不断分析他的发言，拆他的逻辑，最后把他投了出去。”\n“第二天呢？”\n“陈浚铭跳预言家留下来的那一堆烂摊子，到今天还有人在聊。陈思罕昨天站错边，今天所有人都在问他为什么站错。还有我，从昨天开始一直有人抓着我那一票不放，我认守卫以后，又变成了全场最大的焦点。”",
+    "他说到这里，自己都忍不住笑了一下。\n“你们发现没有？”\n“这两天，我们一直在追着那些最像狼的人跑。”",
+    "“谁说得多，我们盘谁；谁站出来，我们盘谁；谁发言有漏洞，我们盘谁；谁身份最扎眼，我们盘谁。”\n“可是，狼人真的会全部站在聚光灯下面吗？”\n客厅忽然安静了下来。",
+    "“左奇函已经出局了，他是狼，没有问题。现在陈奕恒是真预言家，这一点大家也基本统一了。杨博文倒牌，张函瑞跳女巫，这些身份也越来越清楚。按理来说，狼坑应该越来越小才对。”\n“可我越盘，越觉得不对。”\n“因为剩下那只狼，我找不到。”",
+    "“我把你们每个人都放进去盘了一遍。陈浚铭今天为什么要把自己往抗推位送？我想不明白，如果他是狼，这么做对狼队一点收益都没有。陈思罕一直在解释自己昨天为什么站错边，虽然聊得不好，但他的问题始终摆在明面上。聂玮辰有预言家的金水，张函瑞是明女巫，我和预言家互相能够对上逻辑……”\n“那最后那只狼呢？”\n“他去哪儿了？”",
+    "张桂源说到这里，终于停顿了一下。\n他抬起头，望着桌上的所有人，眼神里没有半点咄咄逼人，反而像是真的在请大家一起思考。\n“后来我突然发现，不是我没找到他。”",
+    "“是我们从一开始，就没有人在找他。”\n张桂源却像是没有注意到他的反应，依旧平静地说道：“刚才我盯着这张纸看了很久，我一直在问自己，为什么会这样？为什么所有人都有人聊，只有他没有？”\n“后来答案其实很简单。”",
+    "“不是因为他聊得有多好，也不是因为他逻辑有多强，而是因为从第一天开始，我们所有人心里，都默认了一件事情。”\n他说到这里，看向张函瑞，语气依旧平和，没有一丝逼迫。\n“因为你救了他，所以我们所有人，都默认他是一张好人牌。”",
+    "“可是张函瑞，你仔细想想，你第一天救人的依据是什么？”\n“你的选择没有任何问题，因为第一天谁都会这么救，是你的选择没有问题，不代表狼队不会利用你的选择。”\n“我刚才一直在想，如果我是最后那只狼，我要怎么样才能让自己从第一天开始就永远不会进入狼坑。我想了很多种办法，藏发言、打倒钩、站边真预言家，可这些办法都有风险，因为总会有人来盘我。”",
+    "“直到我想到一种办法。”\n他缓缓抬起眼，目光落在张函瑞身上。\n“如果第一天开始，我就是全场身份最好的人呢？”",
+    "“如果从第一天开始，全场所有人都会替我证明身份呢？”\n“那我是不是就可以什么都不用做，只需要安安静静坐在这里，看着你们一个一个去盘那些比我更显眼的人？”\n张桂源没有继续说下去。",
+    "他们这两天一直在讨论谁像狼、谁不像狼，却从来没有认真讨论过，为什么有一个人从头到尾都没有进入过狼坑。\n这种感觉，就像一间屋子里的每一个角落都被翻了好几遍，唯独有一个柜子，从第一天开始就没有人打开过。不是因为里面没有东西，而是因为所有人都默认，那里面一定是空的。\n张桂源重新抬起头，视线缓缓扫过桌上的每一个人，最后落在张函瑞身上，脸上的表情依旧很平静，既没有咄咄逼人，也没有故意制造什么压迫感，反而像是在和他一起复盘这一局。",
+    "“张函瑞，我一直觉得你昨天有一句话说得特别对。”\n“你说第一天信息太少，所以你不想赌那瓶毒，因为赌错了，好人就白白少一张牌。那个时候我就在想，如果我是狼人，我会不会利用你的这个心理。”\n“后来今天你跳女巫，我就更确定了一件事情。”",
+    "“第一天晚上，你救人，不是因为你知道他是好人，你只是觉得第一天没有信息，一瓶解药换一条命，总比什么都不做好。你的选择没有任何问题，我相信换成这里任何一个人拿到女巫，大概率都会这么玩。”\n“可狼人真正厉害的地方，从来不是让你犯错，而是让你做一件完全正确的事情，然后让这件正确的事情，变成他们后面所有布局的开始。”\n他说得很慢，每一句话都像是自己一路思考下来得出的结论，而不是刻意去引导谁。",
+    "“你有没有发现，从你告诉大家第一天救的是王橹杰以后，所有人的思路都变了。”\n“没有人再去听他第一天到底聊了什么，也没有人再去想他站边是不是有问题，甚至今天他发言的时候，大家关心的都不是他说了什么，而是他说的东西有没有和你冲突。只要没有冲突，那他的发言就自动成立了。”\n“我们不是相信了王橹杰。”",
+    "“我们是相信了你。”\n张函瑞握着笔的手不自觉收紧了一些。\n张桂源没有停下来，而是继续顺着这个思路往下分析。",
+    "“所以我刚才一直在想，最后那只狼到底是怎么做到的。左奇函为什么会出局，因为他必须悍跳预言家；我为什么会一直被盘，因为我认了守卫；陈思罕为什么一直在解释，因为第一天站错了边；陈浚铭为什么今天成了抗推位，因为他昨天把自己跳到了最前面。你发现没有，这些人其实都在不停地自证，他们每一天都必须说很多很多的话，才能让别人相信自己不是狼。”\n“可如果有一个人，从第一天开始就不用自证呢？”\n“如果有一个人，从第一天开始，别人就已经替他把身份证明好了呢？”",
+    "王橹杰还是和刚才一样，安安静静地坐在那里，没有急着解释，也没有因为张桂源的话露出任何慌乱，甚至连表情都没有什么变化。",
+    "__THIRD_VOTE__",
+    "法官适时开口。\n“请陈浚铭发表遗言。”\n陈浚铭听见结果，像是终于等到了下课铃声，整个人都松了一口气，他笑嘻嘻地站起身，把自己的号码牌往桌上一丢。",
+    "“耶终于下线了我好累啊”\n聂玮辰没忍住翻了个白眼。\n“你怎么一副解脱了的样子？”",
+    "“这不是废话吗。”陈浚铭一边整理衣服一边理直气壮地说道，“我昨天晚上就开始头疼了，再坐下去我脑细胞都没了。我好饿”\n法官轻咳一声，提醒道：“请发表遗言。”\n“遗言？”",
+    "陈浚铭愣了一下，随后摆了摆手。\n“没什么遗言。”\n“你们加油。”",
+    "他说完像是又觉得太敷衍，歪着脑袋想了想，笑着补了一句。\n“希望好人赢吧。”\n“当然，狼人也加油哟。”",
+    "“反正别太快结束，我还想边吃东西边看。”\n一句话把所有人都干沉默了。\n聂玮辰一脸无语：“你到底哪边的？”",
+    "“我哪边都不是啊。”陈浚铭笑得一脸无辜，“我现在已经是观众了。”\n说完，他挥了挥手。\n“走了走了，我快饿死了。”",
+    "他转身朝观察席走去。\n刚走过去，左奇函就顺手把旁边拆开的薯片递了过去。\n“游戏继续，请场上玩家保持安静。”",
+    "和之前一样的流程，不过这次，你心跳的格外快\n张桂源在闭眼前一直对着你笑，这局完了真的能结束吗？好人能赢吗\n王橹杰会不会是那最后的一匹狼？",
+    "又或者说，还有格外的狼？\n这次等待格外的漫长\n终于，上帝的声音响起",
+   
+    "天亮了",
+    "__PLAYER1_10_OUT__",
+    "“昨天出局的玩家是1号，10号”\n“恋人阵营胜利，游戏结束”\n客厅安静了一瞬。",
+    "像是谁按下了暂停键。\n陈奕恒还维持着抱臂的姿势，愣了两秒，第一反应居然不是去看身份牌，而是下意识问了一句：“……恋人赢了？”\n聂玮辰比他反应更快，直接探着身子往法官那边看，“恋人是谁啊？”",
+    "话音刚落，法官便把其中两张身份牌翻了过来。\n桌边几个人几乎同时望过去。\n张桂源。",
+    "狼人。\n恋人。\n“……”",
+    "空气诡异地静了两秒。\n下一刻，不知道是谁先笑出了声。\n“我靠——”",
+    "“张桂源？！”\n“真的假的？”\n张函瑞整个人往后一靠，捂着额头笑得肩膀直抖：“怪不得，我昨天一直觉得你后面越聊越奇怪，我还以为你忽然良心发现了。”",
+    "“什么良心发现。”左奇函靠在椅背上，笑得眼睛都眯了起来，“人家那叫换阵营了。”\n张桂源一点没有被抓包的心虚，反倒十分坦荡地摊了摊手，眼睛弯弯的，笑得一脸无辜。\n“没办法。”",
+    "“恋人比较重要。”\n“啧啧啧啧——”\n聂玮辰一边笑一边拍桌子，“听见没有？恋人最重要？狼队队友情说不要就不要。”",
+    "“昨天卖队友卖得可顺手了。”\n旁边一直没说话的王橹杰忽然应了一声。\n张桂源非但没不好意思，反而偏头冲他笑了一下。",
+    "“理解一下。”\n“特殊情况。”\n陈奕恒笑得直拍腿，边笑边指着张桂源：“你们狼队内讧成这样还能打到最后，真不容易。”",
+    "“什么内讧。”左奇函悠悠接了一句，“这叫恋爱脑。”\n“哈哈哈哈哈哈哈哈——”\n“左奇函！”",
+    "张桂源笑着拿号码牌作势要砸他，“你少说两句。”\n“怎么？”左奇函挑了挑眉，丝毫不躲，“我说错了？”\n“没说错。”聂玮辰立刻接话，“总结得非常到位。”",
+    "桌边又是一阵起哄。\n法官趁着他们笑闹，把剩下几张身份牌也翻开了。\n大家其实只是扫了一眼，确认了一下身份，注意力很快又重新回到了桌上的几个人身上。",
+    "陈奕恒终于看见自己的预言家牌，整个人像是扬眉吐气了一样，立刻转头去找左奇函。\n“看见没有？”\n“嗯？”",
+    "“我才是预言家”\n左奇函失笑，举起双手作投降状。\n“是是是。”",
+    "“满意了？”\n“当然满意。”陈奕恒一脸神气，“你非跟我跳。”\n“那不是为了赢吗？”",
+    "“你还好意思说。”陈奕恒越想越乐，“你昨天那个发言，我差点都要怀疑自己了。”\n左奇函忍不住笑出声：“那说明我演得不错。”。\n整个客厅的气氛彻底松了下来。",
+    "就在大家七嘴八舌地聊着的时候，角落里忽然传来一声清清嗓子的声音。\n“咳。”\n没人理。",
+    "“咳咳。”\n还是没人理。\n直到第三声响起，所有人才顺着声音看过去。",
+    "陈浚铭不知道什么时候已经站了起来，一只手叉着腰，一只手举得高高的，满脸写着“你们是不是忘了什么”。\n“请问。”\n“有没有一种可能。”",
+    "“今天真正赢的人，是我。”\n客厅安静了一秒。\n下一秒，全场笑喷。",
+    "“哈哈哈哈哈哈哈哈——”\n“来了来了。”\n“开始邀功了。”",
+    "陈浚铭一点都不觉得不好意思，反而理直气壮地拍了拍自己胸口。\n“恋人是谁连的？”\n“我。”",
+    "“恋人是不是赢了？”\n“是。”\n“那MVP是不是我？”",
+    "他说得有理有据，甚至还一本正经地点了点头。\n“逻辑闭环。”\n张函瑞笑得眼泪都快出来了：“你这时候还惦记MVP呢？”",
+    "“为什么不能惦记？”\n陈浚铭睁大眼睛，“我辛辛苦苦牵的红线。”\n“没有我，他们俩今天各打各的。”",
+    "“你们夸张桂源可以。”\n“但是。”\n他伸出一根手指，在空气里晃了晃。",
+    "“请先夸丘比特，陈太帅”\n张桂源已经笑得不行了，低着头揉了揉眉心。\n“行。”",
+    "他抬起头，十分配合地点了点头。\n“你一等功。”\n“什么一等功。”",
+    "陈浚铭立刻纠正。\n“唯一功臣。”\n你坐在位置上，笑得有些累了，低头拧开桌上的矿泉水喝了一口。",
+    "刚把瓶盖拧回去，旁边忽然落下一片阴影。\n你抬起头，张桂源不知道什么时候已经绕到了你这边。\n他没急着说话，只是站在你旁边，低头看着你笑。",
+    "刚才被大家起哄了半天，他耳朵还有一点红，眼睛却亮得厉害，像藏着什么开心的事，怎么压都压不住。\n你眨了眨眼。\n“干嘛？”",
+    "“没什么。”\n他回答得很快，嘴角却一直扬着。\n安静了两秒，又忍不住补了一句。",
+    "“就是想问问。”\n“嗯？”\n他弯下腰一点，把手撑在你的椅背上，声音放轻了些，带着点藏不住的期待。",
+    "“我刚刚玩得怎么样？”\n“……”\n你看着他，忽然笑了。",
+    "“你不是已经听了一圈了吗？”\n“那不一样啊。”\n张桂源几乎没有犹豫。",
+    "“他们是他们。”\n他说这句话的时候，眼睛一直望着你，神情认真得有些犯规。\n“我想听你说。”",
+    "周围依旧吵吵闹闹，没人注意到角落里的这一小块安静。\n你故意拖长了声音。\n“嗯……”",
+    "“我想想。”\n张桂源果然有点急了\n“还要想？”",
+    "“那当然。”你一本正经地点头，“你昨天把我都骗过去了。”\n“真的吗？”\n“真的。”",
+    "“那是不是说明我演得挺好的？”\n他眼里的笑意越来越明显，偏偏还要装作一本正经地问。\n你终于没忍住，笑着点了点头。",
+    "“嗯。”\n“很厉害。”\n“守卫跳得特别像。”",
+    "“骗人也特别厉害。”\n张桂源脸上的笑一下子就藏不住了。\n“我就知道。”",
+    "“你肯定会夸我。”\n他说这句话的时候，语气里甚至还有点得意。\n你失笑。",
+    "“你哪来的自信？”\n“因为——”\n张桂源拖长了尾音，忽然又停住了。",
+    "他看着你，笑意一点点漫上眼底。\n“今天真的挺开心的。”\n你愣了一下。",
+    "“为什么？”\n“因为赢了啊。”\n他说得理所当然。",
+    "可说完以后，又像忽然想起什么似的，低低笑了一声，补充了一句。\n“而且。”\n“是我们赢了。”",
+    "他说“我们”的时候，没有刻意强调，也没有任何暧昧的语气，只是很自然地把这个词说了出来。\n自然得仿佛本来就该是这样。\n你的心却还是轻轻动了一下。",
+    "刚准备开口，旁边忽然传来一道故意拉长的声音。\n“——哟。”\n两个人同时转头。",
+    "陈浚铭不知道什么时候已经站在了你们身后，抱着胳膊，一脸痛心疾首地看着张桂源。\n“怎么就‘我们赢了’了？”\n“嗯？”",
+    "“我呢？”\n“丘比特不是人啊？”\n“没有我，你俩今天一个狼人一个民”",
+    "“是谁把你们连在一起的？？”\n他说着，十分夸张地指了指自己。\n“请重新组织一下语言。”",
+    "“应该是——”\n“我们三个赢了。”\n张桂源沉默了一秒。",
+    "随后十分诚恳地点了点头。\n“行。”\n“你赢得最多。”",
+    "“这还差不多。”\n陈浚铭瞬间满意了，刚准备继续说，左奇函远远看见这一幕，笑着扬声喊了一句。\n“陈浚铭——”",
+    "“你怎么什么地方都有你？”\n“废话。”陈浚铭转过头，理直气壮地回答，“我是丘比特售后服务。”\n张桂源也跟着笑了，偏头看了你一眼。",
+    "趁着没人注意，他轻轻碰了一下你的手背，很快便收了回去。\n动作轻得像是不小心。\n大家一边帮着整理，一边还在断断续续复盘刚才那局，笑声时不时从人群里冒出来，直到所有东西都收拾得差不多了，才一起往门口走去。",
+    "刚走出单元门，晚风迎面吹过来，把屋子里的闷热吹散了不少。\n已经快十一点了，路边停着几辆等客的出租车，大家站在门口，很自然地开始互相道别。\n\"那我先走了啊。\"",
+    "\"拜拜。\"\n\"到家群里说一声。\"\n\"知道。\"",
+    "陈浚铭临走前还不忘冲你挥挥手：\"姐姐下次继续玩！\"\n你笑着点点头：\"好。\"\n没一会儿，人就走得差不多了。",
+    "左奇函走出去两步，又像是想起什么，回头看了一眼。\n张桂源没跟上。\n他正站在你旁边，低着头看你手机上的打车页面。",
+    "左奇函挑了挑眉，嘴角慢慢扬起来，也没说什么，只是冲张桂源摆了摆手：\"走了。\"\n\"嗯。\"\n\"到家说一声。\"",
+    "\"知道。\"\n等最后几个人也走远，楼下忽然安静下来。\n你低头看了一眼手机。",
+    "\"还有两分钟。\"\n张桂源也跟着看了一眼，轻轻\"嗯\"了一声。\n两个人站在路灯下面，谁都没说话。",
+    "不知道过了多久，他才偏过头，小声问了一句：\"今天玩得开心吗？\"\n\"开心。\"\n你笑了笑。",
+    "\"比我想象中开心。\"\n他听完也笑了。\n\"我也是。\"",
+    "出租车很快停在路边。\n张桂源先一步走过去，替你把车门打开，因为怕被人认出来，你们只好分开打车\n\"到了给我发个消息。\"",
+    "他说得很自然，像是已经说过很多次。\n你坐进车里，抬头看他：\"好。\"\n他扶着车门，像是还想说什么，最后却只是笑了一下。",
+    "\"路上注意安全。\"\n\"知道啦。\"\n你朝他挥了挥手。",
+    "出租车缓缓驶离路边。\n后视镜里，张桂源一直站在原地，直到车子拐过路口，再也看不见了，才转身往回走。"
+];
+messages._isCivilian1Aa = true;
+return messages;
+}
+function getCivilian1AbMessages() {
+var messages = [
+    "法官宣布。\n\"二号玩家，陈浚铭出局。\"\n陈浚铭愣了一下。",
+    "\"啊？\"\n他叹了口气，\n\"好吧。\"",
+    "\"我是民。\"\n他说得特别坦荡。\n\"啥信息都没有。\"",
+    "又低头看了一眼自己的笔记。\n\"我本来记了一堆东西，现在发现写得跟鬼画符一样，我自己都看不懂。\"\n张桂源在旁边没忍住笑了一声。",
+    "陈浚铭立刻瞪过去。\n\"笑什么啊。\"\n\"你伤害了一个善良的小孩。\"",
+    "\"算了算了，我真没信息。\"\n\"你们自己加油吧。\"\n他说着已经站起身。",
+    "\"我要去吃好吃的了。\"\n说完一溜烟跑到杨博文旁边夺走了刚开封的果冻。",
+    "天亮了",
+    "__1AB_PLAYER6_7_8_OUT__",
+    "空气像是安静了一瞬。\n陈奕恒最先愣住。\n“啊？”",
+    "他低头看了看自己的号码牌，又抬头看向法官，像是没反应过来。\n“我死了？”\n法官点点头。",
+    "“请六号玩家离场。”\n他刚准备往外走，忽然发现张桂源也站了起来。\n陈奕恒脚步一顿。",
+    "“你怎么也起来了？”\n张桂源低头把自己的号码牌放回桌上，闻言笑了一下。\n“我也死了。”",
+    "“啊？”\n陈奕恒眨了眨眼，又低头看了看桌面。\n法官平静地重复了一遍。",
+    "“七号玩家死亡，请离场。”\n“不是……”\n陈奕恒还是没明白。",
+    "“狼人不是只刀了我吗？”",
+    "__1AB_PLAYER8_OUT__",
+    "他话音刚落，你也慢慢站起了身。\n陈奕恒整个人都愣住了。\n“……八号也死了？”",
+    "他看看你，又看看张桂源，脸上的表情越来越茫然。\n“不是，为什么？”\n“为什么你们两个也死了？”",
+    "左奇函坐在观众席，原本看热闹，听到这里终于没忍住笑出了声。\n“哈哈哈哈哈哈哈哈哈哈——”\n陈奕恒转头看他，一脸认真。",
+    "“你笑什么？”\n左奇函笑得直拍腿，好半天才缓过来一点。\n“哥。”",
+    "“他俩是恋人。”\n陈奕恒沉默了两秒。\n“……恋人？”",
+    "“对啊。”\n左奇函一边笑一边点头。\n“恋人一方死亡，另一方跟着殉情。”",
+    "陈奕恒皱着眉，像是在努力理解这句话。\n又过了几秒，他眼睛忽然亮了一下。\n“哦——”",
+    "“Romeo and Juliet！”\n“我知道了！”\n“就是一起死！”",
+    "左奇函本来已经快笑停了，听见这句话又重新笑弯了腰。\n“对对对，你这么理解也没问题。”\n你站起身，顺手把桌上的号码牌放回原位。",
+    "张桂源站在你身边等了一会儿。\n等你走到他身边，他才偏过头看了你一眼，笑得有点无奈。\n“好亏。”",
+    "你没听懂：“亏什么？”\n张桂源摸了摸鼻子，小声嘀咕了一句。\n“刚谈上就一起没了。”",
+    "你脚步一顿，耳朵一下热了起来。\n“……谁跟你谈上了。”\n张桂源笑了一声，也没反驳，只是放慢脚步，和你并肩往观众席走。",
+    "陈奕恒还在缠着左奇函问规则。\n“所以如果两个狼人是情侣怎么办？”\n“也一起死？”",
+    "左奇函捂着肚子，笑得眼泪都快出来了。\n“哥，你先把规则看完吧。”\n陈奕恒还没从刚刚的规则里缓过神，一边坐下一边小声嘀咕：\"我还是觉得这个规则有点离谱。\"",
+    "左奇函侧头看他：\"哪里离谱？\"\n\"谈恋爱为什么会一起死？\"\n\"……\"",
+    "左奇函沉默了两秒，认真回答：\"因为这是狼人杀。\"\n陈奕恒点点头。\n\"哦。\"",
+    "过了两秒。\n\"那如果他们分手了呢？\"\n左奇函一口水差点喷出来。",
+    "\"哥。\"\n\"游戏里没有分手。\"\n“请五号玩家发言。”",
+    "聂玮辰明显还没有从刚才的死亡信息里缓过神来，他皱着眉看了一眼空出来的三个位置，又低头看了看自己的笔记，像是怎么都想不明白。\n“昨天晚上……一下死了三个人，我是真的没想到。”\n他说着忍不住笑了一下，更多的是无奈。",
+    "“陈奕恒倒牌，我觉得很正常，毕竟昨天跳了预言家，狼人去刀他没什么问题。”\n“但是张桂源和八号也一起出局，我刚刚一直在想到底是什么情况。”\n聂玮辰低头转着手里的笔，沉默了几秒才继续说道。",
+    "“我现在能想到的，就只有一种可能。”\n“场上应该有情侣。至于到底是谁和谁，我也不知道。”\n“可能是张桂源和八号，也有可能是陈奕恒和八号，反正现在信息太少了，我不敢乱说。”",
+    "他说轻轻叹了口气，把笔放回桌上。\n“我今天还是想听张函瑞怎么聊，如果张函瑞真的是女巫，那他昨天晚上知道的信息肯定比我们多。”\n“这一票，我跟女巫。”",
+    "“过。”\n法官看向陈思罕。\n“请八号玩家发言。”",
+    "陈思罕把摊开的笔记本往自己这边拉了拉，低着头认真翻了两页，像是在重新整理昨天所有人的发言。\n过了一会儿，他才抬起头。\n“我和聂玮辰想得差不多。昨天晚上这个死亡信息，最大的可能还是场上有情侣。”",
+    "“至于到底是谁和谁，现在其实没有办法确定。”\n“我觉得现在一直猜昨天晚上发生了什么，其实意义不是特别大。”\n“因为已经发生了，我们现在更重要的是把最后一只狼人找出来。”",
+    "陈思罕停顿了一下，看向张函瑞。\n“如果张函瑞真的是女巫，那昨天晚上的选择一定是有原因的。”\n“所以这一轮，我还是愿意相信张函瑞。”",
+    "“我跟女巫的票。”\n“过。”\n法官点头。",
+    "“请一号玩家发言。”\n王橹杰慢悠悠坐直身体，把手里的笔轻轻放到桌上，嘴角还是挂着淡淡的笑。\n“昨天晚上这个结果，说实话我也挺意外的。”",
+    "“刚刚他们两个分析得差不多了，我就不重复了。”\n他低头翻了一页笔记，动作不紧不慢。\n“我现在比较认陈思罕今天的发言。”",
+    "“张函瑞，我暂时也愿意相信他是女巫，毕竟如果昨天晚上真的开了毒，那他的视角一定比我们高一点。”\n王橹杰笑了一下。\n“所以今天这一轮，我还是比较想听张函瑞怎么归票。”",
+    "“我应该会跟着女巫走。”\n“过。”\n法官看向最后一位玩家。",
+    "“请十号玩家发言。”\n张函瑞低头看着自己的笔记，很长时间都没有说话。\n他轻轻抿了抿嘴，终于开口。",
+    "“其实昨天晚上，我想了很久。”\n“杨博文那一刀出来以后，我一直觉得，狼人更像是在找神职，所以后来张桂源跳守卫的时候，我没有马上相信。”\n他说到这里停顿了一下。",
+    "“我越想越觉得，他那个守卫身份站不住，昨天他的发言，我也一直觉得有一点奇怪。”\n“所以昨天晚上，我最后还是把毒开给了张桂源。”\n张函瑞说完轻轻呼出一口气，神情却没有轻松多少。",
+    "“不过今天早上起来，一下死了三个人，我反而有点不会盘了。”\n“因为现在我也不知道，到底是张桂源和八号是情侣，还是陈奕恒和八号是情侣。”\n“昨天晚上那些信息，一下全乱了。”",
+    "他说苦笑了一下，低头揉了揉眉心。\n“压力真的挺大的。”\n“现在让我选最后一只狼人，说实话，我没有特别大的把握。”",
+    "张函瑞抬起头，看向剩下的三个人。\n“陈思罕今天的发言，我觉得没有什么问题。”\n“王橹杰……我暂时也没有听出来特别大的问题。”",
+    "他说到这里停顿了很久。\n最后还是把目光落到聂玮辰身上。\n“那我今天……”",
+    "“还是投聂玮辰吧。”\n“第一天你站边陈奕恒，这一点我一直有点在意。”\n“当然，也有可能是我盘错了。”",
+    "“如果真盘错了，好人我对不起你们”\n“过。”",
+    "__1AB_SPECTATOR_VOTE__",
+    "聂玮辰愣了一下，随即笑着把麦摘了下来。\n“行吧。”\n“希望你们没投错。”",
+    "他说完站起身，朝观众席走去。\n整个房间重新安静下来。\n“天黑请闭眼。”",
+    "所有玩家重新闭上眼睛。\n观众席的人也自觉安静了下来。\n“狼人请睁眼。”",
+    "王橹杰缓缓睁开眼。\n桌边只剩下他一个人。\n法官朝他轻轻点了点头，示意选择今晚的目标。",
+    "王橹杰却没有第一时间伸手。\n他偏过头，看向观众席。\n左奇函正托着下巴，一脸看热闹不嫌事大的表情。",
+    "两人视线碰上的一瞬间，王橹杰故意扬了扬眉，嘴角一点一点勾了起来，眼里的得意几乎藏不住。\n左奇函一下就笑了。\n他压低声音催了一句。",
+    "“赶紧的。”\n“别显摆了。”\n王橹杰笑着低下头，这才慢悠悠抬起手，指向了张函瑞。",
+    "就在这时，闭着眼睛的张函瑞忽然笑了一声。\n“哎呀—”\n他拖长了声音。",
+    "“你们快点刀吧。”\n观众席顿时笑成了一片。\n左奇函笑得连连摆手。",
+    "“听见没有？”\n“人家都等急了。”\n王橹杰终于没绷住，也低着头笑了出来。",
+    "法官无奈地看了几个人一眼。\n“安静。”\n笑声渐渐停了下来。",
+    "王橹杰重新确认了自己的手势。\n法官点头。\n“狼人请闭眼。”",
+    "短暂的寂静后。\n法官重新开口。",
+    "天亮了",
+    "__1AB_PLAYER10_OUT__",
+    "张函瑞轻轻叹了一口气，像是早就猜到了这个结果。\n他摘下麦，笑着站起身。\n“尽力了。”",
+    "法官等他走到观众席后，才缓缓环视全场。\n停顿了两秒。\n“本局游戏结束。”",
+    "“狼人阵营获胜。”\n王橹杰把狼人牌翻了过来。\n张函瑞愣愣地盯着那张狼人牌，过了两秒，忽然反应过来。",
+    "“等一下。”\n“第一天平安夜……”\n“是你？”",
+    "王橹杰点点头。\n“嗯。”\n“第一天晚上我自刀。”",
+    "张函瑞低头看了一眼自己的笔记，又抬头看看王橹杰，整个人都懵了。\n“所以……”\n“我的药是救的你？”",
+    "王橹杰笑着点点头。\n张函瑞沉默了两秒。\n忽然站起来，指着王橹杰。",
+    "“王橹杰——”\n“你害张函瑞害得好惨呐～～”\n整个房间顿时笑成一片。",
+    "法官等大家笑得差不多了，才拍了拍手。\n“好了好了。”\n“下面开始复盘。”",
+    "陈浚铭把丘比特牌翻过来，笑得一脸得意，像是终于等到了炫耀的时候。\n“来来来。”\n他用手里的牌轻轻敲了敲桌子。",
+    "“看看本局最佳操作。”\n左奇函原本还靠在桌边听王橹杰复盘，闻言立刻转过头：“你还有最佳操作？”\n“当然。”",
+    "陈浚铭一点不谦虚，举起丘比特牌，在空中晃了晃，最后朝你和张桂源一点。\n“我连的。”\n空气安静了一秒。",
+    "左奇函眨了眨眼，看看你，又看看张桂源，突然”哦——“了一声，尾音拖得老长。\n“原来如此。”\n张桂源还没反应过来：“什么原来如此？”",
+    "左奇函忍着笑，故意一本正经地看着他。\n“怪不得今天发言那么积极。”\n“……”",
+    "张桂源一下愣住。\n“我什么时候积极了？”\n“没有吗？”",
+    "左奇函歪着头，一副认真回忆的样子。\n“我怎么记得你一整局眼神老往那边飘。”\n“噗。”",
+    "不知道是谁先笑出了声。\n紧接着，旁边几个人也都跟着乐了。\n“真的假的？”",
+    "“有这回事？”\n张桂源耳朵一下就红了，笑着伸手就要去推左奇函：“你别胡说。”\n左奇函笑着往旁边一躲。",
+    "“哎，急了。”\n“急了急了。”\n陈浚铭在旁边笑得直拍桌子：“我就说我连得准吧！”",
+    "陈奕恒一边收牌一边抬起头，认真补了一句：“不过确实只当了一天恋人。”\n“哈哈哈哈哈哈。”\n这句话一出来，房间里又笑成一片。",
+    "你低着头把号码牌收到一起，听着他们一人一句，嘴角也忍不住扬了扬。\n张桂源本来还想解释，余光瞥见你在笑，到了嘴边的话又咽了回去，只是低头笑着揉了揉后颈，一副”算了，说不过他们”的样子。\n你被这群人吵的有点口渴，想去吧台拿瓶水喝",
+    "吧台离人群有一段距离。\n那边还围着一圈人，左奇函不知道又在学谁发言，逗得陈浚铭笑得直不起腰\n你走到冰箱前，拿了一瓶矿泉水。",
+    "瓶盖还没拧动，手里的瓶子忽然被人轻轻抽走。\n你偏过头。\n张桂源站在你旁边，低着头，已经顺手把瓶盖拧开了。",
+    "“给。”\n他把水递回来，动作自然得像已经做过很多次。\n你轻声说了句：“谢谢。”",
+    "“没事。”\n他笑了一下，手里还捏着那个瓶盖，没有立刻回去。\n两个人就这么并肩站着。",
+    "谁也没说话。\n耳边全是另一边闹哄哄的笑声。\n过了一会儿，张桂源忽然开口。",
+    "“刚刚……”\n“嗯？”\n“不好意思。”",
+    "他低着头，把瓶盖在掌心转了一圈。\n“把你连累了。”\n你握着矿泉水，轻轻摇了摇头。",
+    "“本来就是游戏。”\n“而且。”\n你抬眼看他，笑了笑。",
+    "“跟你一起出局，也不算亏。”\n张桂源明显愣了一下。\n他像是没想到你会这么说，抿着嘴笑了，耳朵慢慢泛起一点红。",
+    "他没敢看你，只是望着吧台上的饮料柜，像是在认真研究里面有几排矿泉水。\n沉默了一会儿，他忽然很轻地笑了一声。\n“其实……”",
+    "你转头看他。\n他却还是没回头。\n声音低低的，像是不太好意思，",
+    "“还挺想把恋人体验卡……”\n他顿了顿，喉结轻轻滚了一下。\n“延长一局的。”",
+    "话音落下，他自己先笑了，像是终于觉得这句话有点过界。\n“算了。”\n“就当我乱说。”",
+    "你没有立刻回答。\n只是低头喝了一口水。\n冰凉的水顺着喉咙滑下去，你却觉得耳尖有点发热。",
+    "过了两秒，你忽然偏过头，轻轻叫了他一声。\n“张桂源。”\n“嗯？”",
+    "他终于转过来看你。\n你弯着眼睛，很轻地笑了一下。\n“其实……”",
+    "“我也觉得有点短。”\n空气一下安静了。\n张桂源怔怔地看着你，像是没反应过来。",
+    "下一秒，他耳朵红得更厉害了，赶紧偏开视线，嘴角却怎么也压不住。\n他低头笑了一声，小声嘀咕。\n“……那下次。”",
+    "“争取一起活久一点。”\n就在这时，远处忽然传来左奇函的声音。\n“张桂源——”",
+    "“你人呢？复盘啊！”\n张桂源像是一下被拉回现实，应了一声：“来了！”\n他转身走了两步，又停下来，回头看了你一眼。",
+    "这一回，他没再躲开你的视线。\n“走吧。”\n“下局。”",
+    "“我们争取都活到最后。”\n大家一边帮着整理，一边还在断断续续复盘刚才那局，笑声时不时从人群里冒出来，直到所有东西都收拾得差不多了，才一起往门口走去。\n刚走出单元门，晚风迎面吹过来，把屋子里的闷热吹散了不少。",
+    "已经快十一点了，路边停着几辆等客的出租车，大家站在门口，很自然地开始互相道别。\n\"那我先走了啊。\"\n\"拜拜。\"",
+    "\"到家群里说一声。\"\n\"知道。\"\n陈浚铭临走前还不忘冲你挥挥手：\"姐姐下次继续玩！\"",
+    "你笑着点点头：\"好。\"\n没一会儿，人就走得差不多了。\n左奇函走出去两步，又像是想起什么，回头看了一眼。",
+    "张桂源没跟上。\n他正站在你旁边，低着头看你手机上的打车页面。\n左奇函挑了挑眉，嘴角慢慢扬起来，也没说什么，只是冲张桂源摆了摆手：\"走了。\"",
+    "\"嗯。\"\n\"到家说一声。\"\n\"知道。\"",
+    "等最后几个人也走远，楼下忽然安静下来。\n你低头看了一眼手机。\n\"还有两分钟。\"",
+    "张桂源也跟着看了一眼，轻轻\"嗯\"了一声。\n两个人站在路灯下面，谁都没说话。\n不知道过了多久，他才偏过头，小声问了一句：\"今天玩得开心吗？\"",
+    "\"开心。\"\n你笑了笑。\n\"比我想象中开心。\"",
+    "他听完也笑了。\n\"我也是。\"\n出租车很快停在路边。",
+    "张桂源先一步走过去，替你把车门打开，因为怕被人认出来，你们只好分开打车\n\"到了给我发个消息。\"\n他说得很自然，像是已经说过很多次。",
+    "你坐进车里，抬头看他：\"好。\"\n他扶着车门，像是还想说什么，最后却只是笑了一下。\n\"路上注意安全。\"",
+    "\"知道啦。\"\n你朝他挥了挥手。\n出租车缓缓驶离路边。",
+    "后视镜里，张桂源一直站在原地，直到车子拐过路口，再也看不见了，才转身往回走。"
+];
+messages.push('__ENDING_2__');
+messages._isCivilian1Ab = true;
+return messages;
+}
+function getCivilian1BMessages() {
+var messages = [
+    "法官宣布：“六号陈奕恒出局，请留遗言。”\n陈奕恒愣了一下，低头看了眼自己的号码牌，又看了看桌上其他人，半天才笑出来：“不是哥们”\n“第一天就把真预言家投出去了？？”",
+    "他一脸不可思议地摇了摇头“ok啊，这波废了。”\n他说着把椅子往后一推，站起身就准备往外走，走了两步又突然停住，猛地一拍脑门。\n“哎不是！”",
+    "他转身又跑了回来，扶着椅背，差点把自己逗笑：“还有一句还有一句，差点忘了。”\n法官都忍不住笑着看他。\n陈奕恒轻咳了一声，这才稍微认真一点：“杨博文是我金水，还有左奇函，他就是狼，因为我是预言家，这个没什么好说的。”",
+    "他说完又看了一圈众人，语速快了点，明显带着一点急：“真的，你们后面别他说什么就信什么。他今天能把我投出去，后面肯定还能继续骗人，你们自己多盘盘。”\n“尤其是我的金水。“他朝杨博文扬了扬下巴，“bro，你后面压力估计有点大，自己加油。”\n说到最后，他还是没忍住看了你一眼。",
+    "“还有八号。”\n你的手指下意识蜷了一下。\n“我不知道你为什么投我，但没关系。”陈奕恒停顿片刻，最后只是笑了一下，“不要因为左奇函给你发了金水就相信他，相信我好不好？我是真预言家。”",
+    "那点笑意很快又恢复成他平时自信得近乎张扬的模样：“反正我能说的都说了。好人加油，let’s go！”\n“天黑请闭眼”\n上帝依旧熟悉地cue流程，你不知道今晚会是谁出局",
+    "直到上帝的声音再次响起。",
+    "天亮了",
+    "众人陆陆续续睁开眼。\n大家第一时间都下意识看向上帝，等着今天的结果。\n上帝环视一圈，宣布道：",
+    "这句话一出来，桌上的气氛明显变了。\n有人松了口气，也有人下意识皱起眉。\n聂玮辰挑了挑眉，转头看了看身边几个人，没说话，只是低头轻轻转着手里的身份牌。",
+    "法官继续道：\n“请从5号玩家开始，逆序发言。”\n聂玮辰轻轻”啊”了一声，低头笑了笑，像是在消化这个信息：“平安夜啊。”",
+    "他抬起头看了一圈桌上的人：“那我觉得……其实也没什么特别复杂的。昨天真预言家已经出局了，狼人晚上如果想追轮次，第一反应肯定是去刀左奇函。现在左奇函还坐在这儿，我比较偏向于是守卫守到了。”\n他说着看向左奇函，笑了一下：“所以我今天不太想聊太多，还是先听你报验吧。毕竟现在场上就你一个预言家了，你昨晚验了谁，对我来说信息量更大。”\n“至于别的，我暂时没什么变化。“聂玮辰摊了摊手，“等你发言。”",
+    "左奇函点了点头，没有急着开口，而是低头翻了一下自己的记录本。\n“昨天陈奕恒出局，我相信大家多少都会有点动摇，这很正常。“他抬起头，目光落在杨博文身上，语气和平时没什么区别，“所以我昨天晚上去验了杨博文。”\n他抬起头。",
+    "“查杀。”\n左奇函看着杨博文，挑了挑眉。\n“哎呀——”",
+    "“我说你昨天怎么一直追着我打呢。”\n他笑了一下，语气里带着点挑衅的意味。\n“原来是和英国人两个小狼打配合啊”",
+    "“昨天你俩一个给金水，一个盘我是狼，配合得还挺默契啊？”\n他低头轻轻翻了一页记录本。\n“昨天我其实就一直在想，你为什么这么笃定我一定是狼。现在验出来以后，就说得通了。”",
+    "左奇函抬起头，眼神认真了几分。\n“所以今天杨博文这张查杀，我希望大家认真听。”\n“昨天很多人是因为相信陈奕恒，才站到了我对立面，我能理解。毕竟第一天信息少，站错边很正常。”",
+    "“但今天不一样，今天我已经把查验拿出来了。”\n“如果杨博文还能把自己聊成好人，那我这个预言家也不用玩了。”\n说完，他又低头看向昨天的票型。",
+    "“还有一张我比较在意的票。”\n“陈浚铭。”\n左奇函歪了歪头，笑得有点欠。",
+    "“昨天先跳预，又投我，你这身份挺精彩啊。”\n“今天你可得好好聊，聊得好，我今晚可能去验别人；聊不好……”\n“那就只能先验你了。”",
+    "“过。”\n法官抬手示意。\n“下一位，陈思罕。”",
+    "陈思罕撑着下巴，眼睛在左奇函和杨博文之间来回看了两眼，忽然”嘶”了一声。\n“完了。”\n他一脸认真地点点头。",
+    "“这么一听，我昨天好像站对队了，其实我昨天站左奇函，本来就是觉得他的状态比较像预言家，今天又报了杨博文查杀……那我暂时没什么想改的。”\n他偏头看着杨博文，语气里带着一点点好奇。\n“不过我还是挺期待你发言的。”",
+    "“毕竟昨天你真的一直在盘左奇函，我还以为你俩吵架了。”\n“反正目前我跟预言家，今天这一票大概率挂杨博文。”\n“过。”",
+    "法官抬手。\n“下一位，陈浚铭。”\n陈浚铭刚拿起号码牌，就笑嘻嘻地举了举手。",
+    "“退水。”\n“昨天那个预言家我瞎跳的。”\n话音刚落，张桂源扶了扶额，没忍住喊了一声。",
+    "“陈浚铭……”\n那语气里满是无奈，像是早就猜到他能干出这种事。\n陈浚铭眨了眨眼，一脸无辜地看回去，还带着点不好意思地笑了笑。",
+    "“哎哟。”\n“我昨天不是想着给预言家打个掩护嘛。”\n“场上两个预言家，我再跳一个，万一把狼绕晕了呢。”",
+    "他说着自己都乐了，摸了摸后脑勺。\n“虽然现在看起来……好像没绕成功，反正我退了，现在真预出来了，那就跟着左奇函走呗。”\n他低头翻了翻自己的票型本。",
+    "“昨天我站陈奕恒，今天左奇函给little sheep发查杀，那我今天先跟左奇函。”\n“little sheep等会儿要是能把我聊回来，我就改票；聊不回来，那今天只能先投你了。”\n陈浚铭笑嘻嘻地看了一眼杨博文，他把号码牌轻轻放回桌上。",
+    "“过。”\n法官示意。\n“下一位，王橹杰。”",
+    "王橹杰抬起头，语气和平时没什么区别。\n“昨天确实站错边了。”\n“我昨天觉得陈奕恒更像预言家，所以投了左奇函。”",
+    "他说得很平静，没有刻意解释什么。\n“今天左奇函报了杨博文查杀，我就跟今天的信息走。”\n他顿了一下。",
+    "“杨博文等会儿聊得好，我会再听；聊不好，我今天会投他。”\n说完，他轻轻把号码牌放下。\n“过。”",
+    "法官抬眸。\n“下一位，张函瑞。”\n张函瑞低头看了眼笔记，指尖轻轻点了点纸面。",
+    "“昨天我站陈奕恒。”\n“原因大家应该都知道，我当时觉得他的发言更像预言家。”\n他抬起头，看向左奇函。",
+    "“但今天是平安夜。”\n“左奇函给杨博文发查杀，我觉得这条信息的优先级比昨天高。”\n他停顿了一下。",
+    "“所以目前我会重新站边左奇函。”\n说完，他又转头看向杨博文。\n“不过，我还是比较期待你的发言。”",
+    "“毕竟昨天你一直在打左奇函，如果你有新的视角或者逻辑，我会听。”\n“但在你发言之前，我这一票暂时挂杨博文。”\n张函瑞放下号码牌。",
+    "“过。”\n杨博文低头看着桌上的号码牌，半天都没有说话。\n他手里的笔轻轻敲了两下桌面，又停住，像是在犹豫什么。",
+    "过了几秒，他才抬起头，扯出一点笑意。\n“嘶……其实我挺不想这局就把身份说出来的。”\n“我本来还想着今天继续装平民，再往后拖一轮。”",
+    "他说到这里停了一下，轻轻呼出一口气。\n“但是今天报平安夜以后，我突然觉得，好像也没必要了。昨天晚上狼刀落空，他们不会猜不到发生了什么，他们应该已经知道我是什么身份了。”\n杨博文低着头笑了笑，手指无意识地摩挲着桌边。",
+    "“算了。”\n他抬起头。\n“拍身份吧。”",
+    "“我是守卫。”\n桌上安静了一瞬。\n“第一天空守，昨天晚上守的自己。”",
+    "“昨天晚上其实我想了挺久，我一直在想，到底要不要去守左奇函。万一……他才是真预言家呢？真要是这样，这一刀大概率会落在他身上。”\n杨博文说到这里，转头看向左奇函，轻轻摇了摇头。\n“但是后来我还是没去，因为我还是觉得不像。”",
+    "“昨天我第一轮发言其实就说过，我觉得你的状态跟我印象里拿预言家的状态不一样，我认识你也不是一天两天了，你如果真拿预言家，不会是昨天那个样子。”\n“所以我最后还是站了陈奕恒。”\n“既然我站陈奕恒，那在我的视角里，你就是狼。我总不能一边觉得你是狼，一边晚上跑去守你，所以最后我守了自己。”",
+    "杨博文停了一下，继续说道：\n“今天这个平安夜出来以后，我反而更确定左奇函是狼。”\n“昨天陈奕恒已经出局了，场上只剩左奇函一个预言家。如果他真是预言家，狼为什么不刀他？反而来刀我一张没有跳身份的牌。”",
+    "“这个我觉得解释不了。”\n“而且昨天女巫解药已经用了，他们没有必要冒这个险。”\n“所以今天这个平安夜，在我这里已经足够说明左奇函的身份了。”",
+    "他翻了一页笔记。\n“至于另一张狼，我昨天最开始怀疑的是陈浚铭。毕竟第一个跳预言家的是他。”\n“但是后来再想想，我觉得不像。昨天他那个发言太直接了，如果狼真的这么安排，我反而觉得有点奇怪。”",
+    "“我现在更怀疑张桂源。”\n“昨天那轮发言，你一直没有明确站边。左奇函你聊了，陈奕恒你也聊了，到最后那一票也没有投他们两个。我今天重新回想昨天那轮发言，这一点我觉得问题最大。”\n“所以今天我的票还是左奇函。”",
+    "“如果左奇函出局以后游戏还没有结束，女巫晚上可以重点考虑张桂源。”\n“如果我说的这些你们能听进去，晚上女巫再认真想想张桂源，好人还有机会。”\n杨博文停顿了一下，轻轻叹了口气。",
+    "“哎好人们，你们要相信我啊。”\n“狼人已经把场面带过去了，再跟着他们走，这局真的很难赢。”\n“过。”",
+    "轮到我发言，",
+    "张桂源皱了皱眉，忍不住笑了一声。\n“不是。”\n“杨博文，你是守卫，那我是什么？？？”",
+    "“我是守卫。”\n“第一天守的她。”\n他说着朝你的方向看了一眼，又很慌张的躲过去了",
+    "“第一次一起玩，不想她第一天就出局。”\n“昨天晚上守的左奇函，所以今天是平安夜”\n他顿了一下，看着杨博文。",
+    "“而且你刚刚那段话，我越听越觉得奇怪。”\n“你一直在说，陈奕恒出局以后，场上只剩左奇函一张预言家，所以狼昨天晚上最应该刀左奇函。”\n“我认啊。”",
+    "“我也觉得狼最应该刀左奇函。”\n“那你为什么不守他？”\n一句话落下，桌上瞬间安静。",
+    "张桂源没有停，继续往下压。\n“你自己都说了，狼最有可能刀预言家。”\n“结果你一个守卫，不去守预言家，跑去守自己？”",
+    "“杨博文，这说不过去吧。”\n“守卫最重要的任务是什么？”\n“保预言家。”",
+    "“昨天场上就剩左奇函这一张预言家，你放着预言家不守，去守自己，现在还拿这个平安夜证明左奇函是狼。”\n“我觉得你这套逻辑前后就是矛盾的。”\n他转头看向其他人。",
+    "“大家别被他绕进去了。”\n“他说狼一定会刀预言家，那守卫是不是更应该守预言家？”\n“如果我是守卫，我昨天就是这么玩的。”",
+    "“所以今天才会有这个平安夜。”\n他把笔往桌上一放。\n“杨博文今天为什么敢跳？”",
+    "“因为他知道今天出了平安夜，只要抢我一个守卫身份，再把左奇函打成狼，这局就有机会带过去。”\n“今天我的票还是杨博文。”\n“过。”",
+    "__1B_SECOND_VOTE__",
+    "杨博文出局。\n杨博文沉默了两秒，低头笑了一下，像是已经接受了这个结果。\n“行。”",
+    "“我也没什么好说的了。”\n他抬头看了一圈，目光缓缓扫过每个人。\n“我还是那句话，左奇函是狼。”",
+    "“今天把我出了，狼人已经控场了。”\n“后面你们再想把票拉回来，就很难了。”\n“还有女巫，我还是希望你晚上按照我刚刚留的信息去想。”",
+    "他停顿了一下，轻轻叹了口气。\n“我知道现在场上很多人不会信我。”\n“但我真的希望，好人还能赢。”",
+    "杨博文笑了笑，把身份牌轻轻推到桌子中央。\n“过。”\n“天黑请闭眼”",
+    "杨博文的话还一直在你脑海中回荡，他真的是守卫吗？还是张桂源？你不知道你这一票到底投对没，你只知道自己必须百分之百相信张桂源，作为他的“恋人”",
+    "天亮了",
+    "__1B_PLAYER3_4_OUT__",
+    "众人陆陆续续睁开眼。\n法官扫了一眼桌上的人，缓缓开口。\n陈思罕怔了一下，明显没想到会是自己，愣愣地”啊？“了一声。",
+    "“我？”\n他抬手指了指自己，一脸莫名其妙。\n左奇函抬了一下眼，动作停顿了半秒。",
+    "“哎呀。”\n“那还真没想到。”\n张桂源皱了皱眉，下意识看了他一眼。",
+    "左奇函也正好偏过头，两个人对视了一瞬。\n谁都没说话。\n反倒是陈浚铭左看看右看看，眼睛都瞪圆了。",
+    "“不是……”\n“怎么一下两个？”\n上帝抬手示意。",
+    "“请保持安静。”\n“下面开始发言。”\n“二号玩家，陈浚铭。”",
+    "陈浚铭举起号码牌，一脸懵地眨了眨眼。\n“哎呀，这啥啊。”\n他左右看了一圈，又低头看了眼桌上的空位。",
+    "“为啥会死两个啊？”\n话刚说完，他像是突然想起什么，“啊”了一声，拍了下自己的腿。\n“哦对。”",
+    "“昨天张桂源守过左奇函了，今天不能连续守了。”\n他说着还有点遗憾地叹了口气。\n“太可惜了。”",
+    "“我还等着左奇函今天给我发金水呢，反正我还是认左奇函是真预。”\n“我真是好人。”\n“剩下的我不会盘了，看看后面大家怎么聊吧。”",
+    "“过。”\n张函瑞深吸了一口气，把号码牌放到桌上。\n“我不装了，我是女巫。”",
+    "“第一天晚上我救的是王橹杰，所以第一天才会是平安夜。昨天晚上左奇函也是我毒的。”\n他说完以后，像是终于把压在心里的东西全部说出来了，整个人都放松了一点。\n“昨天杨博文出局以后，我回去一直在想他说的话。”",
+    "“我真的想了很久，越想越觉得不对，所以我昨天晚上就直接把他毒了。如果左奇函真的是预言家，昨天晚上场上就剩他一个预言家了啊，守卫也不能再守了，那狼人为什么不去刀他？”\n他抬头看向张桂源。\n“昨天博文跳守卫的时候其实我更偏向于他，但是想隐藏身份只能投他，所以，你为什么要跳守卫？除了跳身份保狼队友我实在想不出还有其他理由”",
+    "“还有陈浚铭……”\n他皱着眉想了一下。\n“你我还是有点看不懂，但是今天我肯定更想出张桂源。”",
+    "他说到这里，忽然长长叹了一口气。\n“哎呀……”\n“真的。”",
+    "“为什么偏偏让张函瑞抽到女巫啊……”\n他一脸生无可恋地捂住额头。\n“我真的不会玩神职啊。”",
+    "“以后谁再让我拿神职，我直接弃权算了。”\n“我真的不会玩！”\n他说到最后已经有点自暴自弃。",
+    "“反正我今天跳了，狼人晚上肯定来刀我。”\n“后面怎么玩……”\n他摆了摆手。",
+    "“你们加油吧。”\n“我是真的尽力了。”\n“我现在已经不知道还能怎么办了。”",
+    "“好人们对不起。”\n“真的。”\n“对不起。”",
+    "张桂源接过号码牌，没急着开口，反而先看了张函瑞一会儿。\n“张函瑞，其实我刚刚一直在听你发言，我发现你好像已经默认了一件事情。”\n“你默认左奇函死了，所以剩下的狼就是我，对吧？”",
+    "他笑了一下，也没等张函瑞回答。\n“但是我刚刚突然想到一个问题。”\n他说着低头翻了一下昨天的票型。",
+    "“你们有没有觉得，王橹杰这张牌这一整局打得太舒服了？”\n桌边安静了一点。\n“第一天晚上被刀，女巫把他救起来了；第一天发言陈浚铭又给他发了个金水，虽然大家知道陈浚铭是在闹，但潜意识里都会觉得，哦，他好像一直都挺像好人的。然后第一轮他站错边，第二轮承认自己站错边，今天又说自己没想好，再听听。”",
+    "张桂源抬起头。\n“是不是特别顺？”\n“顺得好像从头到尾都没人真正怀疑过他。”",
+    "他顿了一下，忽然笑了。\n“然后我就在想，会不会我们一开始方向就错了，你有没有想过，你第一天晚上救的人，也有可能是狼？”\n一句话落下，所有人的目光几乎都落到了王橹杰身上。",
+    "张桂源继续往下说，语速比刚才慢了一点。\n“如果第一天晚上那一刀，本来就是狼队自己安排的呢？”\n“女巫把王橹杰救起来，所有人都会觉得他是受害者；左奇函在前面跳预言家吸引火力，最后死了，你们又会觉得，哦，最大的狼已经没了。”",
+    "“那真正能活到最后的是谁？”\n他摊了摊手。\n“王橹杰啊。”",
+    "“他从第一天到现在，有没有真正被放到焦点上过？没有。”\n“因为所有人的注意力，不是在左奇函身上，就是在我身上。”\n说到这里，他看向张函瑞，忽然笑了一下。",
+    "“可最会藏的那匹狼，到现在还坐在那里，一句话都不用多说，看着我们几个在这里互打。”\n张桂源往后一靠，语气突然轻了下来。\n“反正我是不是狼，你们心里都有答案。”",
+    "“我现在说再多，你们也未必信。”\n“我只是突然觉得有点可惜，如果今天你们还是觉得，左奇函死了，我就是最后一匹狼，那就投我吧，我认。”\n他偏头看向王橹杰。",
+    "“你们回头再想想我刚刚说的话，我过了”\n聂玮辰拿起号码牌，明显比前两轮犹豫得多。\n“我感觉……这局玩到现在，我已经有点不会盘了。”",
+    "他苦着脸笑了一下。\n“刚刚张函瑞跳女巫的时候，我其实已经差不多想好要投谁了。结果张桂源一说，我现在脑子又乱了。”\n“尤其他说第一天晚上那一刀。”",
+    "“我之前真没往那个方向想过。”\n“因为第一天晚上王橹杰被刀，张函瑞把他救起来，这件事我们后来一直默认就是这样了，也没人再聊。”\n“但是刚刚听他那么一说，我突然就在想，会不会第一天晚上真的还有别的可能。”",
+    "他说着又赶紧摆摆手。\n“当然啊，我不是说我已经信了，我就是觉得……有点奇怪，因为这局很多事情，我现在回头看，好像都能解释，又好像都解释不通。”\n聂玮辰抿了抿嘴。",
+    "他叹了口气。\n“反正我现在是真的不知道该信谁了。”\n“我这一票……可能就看感觉吧。”",
+    "“过。”",
+    "__1B_THIRD_VOTE__"
+];
+messages._isCivilian1B = true;
+return messages;
+}
+function getCivilian1BaMessages() {
+var messages = [
+    "法官宣布完票型，张桂源明显愣住了。\n他几乎是下意识转头看向你，眉头一下皱了起来，眼里满是错愕。\n“啊？”",
+    "“你投我干什么？”\n你抬眸看着他，眼睛弯了弯，却什么都没解释。\n短短几秒，两个人就这么对视着。",
+    "张桂源先是愣着，像是在消化这件事，紧接着像是突然反应过来了什么，忍不住低头笑了一声，一副拿你一点办法都没有的样子。\n“行。”\n“我是真没想到。”",
+    "“我前面说那么半天，还以为你多少能配合我一下。”\n说着说着，他自己又笑了。\n“笨死了。”",
+    "那语气轻飘飘的，没有一点责怪，反倒像平时逗你一样。\n“算了。”\n“反正游戏嘛。”",
+    "“玩开心就行。”\n另一边，陈浚铭已经完全懵了。\n他看看你，又看看张桂源，眼睛越睁越大。",
+    "陈浚铭整个人都傻了。\n他张了张嘴，半天才憋出一句。\n“不是……”",
+    "“姐，你干嘛啊？”\n“你怎么投他啊？！”\n法官没有给他继续说话的机会。",
+    "“七号玩家，放逐出局。”\n“由于丘比特技能生效，九号玩家，同时出局。”\n你站起身，张桂源已经在旁边等着了。",
+    "他偏过头看你，忽然笑了一下。\n“满意了？”\n你也笑。",
+    "“满意。”\n两个人一前一后朝场边走去。\n刚坐下，左奇函就吹了声口哨。",
+    "“哟——”\n“还真一起下来了。”\n他撑着下巴看热闹，笑得一点都不收敛。",
+    "“你俩这是玩狼人杀还是玩殉情啊？”\n张桂源笑着踹了他一下。\n“滚啊”",
+    "左奇函乐得更开心了。\n你刚坐稳，就总觉得有一道目光落在自己身上。\n那种感觉很明显，像是已经看了很久。",
+    "你顺着感觉望过去，陈奕恒正坐在另一边，安安静静地看着你。\n撞上你的视线以后，他明显顿了一下，随即有些不自然地移开目光，重新看向局内\n你眨了眨眼，心里莫名有点疑惑。",
+    "……不会还在因为第一天自己把他投出去了，所以一直记到现在吧？\n应该……不至于吧。\n法官抬起手，轻轻敲了敲桌面。",
+    "“好了。”\n“天黑请闭眼。”\n场上的人重新闭上眼睛。",
+    "你和张桂源已经坐到了场边，自然不用再参与流程，只是安安静静看着桌上的人一个个闭上眼。\n左奇函坐在你旁边，双手抱臂，整个人懒洋洋靠在椅背上。\n“狼人请睁眼。”",
+    "王橹杰缓缓睁开眼。\n他先是抬头看向法官，随即不知道想到了什么，目光忽然往观战席这边偏了偏。\n正好和左奇函撞上。",
+    "左奇函扬了扬眉，嘴角一点一点扬起来，抬手做了个极轻的手势。\n——快。\n王橹杰没忍住笑了一下。",
+    "那笑意和平时没什么区别，却莫名带着一点终于要收工的轻松。\n他的手没有犹豫，轻轻指向十号。\n法官点头。",
+    "“狼人请闭眼。”\n客厅重新恢复安静，没过多久。\n法官熟悉的声音再次响起。",
+    "“天亮了。”\n“昨晚出局的是——”\n“十号玩家，张函瑞。”",
+    "法官继续说道：\n“本局神职全部出局。”\n“狼人阵营获胜。”",
+    "空气安静了一秒。\n下一秒，整个客厅彻底炸开。\n“啊？？？”",
+    "张函瑞第一个站了起来，一脸不可思议。\n“结束了？！”\n“翻身份牌。”",
+    "一句话落下，桌上的人几乎同时把身份牌翻了过来。\n张函瑞第一反应就是去看王橹杰。\n看见那张明晃晃的狼人牌以后，他整个人僵在原地，眼睛一点一点睁大。",
+    "“……”\n“王——橹——杰——”\n他捂着脑袋，声音都快喊劈了。",
+    "“第一天晚上果然是你？？？”\n王橹杰笑得肩膀都轻轻抖了一下。\n“嗯。”",
+    "“谢谢。”\n“谢谢你把我救回来。”\n“……”",
+    "张函瑞抱着脑袋，整个人直接蹲了下去。\n“我疯了。”\n左奇函把自己的狼人牌往桌上一拍，整个人笑得直不起腰",
+    "“不好意思了陈奕恒他们还是不信你”\n陈奕恒摇了摇头，手摆弄这那张预言家的身份牌\n“没话讲，我真话讲兄弟”",
+    "左奇函乐了，陈奕恒却越说越气，“不是，我遗言都说那么明白了！”\n“杨博文是好人啊！”\n“你们怎么一个都不听啊？”",
+    "聂玮辰默默举了举手。\n“我听了。”\n陈奕恒眼睛一亮。",
+    "“真的？”\n聂玮辰一本正经地点头。\n“但是我没信。”",
+    "“……”\n陈奕恒沉默两秒。\n“？”",
+    "整个客厅又笑成一团。\n另一边，杨博文已经把守卫牌推到了张桂源面前，忍不住笑着摇了摇头。\n“可以啊”",
+    "张桂源低头笑了一声，把自己的狼身份牌往旁边推了推。\n“没办法。”\n“我总不可能跳女巫吧，女巫包毒我啊”",
+    "旁边的陈浚铭终于举着自己的丘比特牌站了起来。\n“等一下！”\n“我有话说！”",
+    "所有人都看向他。\n陈浚铭把丘比特牌举得老高，一脸骄傲。\n“我宣布。”",
+    "“本局MVP。”\n他拍拍自己。\n“丘比特。”",
+    "左奇函笑着接了一句。\n“你哪儿MVP了？”\n“当然MVP！”",
+    "陈浚铭一本正经地开始掰手指。\n“首先。”\n“我第一天跳预言家。”",
+    "“其次。”\n“我成功连了情侣。”\n“最后。”",
+    "他笑嘻嘻地转头看看你，又看看张桂源。\n“我的情侣最后还是一起下去的。”\n“这不完美吗？”",
+    "陈浚铭这句话一出来，桌上的人齐刷刷朝你和张桂源看了过来。\n你本来还抱着胳膊看热闹，没想到火突然烧到自己身上，愣了一下，下意识偏过头避开他们的视线，耳根却已经开始发烫。\n张桂源倒像是早有预料，低头笑了一声，伸腿踢了踢陈浚铭的椅子，力道不重，更像是警告。",
+    "\"差不多得了。\"\n\"什么叫差不多得了？\"陈浚铭一点都不怕他，抱着自己的丘比特牌笑得格外得意，\"我说的是事实好吗？你们两个是不是情侣？是不是一起出局？是不是我连的？\"\n左奇函本来还靠在旁边看戏，听到这话立马乐了，唯恐天下不乱地跟着鼓掌：\"确实，丘比特这局唯一的高光。\"",
+    "他说着说着，忽然朝你们两个扬了扬下巴，笑得一脸得意。\n\"而且你们俩全程一点破绽都没有。\"\n\"尤其张桂源。\"",
+    "\"我中间有好几次都怀疑你是不是忘了你俩是情侣。\"\n张桂源抬起头，有点疑惑：\"为什么？\"\n\"因为你都不怎么看她。\"",
+    "一句话出来，桌上的人都愣了一下。\n陈浚铭还没意识到什么，继续解释：\"我中间还想呢，你怎么这么冷静。后来游戏结束我才反应过来，你是故意的。\"\n张桂源手上的动作顿了一下，笑着摇摇头。",
+    "\"不然怎么办。\"\n\"总不能一直盯着她看吧，那不是告诉别人有问题了吗。\"\n他说得很自然，可不知道为什么，大家都突然安静了一瞬。",
+    "左奇函慢悠悠地看了他一眼，嘴角一点一点扬起来。\n\"哦——\"\n他故意把尾音拖得很长。",
+    "\"原来你还知道不能一直盯着人家看啊。\"\n张桂源动作一僵。\n\"什么意思？\"",
+    "\"没什么意思啊。\"左奇函笑眯眯地撑着下巴，眼睛却一直看着他，\"游戏里不能看，游戏外呢？\"\n\"我怎么感觉——\"\n他故意停顿了一下。",
+    "\"某个人今天晚上，余光都快长人家身上去了。\"\n\"……\"\n空气安静了两秒。",
+    "陈奕恒最先反应过来，\"噗\"地一声笑出来：\"真的假的？\"\n\"真的啊。\"左奇函抬了抬下巴，语气懒洋洋的，\"你没发现？\"\n聂玮辰愣了一下，随即回忆起来，忍不住笑了：\"……好像还真是。\"",
+    "陈思罕也一拍桌子：\"我靠，我当时还以为他在盘逻辑！\"\n\"不是盘逻辑。\"左奇函笑得眼睛都弯了，\"盘人呢。\"\n张桂源耳朵\"腾\"地一下红了，伸手就去拿桌上的矿泉水，低着头拧了半天瓶盖才拧开，喝了一大口，故作镇定地开口：\"左奇函。\"",
+    "\"嗯？\"\n\"你真的很闲。\"\n\"哎呀。\"左奇函笑得一点都不收敛，\"被我说中了？\"",
+    "张桂源没接话，只是低着头笑，耳尖却越来越红。\n你坐在旁边，看着他难得吃瘪的样子，也没忍住弯了弯嘴角。\n他像是察觉到了你的目光，下意识偏头看了你一眼。",
+    "四目相对不过短短一瞬，他又有些不自在地移开视线，低头把最后一张身份牌放回盒子里，小声嘟囔了一句。\n\"……收东西吧。\"\n这句话一出来，大家才终于止住了笑。",
+    "法官也笑着拍了拍手：\"行了，今天辛苦大家了，东西收一下，准备回去了。\"\n刚才还乱糟糟的桌面重新热闹起来，号码牌、身份牌、水杯被一一收好。大家一边帮着整理，一边还在断断续续复盘刚才那局，笑声时不时从人群里冒出来，直到所有东西都收拾得差不多了，才一起往门口走去。\n刚走出单元门，晚风迎面吹过来，把屋子里的闷热吹散了不少。",
+    "已经快十一点了，路边停着几辆等客的出租车，大家站在门口，很自然地开始互相道别。\n\"那我先走了啊。\"\n\"拜拜。\"",
+    "\"到家群里说一声。\"\n\"知道。\"\n陈浚铭临走前还不忘冲你挥挥手：\"姐姐下次继续玩！\"",
+    "你笑着点点头：\"好。\"\n没一会儿，人就走得差不多了。\n左奇函走出去两步，又像是想起什么，回头看了一眼。",
+    "张桂源没跟上。\n他正站在你旁边，低着头看你手机上的打车页面。\n左奇函挑了挑眉，嘴角慢慢扬起来，也没说什么，只是冲张桂源摆了摆手：\"走了。\"",
+    "\"嗯。\"\n\"到家说一声。\"\n\"知道。\"",
+    "等最后几个人也走远，楼下忽然安静下来。\n你低头看了一眼手机。\n\"还有两分钟。\"",
+    "张桂源也跟着看了一眼，轻轻\"嗯\"了一声。\n两个人站在路灯下面，谁都没说话。\n不知道过了多久，他才偏过头，小声问了一句：\"今天玩得开心吗？\"",
+    "\"开心。\"\n你笑了笑。\n\"比我想象中开心。\"",
+    "他听完也笑了。\n\"我也是。\"\n出租车很快停在路边。",
+    "张桂源先一步走过去，替你把车门打开，因为怕被人认出来，你们只好分开打车\n\"到了给我发个消息。\"\n他说得很自然，像是已经说过很多次。",
+    "你坐进车里，抬头看他：\"好。\"\n他扶着车门，像是还想说什么，最后却只是笑了一下。\n\"路上注意安全。\"",
+    "\"知道啦。\"\n你朝他挥了挥手。\n出租车缓缓驶离路边。",
+    "后视镜里，张桂源一直站在原地，直到车子拐过路口，再也看不见了，才转身往回走。"
+];
+messages._isCivilian1Ba = true;
+return messages;
+}
+function getCivilian1BbMessages() {
+var messages = [
+    "法官低头确认票型。\n“二号玩家，王橹杰，获得本轮最高票数，请发表遗言。”\n王橹杰低头看了一眼自己面前的号码牌，沉默了两秒，忽然笑了一下。",
+    "那笑容很淡，像是无奈，又像是认了。\n“我没招了。”\n他说完，把号码牌轻轻放到桌子中央，没有再多说一句。",
+    "法官点头。\n“遗言结束。”\n“二号玩家出局。”",
+    "整个房间重新安静下来。\n法官缓缓开口。\n“天黑，请闭眼。”",
+    "……\n“狼人请睁眼。”\n我闭着眼，只听见法官平静地继续着流程。",
+    "“请选择今晚要击杀的玩家。”\n短暂的停顿后。\n“狼人请闭眼。”",
+    "“女巫请睁眼。”\n……\n“女巫请闭眼。”",
+    "“天亮了。”\n我睁开眼，下意识朝四周望去。\n法官环视一圈，缓缓开口。",
+    "“昨晚死亡的是——”\n“十号玩家，张函瑞。”\n张函瑞轻轻叹了口气，把身份牌放到桌上，站起身。",
+    "法官看着场上剩余的人数，宣布道：\n“本局游戏结束。”\n“恋人阵营获胜。”",
+    "空气安静了一瞬。\n“啊？”\n陈思罕第一个抬起头，一脸茫然。",
+    "“恋人赢了？”\n聂玮辰皱了皱眉，低头飞快数了一遍场上的人数，又抬头看向法官。\n“为什么？”",
+    "左奇函也怔了一下。\n下一秒，他像是突然意识到了什么，猛地转头看向张桂源，又顺着他的目光看向了我。\n“……我就知道”",
+    "法官没有解释，只是将身份牌一张张翻开。\n法官将最后两张身份牌翻开放到桌子中央。\n“恋人。”",
+    "“七号玩家，张桂源。”\n“八号玩家，玩家的昵称”\n客厅里安静了足足两三秒。",
+    "“……啊？”\n陈思罕最先反应过来，眼睛一下睁圆了。\n“不是，你们两个？”",
+    "聂玮辰也愣住了，低头飞快把整局重新捋了一遍，忽然失笑。\n“怪不得，我就说张桂源今天怪怪的。”\n左奇函抱着胳膊坐在椅子上，先是怔了一下，紧接着像突然把整局都想通了，忍不住笑骂了一句。",
+    "“张桂源，你是真行。”\n“我看到你把王橹杰卖了我当时都懵了你知道吗”\n张桂源笑得一脸无辜",
+    "“哎呀没办法啊，我们是第三方阵营”\n“行。”左奇函指了指他，“算你狠。”\n旁边的陈浚铭已经笑得趴在桌子上。",
+    "“哈哈哈哈哈哈哈哈哈哈！”\n“我就说我连得好吧！”\n我低着头摆弄着手里的号码牌，耳朵莫名有点发热。",
+    "就在这时，旁边忽然有人轻轻碰了碰我的胳膊。\n我偏过头。\n张桂源不知道什么时候已经挪到了我旁边一点，他低着脑袋，眼睛却亮亮的，嘴角压都压不住。",
+    "“怎么样？”\n我眨了眨眼。\n“什么怎么样？”",
+    "他又往我这边凑了一点，声音压得很低，像是在说什么只有我们两个人知道的小秘密。\n“我厉害吧？”\n他说完以后就看着我。",
+    "眼睛亮晶晶的。\n像一只完成任务以后，摇着尾巴等主人夸奖的小狗。\n我看着他那副模样，没忍住笑了。",
+    "故意逗他。\n“哪里厉害？”\n“把自己队友卖了？”",
+    "“那也是战术。”张桂源一本正经地替自己辩解，“最后是不是赢了？”\n他说着，又轻轻碰了碰我的手背。\n“快点，夸一句。”",
+    "我故意拖长了声音。\n“嗯——”\n“还行吧。”",
+    "“什么叫还行？”张桂源一下坐直了，像是对这个评价很不满意，“我这一局多帅啊。”\n我终于忍不住笑出了声。\n“厉害厉害”",
+    "“这还差不多。”\n张桂源心满意足地笑了，嘴角却一直没放下来。\n我正笑着，忽然察觉到一道视线。",
+    "下意识抬起头。\n隔着桌子，陈奕恒正站在人群外，周围的人还在讨论这一局的票型和身份，只有他没有参与。\n他只是安安静静地望着这边。",
+    "准确地说，是望着我。\n那目光并不明显，更多的是带着一点好奇？\n直到我抬起头，和他四目相对。",
+    "他明显愣了一下。\n像是没想到会被我发现。\n几乎是下一秒，他便若无其事地移开了目光，又和左奇函说说笑笑起来。",
+    "动作和平时一样自然。\n仿佛刚刚什么都没有发生。\n我愣了两秒。",
+    "……奇怪，他今天怎么老看我？\n不会……\n真因为第一天我把他投出去了，所以一直记到现在吧？",
+    "我越想越觉得有这个可能。\n想了半天，也没想出别的理由。\n另一边，张桂源已经他们闹成一团。",
+    "“下一局别跟他一队了。”左奇函拍着桌子笑，“求别跟恋爱脑一队”\n“就是”王橹杰笑着接了一句，“防火防盗防张桂源。”\n“哎。”张桂源一脸理直气壮，“那你们怪陈浚铭啊，是他连的我”",
+    "“不是张桂源，你就说我连的好不好吧？”陈浚铭一脸邀功样“那我下次连姐姐和别人了”\n我低着头笑，余光却瞥见陈奕恒一直没说话。\n他站在桌子另一边，目光在我和张桂源之间来回停了两次，像是终于想明白了什么，忽然开口。",
+    "\"等下\"\n大家都朝他看过去。\n\"怎么了？\"",
+    "陈奕恒指向张桂源，又偏头看了我一眼，神情有点认真。\n\"你们两个一点都不像。\"\n张桂源愣了一下。",
+    "\"什么？\"\n\"兄妹啊。\"\n陈奕恒眨了眨眼。",
+    "\"左奇函一直跟我说，她是你妹妹。\"\n空气静了一秒。\n下一秒，左奇函直接笑弯了腰。",
+    "\"哈哈哈哈哈哈哈哈哈哈！\"\n\"不是，你还真信了？\"\n陈奕恒被他笑得有点莫名其妙。",
+    "\"啥？\"\n\"我为什么不信？\"\n左奇函笑得肩膀都在抖，伸手拍了拍他的肩。",
+    "\"你是真好骗，我说什么你都信。\"\n陈奕恒皱着眉，又重新看了看我和张桂源。\n他的目光在我们两个人之间停了一会儿，像是在重新确认什么。",
+    "过了两秒，他才有点不好意思地笑了一下。\n\"可是……\"\n\"真的不像。\"",
+    "\"我当时还觉得，你们兄妹关系真好。\"\n他说这句话的时候，目光落在我身上一瞬，很快又移开了，抬手摸了摸鼻尖，耳朵有些发红\n桌上几个人却已经笑作一团。",
+    "聂玮辰偏过头，忍着笑问他：\"你是真一点没往别的方向想？\"\n\"想什么？妹妹不就是这个意思吗\"\n陈奕恒一脸茫然。",
+    "左奇函盯着他看了两秒，意味深长地笑了笑。\n\"算了。\"\n\"你以后就知道了。\"",
+    "大家一边帮着整理，一边还在断断续续复盘刚才那局，笑声时不时从人群里冒出来，直到所有东西都收拾得差不多了，才一起往门口走去。\n刚走出单元门，晚风迎面吹过来，把屋子里的闷热吹散了不少。\n已经快十一点了，路边停着几辆等客的出租车，大家站在门口，很自然地开始互相道别。",
+    "\"那我先走了啊。\"\n\"拜拜。\"\n\"到家群里说一声。\"",
+    "\"知道。\"\n陈浚铭临走前还不忘冲你挥挥手：\"姐姐下次继续玩！\"\n你笑着点点头：\"好。\"",
+    "没一会儿，人就走得差不多了。\n左奇函走出去两步，又像是想起什么，回头看了一眼。\n张桂源没跟上。",
+    "他正站在你旁边，低着头看你手机上的打车页面。\n左奇函挑了挑眉，嘴角慢慢扬起来，也没说什么，只是冲张桂源摆了摆手：\"走了。\"\n\"嗯。\"",
+    "\"到家说一声。\"\n\"知道。\"\n等最后几个人也走远，楼下忽然安静下来。",
+    "你低头看了一眼手机。\n\"还有两分钟。\"\n张桂源也跟着看了一眼，轻轻\"嗯\"了一声。",
+    "两个人站在路灯下面，谁都没说话。\n不知道过了多久，他才偏过头，小声问了一句：\"今天玩得开心吗？\"\n\"开心。\"",
+    "你笑了笑。\n\"比我想象中开心。\"\n他听完也笑了。",
+    "\"我也是。\"\n出租车很快停在路边。\n张桂源先一步走过去，替你把车门打开，因为怕被人认出来，你们只好分开打车",
+    "\"到了给我发个消息。\"\n他说得很自然，像是已经说过很多次。\n你坐进车里，抬头看他：\"好。\"",
+    "他扶着车门，像是还想说什么，最后却只是笑了一下。\n\"路上注意安全。\"\n\"知道啦。\"",
+    "你朝他挥了挥手。\n出租车缓缓驶离路边。\n后视镜里，张桂源一直站在原地，直到车子拐过路口，再也看不见了，才转身往回走。"
+];
+var werewolfPlayerName = (typeof player !== 'undefined' && player && (player.name || player.nickname || player.wechatName)) || '玩家';
+messages = messages.map(function(message) { return message.replace(/玩家的昵称/g, werewolfPlayerName); });
+messages._isCivilian1Bb = true;
+return messages;
+}
+function getCivilian1CMessages() {
+var messages = [
+    "上帝低头确认完所有号码牌。\n“本轮投票结束。”\n“平票。”",
+    "“无人出局。”\n客厅安静了一瞬。\n左奇函抬起眼，隔着圆桌看向我。",
+    "对上视线后，他轻轻笑了一下。\n很快便收回目光。\n“天黑请闭眼。”",
+    "天亮了",
+    "__1C_PLAYER9_OUT__",
+    "“请九号开始逆序发言。”\n我说完，轻轻放下了手里的笔。\n陈奕恒低头在记录本上写了几笔，眉头微微皱着。",
+    "左奇函抬眸看了我一眼，神色依旧平静。\n上帝看向张桂源。\n“请七号玩家发言。”",
+    "张桂源低头翻了翻自己的本子。\n“遭不住了哎呀，昨天平票我还觉得挺好的，结果今天直接给我干懵了。”\n“杨博文居然倒了，不是，他昨天不都说了今天还能再听一轮吗？”",
+    "“狼是真一点机会不给啊。”\n说着，他又低头看了眼记录。\n“我先说啊，我现在还是那个态度，左奇函昨天聊得确实好，真的好。”",
+    "“但是——”\n他拖长了声音。\n“杨博文昨天最后那几句话，我晚上回去一直在想，他说左奇函聊得太顺了，我本来觉得没什么，现在一想……好像是有点。”",
+    "他抬眼看向左奇函。\n“你昨天真的一点犹豫都没有。”\n左奇函笑着看他。",
+    "“夸我呢？”\n“？”\n张桂源没忍住笑。",
+    "“但是陈奕恒吧……”\n“说实话，他昨天那个发言也没好到哪里去。”\n“就是感觉……嗯……怎么说呢。”",
+    "“有点笨。”\n陈奕恒：”？”\n“不是骂你啊。”",
+    "张桂源赶紧摆手。\n“就是你那个状态不像装的，挺自然的，所以我现在还是站不了边。”\n“今天谁报的信息多，我听谁。”",
+    "陈奕恒一听到上帝叫自己，立马坐直了。\n“到我了到我了。”\n他翻开自己的本子，看了一眼，又抬起头。",
+    "“昨天晚上我验张桂源了。”\n他说着直接看向张桂源。\n“诶~查杀。”",
+    "桌边一下安静了。\n张桂源挑了挑眉，没说话。\n陈奕恒继续往下说。",
+    "“我昨天为什么验他，其实很简单，左奇函我不用验对吧，他在我这里已经是铁狼了。”\n“昨天我就在想，他狼队友是谁。”\n“然后我回去看票，七号那票最奇怪。”",
+    "“昨天大家不是投四号就是投我，就他一个人去投陈浚铭。”\n“他说自己投不了，但是我觉得这种时候，不站边就很奇怪。”\n“所以我直接验了。”",
+    "“结果就是查杀。”\n他说完以后，把本子一合。\n“所以今天很简单。”",
+    "“投左奇函。”\n“左奇函出了以后，女巫如果还在，把张桂源毒了。”\n“守卫如果还在，今天晚上守我。”",
+    "“这样我还能再验一天。”\n他说到这里顿了一下，低头看了一眼自己的本子。\n“我今天晚上验陈浚铭，昨天他一直在搞效果，我还没来得及管他。”",
+    "“今天验一下，陈浚铭你小心点哈”\n陈奕恒抬起头，看了一圈桌上的人。\n“反正今天别分票了，先把左奇函出了。”",
+    "聂玮辰往椅背上一靠，\n“杨博文没了我第一反应就是——”\n“狼是不是急了。”",
+    "“你们想啊。”\n“昨天杨博文聊谁聊得最多？”\n“四号。”",
+    "“最后投谁？”\n“四号。”\n“然后今天人没了。”",
+    "他抬头看向左奇函。\n“那我是不是可以大胆猜一下。”\n“你们昨天晚上不是在刀民，是在找神。”",
+    "“但是，我还是那句话，昨天我是有点站左奇函的。”\n“今天杨博文这一倒，我开始有点怀疑你了。”\n他看向左奇函。",
+    "“所以左奇函，今天我主要听你啊。”\n“过。”\n左奇函没有立刻开口。",
+    "他低头翻了一页本子，像是在重新顺一遍刚刚所有人的发言。\n过了两秒，他才抬起头，先看向陈奕恒，笑了一下。\n“你今天这一轮，我听下来其实就一个感觉——你有点急了。”",
+    "“昨天你说我是狼，今天还是说我是狼，这个没问题，毕竟我们对跳预言家，本来也只能打对方。但是你今天为什么去验七号，我觉得你这个理由有点站不住。”\n左奇函不紧不慢地继续说。\n“昨天七号那票确实很奇怪，这个大家都知道。可恰恰因为奇怪，我反而不会第一时间去验他。”",
+    "“为什么？”\n“因为他昨天聊得很明白，他站不了边，所以索性投了陈浚铭。如果你觉得这个逻辑有问题，你完全可以今天听他再聊一轮。第一天平票，信息本来就比昨天多，你作为预言家，最重要的是去找那个大家还看不清的人，而不是急着验证一个已经被所有人注意到的目标。”\n他说停了一下，轻轻笑了笑。",
+    "“当然，这只是我的想法。”\n“至于我昨天晚上验的人……”\n左奇函把本子往前推了推，看向张函瑞。",
+    "“十号。”\n“查杀。”\n桌边一下安静下来。",
+    "“其实昨天听发言的时候，我就在注意十号了。”左奇函看着张函瑞，“你整轮发言给我的感觉就是，很圆。”\n“不是说你聊得不好，相反，就是因为太好了。”\n“四号有问题，你认可一点；九号有道理，你也认可一点；最后又说今天谁都不是非出不可，最好平票。”",
+    "“这种发言放在好人身上，不奇怪。但如果放在狼人身上，也一样成立。”\n“所以我昨天就在想，与其今天继续猜，不如直接验。”\n他把本子合上，语气依旧很平静。",
+    "“结果就是查杀。”\n左奇函抬头看了一圈。\n“所以现在在我眼里，其实局势已经很清楚了。”",
+    "“六号、十号，两狼。”\n“今天如果大家把我投出去，明天起来，就没有预言家了。”\n“如果大家相信我，那守卫今天晚上守我。我还能再验一个人。”",
+    "他说笑了一下，看向聂玮辰。\n“刚刚你不是说，今天主要听我吗？”\n“那我今晚验你。”",
+    "“明天起来，不管是什么结果，我都给你一个身份的哟”\n他把笔放回桌上。\n“我说完了。”",
+    "陈思罕低头翻了翻自己的本子，安静了两秒才开口。\n“我刚刚一直在想，昨天晚上为什么会是杨博文。”\n“如果狼人昨天想刀预言家，我觉得不太合理。因为昨天两边对跳，他们也不知道守卫会不会守，所以直接刀预言家风险太大。”",
+    "“那反过来想，他们会不会就是觉得，守卫大概率会守预言家，所以干脆去找其他神。”\n“杨博文昨天聊得其实挺好，也一直在盘四号，我觉得狼人会觉得他身份偏高，刀他也说得过去。”\n陈思罕抬头看了眼左奇函，又看向陈奕恒。",
+    "“然后就是两位预言家。”\n“陈奕恒今天报张桂源查杀，我觉得这个验人理由，我能接受。”\n“因为昨天张桂源那票确实很奇怪。”",
+    "“至于左奇函……”\n他顿了一下。\n“这张查杀，我目前还是保留意见。”",
+    "“昨天张函瑞其实没有明确站边，今天直接查杀他，我还想再听听他怎么说。”\n陈思罕笑了一下。\n“差不多就这些。”",
+    "“过。”\n陈浚铭一听到自己，立马坐直了。\n“不是。”",
+    "“陈奕恒你为什么验我啊？”\n他看看陈奕恒，一脸委屈。\n“我第一天跳一下预言家，节目效果而已啊……”",
+    "“你们怎么还记仇。”\n“反正我不管。”\n“你既然说今天晚上验我，那我就站左奇函了”",
+    "王橹杰把矿泉水拧开喝了一口，放回桌上。\n“我今天其实没昨天那么纠结了。”\n“昨天两边我确实分不出来，但今天听完，我还是更偏陈奕恒吧。”",
+    "他转头看向左奇函。\n“因为昨天杨博文盘你，今天杨博文没了，今天陈奕恒报张桂源查杀，我觉得这个验人思路也比你更顺一点。”\n“反倒是你今天这个查杀，我有点没听懂。”",
+    "“张函瑞昨天发言一直挺中规中矩的，你为什么会直接去验他，我觉得你没有完全聊明白。”\n张函瑞赞同的点了点头，用口型对王橹杰说了一声“你懂我”\n王橹杰想了想，又补了一句。",
+    "“所以今天这票，我会投左奇函。”\n“过。”\n桌上的目光，不约而同落在了张函瑞身上。",
+    "张函瑞低着头笑了一下，像是有点无奈。\n“哎呀。”\n“本来还想藏一轮的。”",
+    "他慢悠悠把笔放到桌上，抬头看向左奇函。\n“可是怎么办呢。”\n“你都查杀到我头上来了，那我只能跳身份了？”",
+    "他弯着眼睛笑了笑。\n“女巫。”\n桌边顿时安静下来。",
+    "张函瑞偏头看向王橹杰。\n“第一天晚上一号倒牌，是我开的药。”\n“所以一号是我的银水。”",
+    "他说完，又重新看向左奇函。\n“那现在应该不用继续盘了吧？”\n“你查杀查到女巫身上了诶。”",
+    "他语气还是轻轻的，甚至带着点笑意。\n“那你就是铁狼呀。”\n左奇函笑着和他对视，没有说话。",
+    "张函瑞托着下巴，像是突然想起什么。\n“哦，对了。”\n“陈奕恒刚刚不是让我晚上毒张桂源吗？”",
+    "“我想了一下，还是算了。”\n他笑眯眯地看着左奇函。\n“既然你都查杀我了。”",
+    "“那剩下这瓶毒药——”\n“送给你了哟。”\n桌边瞬间炸开。",
+    "陈浚铭：“哇——”\n聂玮辰直接笑出了声：“好狠。”\n张函瑞却像什么都没发生一样，轻轻眨了眨眼。",
+    "“所以今天就算大家不把你投出去，也没关系。”\n“反正你今天晚上也、会、死。”\n他笑着歪了歪头。",
+    "“这样安排，应该没意见吧？”",
+    "__1C_SECOND_VOTE__",
+    "左奇函笑了一下，倒也没急着站起来。\n“行。”\n“你们是真敢投。”",
+    "他低头拍了拍桌子，像是在整理思路。\n“那我还是最后再说一遍。”\n“我是预言家，今天把我投出去，明天你们自己承担后果。”",
+    "他说着看向张函瑞，嘴角勾了一下。\n“张函瑞，可以啊。”\n“悍跳女巫？那今天晚上就等真正的女巫来毒你吧。”",
+    "他收回目光，又看向其他人。\n他站起身，拿起自己的身份牌走向一旁\n流程继续，天又黑了",
+    "上帝的声音响起。",
+    "天亮了",
+    "__1C_PLAYER6_7_8_OUT__",
+    "桌上安静了两秒。\n陈浚铭最先反应过来，猛地抬起头。\n“啊？？？？？”",
+    "“不是……”\n他皱着眉看着我和张桂源，明显愣住了。\n“狼刀的是八号？”",
+    "他张了张嘴，像是终于反应过来，低声嘟囔了一句：\n“……怎么会刀她啊。”\n其他几个人也都沉默了。",
+    "法官没有给众人讨论的时间。\n“请存活玩家继续游戏。”\n聂玮辰看着空了一大半的座位，半天才憋出一句：",
+    "“这一晚上狼人是开扫射了？”\n桌边没人接他的话。\n法官示意继续发言。",
+    "聂玮辰收了收表情，转头看向张函瑞。\n“那我现在也没什么好盘的了，预言家没了，七号和八号一起出局，场上能确定身份的就剩女巫。”\n“我今天听女巫的，你说投谁我就投谁。反正都已经到这一步了，我也不自己乱带队了，免得一开口又给狼人送温暖。”",
+    "他说完摊了摊手。\n“过。”\n轮到陈浚铭，他还在盯着空出来的三个位置看。",
+    "“不是，我现在真的有点没搞明白。”\n“怎么一下子全出局了？”\n他皱着眉想了半天，",
+    "“反正我就是个民，也没信息。张函瑞是女巫，那我也跟着女巫走，你今天让我投谁，我就投谁。”\n“过。”\n王橹杰点了点头。",
+    "“我也一样。”\n“现在场上张函瑞的女巫身份是坐实的，今天肯定听他的。至于七号、八号为什么一起出局，我觉得应该就是情侣，剩下的看张函瑞怎么盘吧。”\n他说完看向张函瑞。",
+    "“我跟女巫走，过”\n张函瑞低着头，手指轻轻转着桌上的笔。\n半晌，他才笑了一下。",
+    "“其实我刚刚一直在想。”\n“到底哪里不对。”\n他抬起头，看向王橹杰。",
+    "“结果想了半天。”\n“发现问题好像出在你身上诶。”\n桌边几个人都朝王橹杰看过去。",
+    "张函瑞还是笑着，声音一点都不重。\n“我第一天救的人，是你。”\n“所以直到现在，你都是我的银水。”",
+    "“我刚刚还一直跟自己说，不可能，不可能是王橹杰。”\n他说着轻轻叹了口气，像是真的有点无奈。\n“可是……”",
+    "“我越盘越觉得。”\n“除了你，好像没有别人了。”\n他掰着手指，一件一件往下数。",
+    "“左奇函走了。”\n“张桂源昨天晚上被我毒走了。”\n“今天场上还能站得住的狼……”",
+    "他停顿了一下，抬眼望向王橹杰，弯着眼睛笑。\n“不会真的是你吧？还是说是我们的小吉米？”\n桌边安静了几秒。",
+    "张函瑞继续慢悠悠地说道：\n“因为我突然想到一种可能。”\n“第一天晚上，真的是狼人刀你吗？”",
+    "“还是……”\n他故意拖长了一点尾音。\n“你故意的啊？”",
+    "王橹杰脸上的笑容微微一顿。\n张函瑞立刻笑出了声。\n“哎呀，别紧张。”",
+    "“我就是随便猜猜。”\n“但是吧——”\n他托着下巴，眼睛一直看着王橹杰。",
+    "“如果第一天晚上是你自刀，那后面的事情就都解释得通了。”\n“骗我一瓶解药，保住自己；左奇函出来悍跳预言家，张桂源在外面冲锋。”\n“王橹杰。”",
+    "“你们狼人打得挺坏呀。”\n“亏我第一天还救你哈王橹杰，如果我的判断没错。”\n“那王橹杰就是最后一匹狼。”",
+    "他抬起眼，语气依旧温温柔柔，却没有半点迟疑。\n“这一票。”\n“归一号。”",
+    "“我们今天把王橹杰投出去，游戏结束。”\n他说完，看着另外两人笑了一下。\n“应该没有人反对吧？”",
+    "聂玮辰举起手。\n“没有。”\n“女巫说得这么明白，我再投错我就回家种地去了。”",
+    "法官点了点头。",
+    "__1C_FINAL_VOTE__",
+    "法官合上记录板，抬头看向众人。\n“场上所有狼人全部出局。”\n“本局游戏结束。”",
+    "“好人阵营获胜。”\n法官笑着拍拍桌子。\n“游戏结束，大家翻身份吧。”",
+    "一张张身份牌被翻开。\n“王橹杰——狼人。”\n“左奇函——狼人。”",
+    "“张桂源——狼人。”\n“……”\n聂玮辰直接站了起来。",
+    "“左奇函！！”\n“你真是狼啊？！”\n左奇函一边笑一边把狼人牌翻到他面前。",
+    "“嗯？如假包换，欢迎查证”\n“亏我第一天还帮你说话！”\n“谢谢聂少支持。”",
+    "“支持个鬼！”\n聂玮辰指着他，越想越气。\n“你昨天还一脸真诚跟我说‘你再想想’。”",
+    "“我还真想了！”\n左奇函笑得肩膀直抖。\n“那说明我演得好。”",
+    "“……”\n“滚。”\n另一边，王橹杰刚把狼人牌放桌上，张函瑞已经把女巫牌轻轻放到了他旁边。",
+    "“王橹杰”\n“你竟然骗我”\n张函瑞笑眯眯地看着他。",
+    "王橹杰心虚地摸摸鼻子。\n“不是啊，职业需要……”\n“哦。”",
+    "张函瑞点点头。\n“张函瑞以后玩女巫再也不会第一天救人了”\n就在大家笑成一团的时候。",
+    "陈奕恒忽然站了起来。\n他把自己的预言家牌高高举过头顶，像举着什么奖杯一样。\n然后清了清嗓子。",
+    "一本正经地唱起来。\n“啊—”\n“啊—啊—啊—啊—”",
+    "整个房间瞬间安静了一秒。\n下一秒。\n所有人爆笑。",
+    "“哈哈哈哈哈哈哈哈——”\n“陈奕恒你有病吧！我真受不了你了”\n“这是在……还是放不下狮子王吗”",
+    "陈奕恒举着那张预言家牌，得意得不行。\n“看—见—没—”\n“我没骗你们吧—”",
+    "“我是预言家—”\n“唯一预言家—”\n聂玮辰笑得趴在桌上。",
+    "“行了行了知道了！”\n左奇函捂着脸。\n“我第一天就知道你要拿这事说一年。”",
+    "陈奕恒一脸骄傲。\n“谁让你们不信我。”\n这时陈浚铭也把自己的丘比特牌翻了出来。",
+    "左奇函看了一眼。\n“好啊。”\n“原来罪魁祸首是你。”",
+    "陈浚铭一点都不慌。\n“对。”\n“我连的。”",
+    "左奇函挑眉。\n“为什么连他俩？”\n陈浚铭一脸理所当然。",
+    "“因为除了他俩，我还能连谁？”\n“平时就觉得他俩差点意思。”\n“我寻思推一把。”",
+    "我一愣。\n“什么叫差点意思？”\n陈浚铭笑了一声。",
+    "“你不知道。”\n“反正我们都看出来了。”\n张桂源立刻开口。",
+    "“别胡说。”\n“谁胡说了？”\n“噢——”",
+    "左奇函第一个开始起哄。\n“原来如此——”\n聂玮辰也跟着笑。",
+    "“我还以为就我一个人觉得不对呢，之前左奇函在群里发我就看出来了”\n张桂源脸一下红了。\n“……你们有完没完。”",
+    "大家笑闹了一阵，慢慢开始收桌上的牌。\n我低着头把自己的身份牌放回盒子里。\n一道影子停在我身边。",
+    "我偏过头，张桂源不知道什么时候站到了我身边。\n他也没说话，就那么站着。\n我抬头看他。",
+    "“怎么了？”\n他和我对视了一秒，又有点不自然地移开目光。\n沉默了好一会儿，才小声开口。",
+    "“……对不起。”\n我愣了愣。\n“为什么道歉？”",
+    "他低着头，\n“本来想带你赢的。”\n“结果……”",
+    "“还是输了。”\n他说这句话的时候，声音闷闷的。\n像是真的因为这件事难受。",
+    "我看着他，忽然觉得有点好笑。\n“游戏而已。”\n他却摇摇头",
+    "“不是。”\n“我当时真的想过。”\n“要是最后能一起赢就好了。”",
+    "他说完这句话，耳朵已经有点红了。\n大概是觉得自己说得太认真了\n他抿了抿嘴，又小声补了一句",
+    "“结果还把你一起带走了。”\n我笑了。\n“那也不是你的错。”",
+    "他抬头看着我，眼睛亮亮的，又有点委屈。\n“你真没生气？”\n我摇头。",
+    "“没有。游戏而已”\n听见这句话，他整个人明显松了一口气\n就在这时，身后突然幽幽传来一道声音",
+    "“——你真没生气～”\n张桂源整个人一僵。\n左奇函不知道什么时候站在了后面，抱着胳膊，一脸欠揍地学着张桂源刚才的语气，连尾音都拖得一模一样。",
+    "“你真没生气～～”\n“真的吗～～”\n聂玮辰愣了一下，下一秒直接笑喷。",
+    "“哈哈哈哈哈哈哈哈！”\n陈浚铭也没忍住，扶着桌子笑得直不起腰。\n“左奇函，你有病吧！”",
+    "张桂源耳朵“唰”地一下红透了。\n“左、奇、函！”\n左奇函笑得直往后躲，还不忘继续学。",
+    "“没有～～”\n“真的～～”\n“那就好～～”",
+    "“哈哈哈哈哈哈哈哈哈哈——”\n整个房间笑成一团。\n张桂源气得追着左奇函满屋跑。",
+    "左奇函边跑边喊。\n“恼羞成怒了！”\n“救命啊—狼队内讧了—”",
+    "王橹杰和张函瑞站在一起，有些无奈的看着追逐的两人\n大家一边帮着整理，一边还在断断续续复盘刚才那局，笑声时不时从人群里冒出来，直到所有东西都收拾得差不多了，才一起往门口走去。\n刚走出单元门，晚风迎面吹过来，把屋子里的闷热吹散了不少。",
+    "已经快十一点了，路边停着几辆等客的出租车，大家站在门口，很自然地开始互相道别。\n\"那我先走了啊。\"\n\"拜拜。\"",
+    "\"到家群里说一声。\"\n\"知道。\"\n陈浚铭临走前还不忘冲你挥挥手：\"姐姐下次继续玩！\"",
+    "你笑着点点头：\"好。\"\n没一会儿，人就走得差不多了。\n左奇函走出去两步，又像是想起什么，回头看了一眼。",
+    "张桂源没跟上。\n他正站在你旁边，低着头看你手机上的打车页面。\n左奇函挑了挑眉，嘴角慢慢扬起来，也没说什么，只是冲张桂源摆了摆手：\"走了。\"",
+    "\"嗯。\"\n\"到家说一声。\"\n\"知道。\"",
+    "等最后几个人也走远，楼下忽然安静下来。\n你低头看了一眼手机。\n\"还有两分钟。\"",
+    "张桂源也跟着看了一眼，轻轻\"嗯\"了一声。\n两个人站在路灯下面，谁都没说话。\n不知道过了多久，他才偏过头，小声问了一句：\"今天玩得开心吗？\"",
+    "\"开心。\"\n你笑了笑。\n\"比我想象中开心。\"",
+    "他听完也笑了。\n\"我也是。\"\n出租车很快停在路边。",
+    "张桂源先一步走过去，替你把车门打开，因为怕被人认出来，你们只好分开打车\n\"到了给我发个消息。\"\n他说得很自然，像是已经说过很多次。",
+    "你坐进车里，抬头看他：\"好。\"\n他扶着车门，像是还想说什么，最后却只是笑了一下。\n\"路上注意安全。\"",
+    "\"知道啦。\"\n你朝他挥了挥手。\n出租车缓缓驶离路边。",
+    "后视镜里，张桂源一直站在原地，直到车子拐过路口，再也看不见了，才转身往回走。"
+];
+var firstReverseSpeechIndex = messages.findIndex(function(message) {
+    return message.indexOf('“请九号开始逆序发言。”') === 0;
+});
+if (firstReverseSpeechIndex !== -1) {
+    var firstReverseSpeechText = messages[firstReverseSpeechIndex];
+    var firstReverseSpeechLead = '“请九号开始逆序发言。”';
+    var firstReverseSpeechAfter = firstReverseSpeechText.slice(firstReverseSpeechLead.length).replace(/^\n/, '');
+    messages.splice(firstReverseSpeechIndex, 1, firstReverseSpeechLead, '轮到我发言，', firstReverseSpeechAfter);
+}
+var werewolfPlayerName = (typeof player !== 'undefined' && player && (player.name || player.nickname || player.wechatName)) || '玩家';
+messages = messages.map(function(message) { return message.replace(/玩家的昵称/g, werewolfPlayerName); });
+messages._isCivilian1C = true;
+return messages;
+}
+var civilianTypingTimer = null;
+var civilianTyping = false;
+var civilianFullText = '';
+var civilianLastVote = '';
+var civilianFastForward = false;
+var civilianLongPressTimer = null;
+var civilianSuppressClick = false;
+var civilianVoteTimer = null;
+var civilianTypingGeneration = 0;
+var civilianVoteRound = 1;
+
+var civilianPendingMessages = null;
+var civilianPendingIndex = 0;
+
+function enterCivilianLine() {
+    setupWerewolfBranchCommon();
+    installCivilianLongPress();
+    if (!document.getElementById('civFontLink')) {
+        var fl = document.createElement('link');
+        fl.id = 'civFontLink';
+        fl.rel = 'stylesheet';
+        fl.href = 'https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap';
+        document.head.appendChild(fl);
+    }
+    var msgs = [
+            "“天黑请闭眼”\n刚才还七嘴八舌讨论着规则的人都安静下来，随着上帝的话音落下，陆续闭上了眼睛。\n“丘比特请睁眼”",
+            "“丘比特请连情侣”\n“丘比特请闭眼”\n上帝轻轻拍了拍两位被连的情侣",
+            "“本局你们二人成为情侣”\n你缓缓睁开眼。\n看清对面的人时，你明显怔了一下，是张桂源。",
+            "他那双向来藏不住情绪的眼睛里闪过一丝意外，很快又恢复了平静。\n你们隔着桌子对视了短短几秒。\n上帝轻轻示意，确认情侣身份。",
+            "你点点头，重新闭上眼。\n“守卫请睁眼，请选择你要守护的玩家”\n“守卫请闭眼”",
+            "“狼人请睁眼”\n“狼人请确认同伴”\n“狼人请刀人”",
+            "“狼人请闭眼”\n“女巫请睁眼”\n“这是今晚被刀的玩家，你要使用解药吗”",
+            "“你还有一瓶毒药，你要使用吗”\n“女巫请闭眼”\n“预言家请睁眼，请选择你要查验的玩家”",
+            "“他的阵营为……”\n“预言家请闭眼”",
+            "天亮了",
+            "桌边安静了一瞬。\n有人像是松了口气，有人神情依旧平静，也有人不动声色地扫了一眼四周，试图从其他人的反应里找到一点蛛丝马迹。\n第一局，正式开始。",
+            "上帝环视了一圈桌上的人。\n第一天就是平安夜，没人露出太意外的表情，只是有人轻轻往椅背上一靠，有人低头摆弄着桌上的号码牌，也有人不动声色地打量起其他人的神情。\n\"下面开始发言，一号。\"",
+            "王橹杰把手里的矿泉水瓶放回桌上，身体微微坐直了一点。\n\"一号，民牌。\"\n他说完以后没有马上往下说，而是低着头想了一会儿，像是在整理思路。",
+            "\"平安夜的话……第一天信息确实太少了，现在能想到的可能性挺多的，女巫救人、守卫守到，\"\n他说话一直慢悠悠的，语气和平时聊天没什么区别。\n\"我这一轮应该不会站边，主要还是听后面预言家的发言。我比较在意他们为什么验这个人，还有发言前后是不是一个视角，第一天能听出来的东西其实也就这些。\"",
+            "他停了一下，又低头想了想。\n\"嗯……\"\n\"好像也没什么说的了。\"",
+            "王橹杰笑了笑，重新靠回椅背。\n\"先听后面吧，过。\"\n还没等上帝示意，陈浚铭已经\"唰\"地一下站了起来，动作快得椅子都往后滑了一小截。",
+            "他一本正经地清了清嗓子，又把不知道什么时候准备好的小本子拿到手里，背着手在桌边慢悠悠走了两步，脸上的表情神秘得像真发现了什么不得了的事情。\n\"昨天晚上……\"\n他故意把声音拖长。",
+            "\"我——看——见——了——一——些——东——西。\"\n桌边已经有人没忍住笑了。\n\"别打断预言家发言。\"",
+            "他说完低下头翻开自己的小本子，皱着眉看了两眼，像是在确认什么重要信息，还煞有介事地点了点头。\n\"好。\"\n\"我要报验人了。\"",
+            "\"昨天晚上，我验了一号王橹杰。\"\n他说到这里故意停顿了一拍。\n\"金——水。\"",
+            "说完以后，他满意地合上本子，双手规规矩矩放到桌上，一脸严肃地坐在那里，仿佛真的在等待大家根据他的发言开始分析局势。\n桌边安静了一瞬。\n有人低着头憋笑，有人抬手挡了挡嘴角。",
+            "陈浚铭一脸懵：“笑什么啊我认真的”\n陈思罕低着头笑了半天，等桌上的笑声慢慢停下来，才轻轻咳了一声，坐直了些。\n\"三号，民牌。\"",
+            "他看了一眼二号，又有点没忍住笑。\n\"我刚刚一直在想，到底要不要认真盘二号，后来想想还是算了。陈浚铭要是哪天一本正经坐在那儿，我可能反而觉得他有问题。\"\n说完这句，他自己也笑了笑，没再继续这个话题。",
+            "\"还是说正经的吧。\"\n\"目前我觉得信息其实还是挺少的。一号没站边，二号……嗯，先放着。后面如果真有预言家出来，我还是想听对跳。我感觉还是得把两边都听完，再回头比较。\"\n他说到这里停顿了一下，低头想了想。",
+            "\"嗯……还有一个。\"\n\"今天是平安夜，所以大家发言最好还是别太着急怀疑人。现在谁都有可能是好人，\"\n他轻轻点了点头。",
+            "\"差不多就这些吧。\"\n\"过。\"\n左奇函没有急着开口，他手里的笔在桌上轻轻转了一圈，等陈思罕说完以后，才抬起眼，目光不紧不慢地扫过桌上的人，像是在重新整理这一轮到目前为止所有的信息。",
+            "\"终于到我了。\"\n他说这句话的时候还带着一点笑意。\n\"前面听完，其实还挺有意思的。\"",
+            "他侧过头，看向二号。\n\"首先，二号。\"\n\"陈浚铭你别闹了好吧\"",
+            "\"要是让我猜，我猜你是一张好人牌，想第一局活跃一下气氛。\"\n他说完便收回目光，没有继续在二号身上停留。\n\"那我也不藏了。\"",
+            "左奇函轻轻靠向椅背，嘴角扬起一点弧度。\n\"因为我才是全场——唯、一、真预言家。\"\n他故意停顿了一下。",
+            "整个客厅都安静了下来。\n\"昨天晚上我验的是八号。\"\n说到这里，他看向了你的方向。",
+            "\"金水。\"\n说完以后，他没有马上继续，而是给了大家一点消化信息的时间。\n\"为什么验八号，很简单。第一局一起玩，我不了解八号拿不同身份的时候会是什么状态，也不知道她的发言习惯。对我来说，与其去猜她的状态不如第一晚直接验掉。现在她是我的金水，我至少可以放心去听她发言。\"",
+            "他的手指轻轻点了点桌面。\n\"另外，王橹杰刚刚有一句话我挺认同的。\"\n\"第一天最重要的，是看视角喝站边\"",
+            "\"所以我也不会因为二号跳了预言家，就把他打成狼人。我还是那句话，他不像预言家，但我暂时也不觉得他一定是狼。\"\n说到这里，他停了一下。\n\"当然。\"",
+            "\"如果后面还有人跟我对跳。\"\n左奇函笑了一下。\n\"那就另说了。\"",
+            "他把笔放回桌上，身体重新靠回椅背。\n\"我先聊到这里。\"\n\"后面听发言。\"",
+            "聂玮辰往后靠了靠椅子，手里的笔在指尖转了一圈。\n\"左奇函这轮我听着还不错。不是因为他说自己是真预言家，这个谁都会说。我比较在意的是他说验八号那个理由。\"\n他转着笔想了两秒。",
+            "\"怎么说呢……挺像他会干出来的事。\"\n\"他说自己不了解八号拿不同身份是什么状态，所以干脆第一晚验掉。我听到这儿的时候，脑子里第一反应就是——嗯，要是左奇函拿预言家，好像真会这么玩。\"\n\"所以至少目前，我愿意先把他放在预言家那个位置听。\"",
+            "他说着，又朝左奇函那边看了一眼。\n\"当然，也只是目前。后面要是真有人能把你拍死，我也不是那种站边站到底的人。\"\n他笑了笑。",
+            "\"还有一号和三号。\"\n\"我觉得这两个人今天都挺正常的。没急着抢身份，也没硬盘谁像狼。第一天信息本来就少，我反而觉得这种状态舒服一点。\"\n他说到这里，像是突然想起什么。",
+            "\"哦对，还有二号。\"\n他转头看向陈浚铭。\n\"你最好是真有身份。\"",
+            "陈浚铭眨了眨眼。\n\"为什么？\"\n\"因为你要是平民第一天这么跳，晚上狼人不刀你我都觉得对不起你。\"",
+            "桌边顿时笑成一片。\n陈浚铭皱着眉，很认真地想了一下。\n\"有道理。\"",
+            "\"行了，我聊完了。\"\n陈奕恒清了清嗓子，站起来笑嘻嘻地拍了拍桌子。\n“我要跳了哈，我要跳了。”",
+            "左奇函被他逗笑了，往椅背上一靠：“我求你了吧，你要跳啥快点跳。”\n“对。”陈奕恒一本正经地点点头，“我要跳预言家，因为我才是预言家。”\n“昨天晚上我验了杨博文，是那个……那个啥水。”",
+            "他想了两秒。\n“反正就是好人。”\n“我验他是因为他脑子太好使了，我怕他拿狼把我骗了，所以我先验他。现在不用怕了。”",
+            "他抬手指了指左奇函。\n“因为左奇函就是狼。”\n“他说八号那个，我不敢确认，因为我昨天晚上验的不是八号。但是他肯定是假的，因为我是预言家。”",
+            "“今天把左奇函投了就行。”\n“要是你们不相信我……”陈奕恒摊了摊手，自己先笑了一下，“我也没有办法。”\n“反正我是真的预言家。”",
+            "“二号我先放一边，我现在主要听四号和六号。”\n张桂源先是笑了一下，“啧，有点难搞啊”\n“左奇函那个验八号的理由，我觉得说得通。要是换我，我可能也会先验一个自己看不透的人，所以这一点我没有什么意见。”",
+            "“六号的话……”他转头看了陈奕恒一眼，“也挺像陈奕恒会说出来的话。”\n“所以我现在其实站不死。”\n他说着又看回左奇函。",
+            "“你俩今天谁是真的，我现在说不好，我还是想听八号和九号怎么聊。”\n说这句话的时候，他没有去看左奇函，也没有看陈奕恒。\n反倒是目光轻轻落在了你的身上。",
+            "像是在等什么。\n下一秒，他自己先反应过来似的，若无其事地把视线移开。\n“反正我现在也拿不准。”",
+            "“要不这样吧。”\n他往二号那边偏了偏头，语气带着点笑意。\n“咱们把陈浚铭这个搞事的先投出去。天天搞这些花里胡哨的”",
+            "桌上顿时笑了两声。\n陈浚铭一脸认真地看着他。\n“你会后悔的。”",
+            "他说得不大声，像是在小声嘟囔。\n张桂源却偏偏听见了。\n“后悔什么？”",
+            "他笑着回了一句。\n陈浚铭抿了抿嘴，没再解释。\n“没什么。”",
+            "张桂源耸了耸肩，也没继续追问。\n“反正我先听后面发言。”\n说完他就坐了下来",
+            "轮到我发言，",
+            "杨博文低头看了一眼自己记的东西，才抬起头。\n“我刚刚一直在记大家发言，因为前面跳的人有点多，我怕后面忘了。”\n“我现在其实比较偏陈奕恒一点，因为我刚刚翻了一下，哎，左奇函总让我觉得有点奇怪。”",
+        
+            "“不一定对，就是我的个人感觉。我之前看左奇函玩预言家，和今天不太一样。以前你拿预言家会更着急一点，更想让大家马上相信你，但今天倒是挺悠然自得”\n左奇函没有接话，只是安静地看着他。\n杨博文也没在意，继续往下说。",
+            "他把笔盖扣上，停了一会儿。\n“不过今天毕竟是第一天，信息还是太少了。如果今天一定让我投的话，我会偏投四号；但如果场上能平票，我其实更希望平票。这样晚上还能再多拿一天信息，比现在直接出一个人要稳一点。”\n“我差不多就是这个想法。”",
+            "张函瑞一直安安静静听到最后，才慢慢开口：“我其实听下来，觉得大家今天都挺正常的吧，就是每个人今天的状态都挺像我认识的那个人。”\n“博文刚刚说左奇函今天跟以前不太一样，但是我自己不是特别喜欢拿状态去定义一个人的身份。可能今天紧张一点、放松一点，我都觉得有可能吧，所以四号应该还没有到必须出的程度。”\n说到这里，他的目光很自然地扫过桌上的每一个人，在一号身上停留了一瞬，又若无其事地移开。",
+            "“今天毕竟还是第一天，而且还是平安夜，说实话信息真的不多。我听完大家发言以后，没有一个人让我觉得‘今天非出不可’，所以如果场上最后能平票，张函瑞其实会更倾向于平票，当然，如果最后必须要投，这一票我不会投得特别有把握。”\n他说完笑了笑。\n“差不多就这些吧。”"
+    ];
+    showCivilianMessages(msgs, 0);
+}
+
+function showCivilianMessages(msgs, idx) {
+    var cd = document.getElementById('werewolfTextContent');
+    if (!cd) return;
+    if (idx >= msgs.length) return;
+    if (msgs[idx] === '__PLAYER9_OUT__') {
+        markCivilianPlayerOut('杨博文');
+        showCivilianOutAnnouncement('9号玩家出局', msgs, idx + 1);
+        return;
+    }
+    if (msgs[idx] === '__PLAYER6_OUT__') {
+        markCivilianPlayerOut('陈奕恒');
+        showCivilianOutAnnouncement('6号玩家出局', msgs, idx + 1);
+        return;
+    }
+    if (msgs[idx] === '__PLAYER1_10_OUT__') {
+        markCivilianPlayerOut('王橹杰');
+        markCivilianPlayerOut('张函瑞');
+        showCivilianOutAnnouncement('昨晚1号、10号出局', msgs, idx + 1);
+        return;
+    }
+    if (msgs[idx] === '__SECOND_VOTE__') {
+        startCivilianVoting(2);
+        return;
+    }
+    if (msgs[idx] === '__THIRD_VOTE__') {
+        civilianPendingMessages = msgs;
+        civilianPendingIndex = idx + 1;
+        startCivilianVoting(3);
+        return;
+    }
+    if (msgs[idx] === '__1B_SECOND_VOTE__') {
+        civilianPendingMessages = msgs;
+        civilianPendingIndex = idx + 1;
+        startCivilianVoting(4);
+        return;
+    }
+    if (msgs[idx] === '__1B_PLAYER3_4_OUT__') {
+        markCivilianPlayerOut('陈思罕');
+        markCivilianPlayerOut('左奇函');
+        showCivilianOutAnnouncement('昨晚3号、4号出局', msgs, idx + 1);
+        return;
+    }
+    if (msgs[idx] === '__1B_THIRD_VOTE__') {
+        startCivilianVoting(5);
+        return;
+    }
+    if (msgs[idx] === '__1C_PLAYER9_OUT__') {
+        markCivilianPlayerOut('杨博文');
+        showCivilianOutAnnouncement('9号玩家出局', msgs, idx + 1);
+        return;
+    }
+    if (msgs[idx] === '__1C_SECOND_VOTE__') {
+        civilianPendingMessages = msgs;
+        civilianPendingIndex = idx + 1;
+        startCivilianVoting(6);
+        return;
+    }
+    if (msgs[idx] === '__1C_PLAYER6_7_8_OUT__') {
+        markCivilianPlayerOut('陈奕恒');
+        markCivilianPlayerOut('张桂源');
+        markCivilianPlayerOut('玩家');
+        showCivilianOutAnnouncement('昨晚6号、7号、8号出局', msgs, idx + 1);
+        return;
+    }
+    if (msgs[idx] === '__1C_FINAL_VOTE__') {
+        civilianPendingMessages = msgs;
+        civilianPendingIndex = idx + 1;
+        startCivilianSpectatorVote(7);
+        return;
+    }
+    if (msgs[idx] === '__1AB_PLAYER6_7_8_OUT__') {
+        markCivilianPlayerOut('陈奕恒');
+        markCivilianPlayerOut('张桂源');
+        markCivilianPlayerOut('玩家');
+        showCivilianOutAnnouncement('昨晚6号、7号、8号出局', msgs, idx + 1);
+        return;
+    }
+    if (msgs[idx] === '__1AB_PLAYER8_OUT__') {
+        markCivilianPlayerOut('玩家');
+        showCivilianMessages(msgs, idx + 1);
+        return;
+    }
+    if (msgs[idx] === '__1AB_SPECTATOR_VOTE__') {
+        civilianPendingMessages = msgs;
+        civilianPendingIndex = idx + 1;
+        startCivilianSpectatorVote(8);
+        return;
+    }
+    if (msgs[idx] === '__1AB_PLAYER10_OUT__') {
+        markCivilianPlayerOut('张函瑞');
+        showCivilianOutAnnouncement('昨晚10号玩家出局', msgs, idx + 1);
+        return;
+    }
+    if (msgs[idx] === '__ENDING_2__') {
+        unlockAndShowWerewolfEnding(2);
+        return;
+    }
+    if (msgs[idx] === '轮到我发言，') {
+        showPlayerSpeechInput(msgs, idx);
+        return;
+    }
+    if (msgs[idx] === '天亮了') {
+        showCivilianTypedText('天亮了', function() {
+            var tb = document.getElementById('werewolfTextBox');
+            if (tb) tb.onclick = function() {
+                tb.onclick = null;
+                if (msgs._isCivilian1A || msgs._isCivilian1Aa || msgs[idx + 1] === '__1B_PLAYER3_4_OUT__' || msgs[idx + 1] === '__1C_PLAYER9_OUT__' || msgs[idx + 1] === '__1C_PLAYER6_7_8_OUT__' || msgs[idx + 1] === '__1AB_PLAYER6_7_8_OUT__' || msgs[idx + 1] === '__1AB_PLAYER10_OUT__') showCivilianMessages(msgs, idx + 1);
+                else showPeacefulNight(msgs, idx + 1);
+            };
+        });
+        return;
+    }
+    showCivilianTypedText(msgs[idx], function() {
+        var tb = document.getElementById('werewolfTextBox');
+        if (tb) {
+            var advanceCivilianPage = function() {
+                if (civilianFastForward === false && civilianSuppressClick) return;
+                tb.onclick = null;
+                if (idx + 1 >= msgs.length) {
+                    if (msgs._isCivilian1Ba) {
+                        unlockAndShowWerewolfEnding(3);
+                    } else if (msgs._isCivilian1Bb) {
+                        unlockAndShowWerewolfEnding(4);
+                    } else if (msgs._isCivilian1C) {
+                        unlockAndShowWerewolfEnding(5);
+                    } else if (msgs._isCivilian1Aa) {
+                        unlockAndShowWerewolfEnding(1);
+                    } else if (msgs._isCivilian1Ab) {
+                        unlockAndShowWerewolfEnding(2);
+                    } else if (msgs._isCivilian1A || msgs._isCivilian1B) {
+                        cd.innerHTML = '<div style="text-align:center;color:#aaa;padding:10px;">本段剧情结束</div>';
+                    } else {
+                        startCivilianVoting();
+                    }
+                } else {
+                    showCivilianMessages(msgs, idx + 1);
+                }
+            };
+            tb.onclick = function() {
+                civilianSuppressClick = false;
+                advanceCivilianPage();
+            };
+            if (civilianFastForward) {
+                setTimeout(function() {
+                    if (civilianFastForward) advanceCivilianPage();
+                }, 25);
+            }
+        }
+    });
+}
+
+function showCivilianTypedText(text, callback) {
+    var cd = document.getElementById('werewolfTextContent');
+    var tb = document.getElementById('werewolfTextBox');
+    if (!cd || !tb) return;
+    if (typeof civilianTypingGeneration !== 'number' || !Number.isFinite(civilianTypingGeneration)) civilianTypingGeneration = 0;
+    if (civilianTypingTimer) clearTimeout(civilianTypingTimer);
+    var generation = ++civilianTypingGeneration;
+    civilianTyping = true;
+    civilianFullText = text;
+    cd.textContent = '';
+    var chars = Array.from(text);
+    var pos = 0;
+    function finish() {
+        if (generation !== civilianTypingGeneration) return;
+        if (civilianTypingTimer) clearTimeout(civilianTypingTimer);
+        civilianTypingTimer = null;
+        civilianTyping = false;
+        cd.textContent = text;
+        tb.onclick = null;
+        if (callback) callback();
+    }
+    tb.onclick = function() {
+        if (civilianTyping) finish();
+    };
+    function typeNext() {
+        if (!civilianTyping || generation !== civilianTypingGeneration) return;
+        if (pos >= chars.length) { finish(); return; }
+        cd.textContent += chars[pos++];
+        civilianTypingTimer = setTimeout(typeNext, civilianFastForward ? 3 : 28);
+    }
+    typeNext();
+}
+
+function installCivilianLongPress() {
+    var tb = document.getElementById('werewolfTextBox');
+    if (!tb || tb.dataset.longPressReady === '1') return;
+    tb.dataset.longPressReady = '1';
+    tb.style.position = 'relative';
+    function beginPress() {
+        if (civilianLongPressTimer) clearTimeout(civilianLongPressTimer);
+        civilianLongPressTimer = setTimeout(function() {
+            civilianLongPressTimer = null;
+            civilianFastForward = true;
+            civilianSuppressClick = true;
+            showCivilianSpeedBadge();
+            // 短页面可能在两秒阈值前已经播放完，此时直接触发下一页。
+            if (!civilianTyping && typeof tb.onclick === 'function') {
+                civilianSuppressClick = false;
+                tb.onclick();
+            }
+        }, 2000);
+    }
+    function endPress() {
+        if (civilianLongPressTimer) {
+            clearTimeout(civilianLongPressTimer);
+            civilianLongPressTimer = null;
+        }
+        if (civilianFastForward) {
+            civilianFastForward = false;
+            hideCivilianSpeedBadge();
+        }
+    }
+    tb.addEventListener('pointerdown', beginPress);
+    tb.addEventListener('pointerup', endPress);
+    tb.addEventListener('pointercancel', endPress);
+    tb.addEventListener('pointerleave', endPress);
+    tb.addEventListener('click', function(e) {
+        if (civilianSuppressClick) {
+            civilianSuppressClick = false;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }
+    }, true);
+}
+
+function showCivilianSpeedBadge() {
+    var tb = document.getElementById('werewolfTextBox');
+    if (!tb) return;
+    var badge = document.getElementById('civilianSpeedBadge');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'civilianSpeedBadge';
+        badge.style.cssText = 'position:absolute;top:8px;right:12px;padding:3px 9px;border-radius:12px;background:rgba(232,93,117,.88);color:white;font-size:11px;z-index:180;pointer-events:none;';
+        tb.appendChild(badge);
+    }
+    badge.textContent = '剧情加速中 »»';
+}
+
+function hideCivilianSpeedBadge() {
+    var badge = document.getElementById('civilianSpeedBadge');
+    if (badge) badge.remove();
+}
+
+function showPeacefulNight(msgs, nextIdx) {
+    var oldOv = document.getElementById('peacefulNightOverlay');
+    if (oldOv) oldOv.remove();
+    var ov = document.createElement('div');
+    ov.id = 'peacefulNightOverlay';
+    ov.style.cssText = 'position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);z-index:200;text-align:center;pointer-events:none;animation:fadeInBrush 1.5s ease forwards;';
+    ov.innerHTML = '<div style="font-family:\'Ma Shan Zheng\',cursive;font-size:42px;color:#6B0000;text-shadow:0 0 30px rgba(107,0,0,0.4),3px 3px 6px rgba(0,0,0,0.5),-2px -2px 4px rgba(0,0,0,0.2),0 0 60px rgba(107,0,0,0.15);letter-spacing:8px;">昨晚是平安夜……</div>';
+    var pg = document.getElementById('werewolfPage');
+    if (pg) pg.appendChild(ov);
+    if (!document.getElementById('civAnimStyle')) {
+        var st = document.createElement('style');
+        st.id = 'civAnimStyle';
+        st.textContent = '@keyframes fadeInBrush { 0% { opacity:0; transform:translate(-50%,-50%) scale(0.8); } 100% { opacity:1; transform:translate(-50%,-50%) scale(1); } }';
+        document.head.appendChild(st);
+    }
+    var tb = document.getElementById('werewolfTextBox');
+    if (tb) {
+        tb.onclick = null;
+        setTimeout(function() {
+            tb.onclick = function() {
+                tb.onclick = null;
+                var oo = document.getElementById('peacefulNightOverlay');
+                if (oo) oo.remove();
+                showCivilianMessages(msgs, nextIdx);
+            };
+        }, 1500);
+    }
+}
+function showCivilianOutAnnouncement(text, msgs, nextIdx) {
+    var oldOv = document.getElementById('civilianOutOverlay');
+    if (oldOv) oldOv.remove();
+    var ov = document.createElement('div');
+    ov.id = 'civilianOutOverlay';
+    ov.style.cssText = 'position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);z-index:200;text-align:center;pointer-events:none;animation:fadeInBrush 1.5s ease forwards;width:90%;';
+    ov.innerHTML = '<div style="font-family:\'Ma Shan Zheng\',cursive;font-size:42px;color:#6B0000;text-shadow:0 0 30px rgba(107,0,0,.4),3px 3px 6px rgba(0,0,0,.5),-2px -2px 4px rgba(0,0,0,.2),0 0 60px rgba(107,0,0,.15);letter-spacing:8px;">' + text + '</div>';
+    var pg = document.getElementById('werewolfPage');
+    if (pg) pg.appendChild(ov);
+    var cd = document.getElementById('werewolfTextContent');
+    if (cd) cd.innerHTML = '';
+    var tb = document.getElementById('werewolfTextBox');
+    if (tb) {
+        tb.onclick = null;
+        setTimeout(function() {
+            tb.onclick = function() {
+                tb.onclick = null;
+                ov.remove();
+                showCivilianMessages(msgs, nextIdx);
+            };
+        }, 1500);
+    }
+}
+function markCivilianPlayerOut(name) {
+    var wrapper = document.querySelector('#werewolfAvatarContainer [data-name="' + name + '"]');
+    if (!wrapper || wrapper.dataset.out === '1') return;
+    wrapper.dataset.out = '1';
+    wrapper.style.position = 'relative';
+    wrapper.style.opacity = '0.58';
+    var avatar = wrapper.firstElementChild;
+    if (avatar) avatar.style.filter = 'grayscale(1)';
+    var soul = document.createElement('div');
+    soul.className = 'civilian-floating-soul';
+    soul.textContent = '👻';
+    soul.style.cssText = 'position:absolute;top:-19px;left:50%;transform:translateX(-50%);font-size:22px;z-index:5;pointer-events:none;animation:civilianSoulFloat 1.8s ease-in-out infinite;';
+    wrapper.appendChild(soul);
+    if (!document.getElementById('civilianSoulStyle')) {
+        var st = document.createElement('style');
+        st.id = 'civilianSoulStyle';
+        st.textContent = '@keyframes civilianSoulFloat{0%,100%{transform:translate(-50%,0);opacity:.72}50%{transform:translate(-50%,-10px);opacity:1}}';
+        document.head.appendChild(st);
+    }
+}
+// ===== 玩家发言麦克风系统 =====
+function showPlayerSpeechInput(msgs, idx) {
+    var cd = document.getElementById('werewolfTextContent');
+    if (!cd) return;
+    cd.innerHTML = '<div style="text-align:center;color:#E8E8E8;font-size:16px;padding:10px;">轮到我发言</div>';
+    var oldEl = document.getElementById('playerMicArea');
+    if (oldEl) oldEl.remove();
+    var ma = document.createElement('div');
+    ma.id = 'playerMicArea';
+    ma.style.cssText = 'position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);text-align:center;z-index:150;padding:0 16px;';
+    var mb = document.createElement('div');
+    mb.style.cssText = 'width:44px;height:44px;border-radius:50%;background:#E85D75;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;transition:all 0.2s;margin:0 auto;';
+    mb.textContent = '\uD83C\uDFA4';
+    mb.onmouseenter = function(){mb.style.background='#d14a60';};
+    mb.onmouseleave = function(){mb.style.background='#E85D75';};
+    var ia = document.createElement('div');
+    ia.style.cssText = 'display:none;margin-top:10px;';
+    var ib = document.createElement('input');
+    ib.id = 'playerSpeechInput';
+    ib.type = 'text';
+    ib.placeholder = '\u8F93\u5165\u4F60\u7684\u53D1\u8A00...';
+    ib.style.cssText = 'width:100%;padding:8px 12px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;background:rgba(0,0,0,0.6);color:white;font-size:14px;outline:none;box-sizing:border-box;';
+    var sb = document.createElement('button');
+    sb.textContent = '\u53D1\u9001';
+    sb.style.cssText = 'margin-top:6px;padding:6px 24px;background:#E85D75;color:white;border:none;border-radius:0;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.2s;';
+    sb.onmouseenter = function(){sb.style.background='#d14a60';};
+    sb.onmouseleave = function(){sb.style.background='#E85D75';};
+    sb.onclick = function(event){
+        if (event) event.stopPropagation();
+        submitPlayerSpeech(msgs, idx);
+    };
+    ia.appendChild(ib);
+    ia.appendChild(sb);
+    ma.appendChild(mb);
+    ma.appendChild(ia);
+    ma.onclick = function(event){ if (event) event.stopPropagation(); };
+    mb.onclick = function(event){if (event) event.stopPropagation();ia.style.display='block';mb.style.display='none';setTimeout(function(){document.getElementById('playerSpeechInput').focus();},100);};
+    var tb = document.getElementById('werewolfTextBox');
+    if (tb) { tb.style.position = 'relative'; tb.appendChild(ma); tb.onclick = null; }
+}
+function submitPlayerSpeech(msgs, idx) {
+    var inp = document.getElementById('playerSpeechInput');
+    var speech = inp ? inp.value.trim() : '';
+    if (!speech) { alert('\u8BF7\u8F93\u5165\u4F60\u7684\u53D1\u8A00'); return; }
+    var ma = document.getElementById('playerMicArea');
+    if (ma) ma.remove();
+    var tb = document.getElementById('werewolfTextBox');
+    if (tb) tb.onclick = null;
+    showCivilianTypedText('\u201c' + speech + '\u201d', function() {
+        var speechBox = document.getElementById('werewolfTextBox');
+        if (speechBox) {
+            speechBox.onclick = function() {
+                speechBox.onclick = null;
+                showCivilianMessages(msgs, idx + 1);
+            };
+        }
+    });
+}
+// ===== 平民线投票系统 =====
+function startCivilianSpectatorVote(round) {
+    civilianVoteRound = round;
+    var cd = document.getElementById('werewolfTextContent');
+    if (cd) cd.innerHTML = '<div style="text-align:center;color:#E8E8E8;font-size:16px;padding:10px;">你已出局，请观看场上玩家投票</div>';
+    var oldVA = document.getElementById('civilianVoteArea');
+    if (oldVA) oldVA.remove();
+    var va = document.createElement('div');
+    va.id = 'civilianVoteArea';
+    va.style.cssText = 'position:absolute;bottom:18px;left:0;right:0;text-align:center;z-index:150;padding:0 16px;';
+    var button = document.createElement('button');
+    button.textContent = '查看投票结果';
+    button.style.cssText = 'padding:9px 24px;background:#E85D75;color:white;border:none;border-radius:0;font-size:13px;font-weight:600;cursor:pointer;';
+    button.onclick = function() {
+        va.remove();
+        showVotingResults('', round);
+    };
+    va.appendChild(button);
+    var tb = document.getElementById('werewolfTextBox');
+    if (tb) { tb.style.position = 'relative'; tb.appendChild(va); tb.onclick = null; }
+}
+
+function startCivilianVoting(round) {
+    civilianVoteRound = round || 1;
+    var cd = document.getElementById('werewolfTextContent');
+    if (cd) cd.innerHTML = '<div style="text-align:center;color:#E8E8E8;font-size:16px;padding:10px;">提示，请点击头像进行投票</div>';
+    var oldVA = document.getElementById('civilianVoteArea');
+    if (oldVA) oldVA.remove();
+    var va = document.createElement('div');
+    va.id = 'civilianVoteArea';
+    va.style.cssText = 'position:absolute;bottom:10px;left:0;right:0;text-align:center;z-index:150;padding:0 16px;';
+    var tm = document.createElement('div');
+    tm.id = 'voteTimer';
+    tm.style.cssText = 'color:#E85D75;font-size:22px;font-weight:700;margin-bottom:6px;text-shadow:0 1px 6px rgba(0,0,0,0.8);';
+    tm.textContent = '15s';
+    va.appendChild(tm);
+    var tb = document.getElementById('werewolfTextBox');
+    if (tb) { tb.style.position = 'relative'; tb.appendChild(va); tb.onclick = null; }
+    var selectedName = null;
+    var voteBtn = null;
+    var countdown = 15;
+    document.querySelectorAll('#werewolfAvatarContainer [data-name]').forEach(function(el) {
+        if (el.dataset.out === '1' || el.dataset.name === '玩家' || (civilianVoteRound === 5 && ['张桂源','王橹杰'].indexOf(el.dataset.name) === -1)) {
+            el.style.cursor = 'default';
+            el.onclick = null;
+            return;
+        }
+        el.style.cursor = 'pointer';
+        el.onclick = function() {
+            var name = this.dataset.name;
+            document.querySelectorAll('#werewolfAvatarContainer [data-name]').forEach(function(o) {
+                o.style.border = 'none';
+                o.style.outline = 'none';
+                o.style.boxShadow = 'none';
+                var vb = o.querySelector('.vote-inline-btn');
+                if (vb) vb.remove();
+            });
+            selectedName = name;
+            this.style.outline = '2px solid #E85D75';
+            this.style.outlineOffset = '2px';
+            if (voteBtn) voteBtn.remove();
+            voteBtn = document.createElement('div');
+            voteBtn.className = 'vote-inline-btn';
+            voteBtn.textContent = '\u6295\u7968';
+            voteBtn.style.cssText = 'margin-top:4px;padding:4px 16px;background:#E85D75;color:white;border:none;border-radius:0;font-size:12px;font-weight:600;cursor:pointer;';
+            voteBtn.onmouseenter = function(){voteBtn.style.background='#d14a60';};
+            voteBtn.onmouseleave = function(){voteBtn.style.background='#E85D75';};
+            voteBtn.onclick = function(e){e.stopPropagation();submitVote(name);};
+            this.appendChild(voteBtn);
+        };
+    });
+    if (civilianVoteTimer) clearInterval(civilianVoteTimer);
+    civilianVoteTimer = setInterval(function() {
+        countdown--;
+        tm.textContent = countdown + 's';
+        if (countdown <= 0) {
+            clearInterval(civilianVoteTimer);
+            civilianVoteTimer = null;
+            if (selectedName) submitVote(selectedName);
+            else { var va2 = document.getElementById('civilianVoteArea'); if (va2) va2.remove(); }
+        }
+    }, 1000);
+}
+function submitVote(votedName) {
+    if (civilianVoteTimer) {
+        clearInterval(civilianVoteTimer);
+        civilianVoteTimer = null;
+    }
+    var va = document.getElementById('civilianVoteArea');
+    if (va) va.remove();
+    document.querySelectorAll('#werewolfAvatarContainer [data-name]').forEach(function(el) {
+        el.onclick = null; el.style.cursor = 'default'; el.style.outline = 'none';
+        var voteButton = el.querySelector('.vote-inline-btn');
+        if (voteButton) voteButton.remove();
+    });
+    showVotingResults(votedName, civilianVoteRound);
+}
+function getVoteAvatarHTML(name, sz) {
+    sz = sz || 32;
+    var imgMap = {'王橹杰':'wljwx.jpg','陈浚铭':'cjmwx.jpg','陈思罕':'cshwx.jpg','左奇函':'zqhwx.jpg','聂玮辰':'nwcwx.jpg','陈奕恒':'cyhwx.jpg','张桂源':'zgyweixin.png','杨博文':'ybwwx.jpg','张函瑞':'zhrwx.jpg'};
+    if (name === '\u73A9\u5BB6') {
+        var pa = localStorage.getItem('player_avatar');
+        if (pa && pa.indexOf('data:image') === 0) return '<img src="' + pa + '" style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,0.4);">';
+        return '<div style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:#E85D75;display:flex;align-items:center;justify-content:center;color:white;font-size:' + (sz-10) + 'px;border:1px solid rgba(255,255,255,0.4);">\uD83D\uDC30</div>';
+    }
+    if (name === '弃票') return '<div style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:#555;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">弃</div>';
+    var src = imgMap[name] || 'kb.jpg';
+    return '<img src="' + src + '" style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,0.4);" onerror="this.style.display=\'none\'">';
+}
+function showVotingResults(playerVote, round) {
+    civilianVoteRound = round || civilianVoteRound || 1;
+    civilianLastVote = playerVote;
+    var oldP = document.getElementById('voteResultPopup');
+    if (oldP) oldP.remove();
+    var results = civilianVoteRound === 8 ? [
+        { player: '聂玮辰', voters: ['陈思罕','王橹杰','张函瑞'] },
+        { player: '王橹杰', voters: ['聂玮辰'] }
+    ] : civilianVoteRound === 7 ? [
+        { player: '王橹杰', voters: ['陈思罕','陈浚铭','聂玮辰','张函瑞'] },
+        { player: '张函瑞', voters: ['王橹杰'] }
+    ] : civilianVoteRound === 6 ? [
+        { player: '左奇函', voters: ['王橹杰','陈思罕','陈浚铭','陈奕恒','张桂源','聂玮辰','张函瑞'] }
+    ] : civilianVoteRound === 5 ? [
+        { player: '张桂源', voters: ['王橹杰','张函瑞'] },
+        { player: '王橹杰', voters: ['张桂源','陈浚铭'] },
+        { player: '弃票', voters: ['聂玮辰'] }
+    ] : civilianVoteRound === 4 ? [
+        { player: '杨博文', voters: ['王橹杰','左奇函','张桂源','陈浚铭','聂玮辰','张函瑞'] },
+        { player: '左奇函', voters: ['杨博文','陈思罕'] }
+    ] : civilianVoteRound === 3 ? [
+        { player: '王橹杰', voters: ['张桂源'] },
+        { player: '陈浚铭', voters: ['聂玮辰','王橹杰','陈浚铭','张函瑞'] }
+    ] : civilianVoteRound === 2 ? [
+        { player: '陈思罕', voters: ['张桂源','陈浚铭','王橹杰'] },
+        { player: '陈浚铭', voters: ['陈奕恒','聂玮辰','陈思罕'] },
+        { player: '弃票', voters: ['张函瑞'] }
+    ] : [
+        { player: '左奇函', voters: ['王橹杰','陈浚铭','陈奕恒','杨博文'] },
+        { player: '陈奕恒', voters: ['聂玮辰','陈思罕','张函瑞','左奇函'] },
+        { player: '陈浚铭', voters: ['张桂源'] }
+    ];
+    if (civilianVoteRound === 2 && playerVote !== '陈思罕') {
+        results = results.filter(function(result) { return result.player !== '弃票'; });
+        for (var resultIndex = 0; resultIndex < results.length; resultIndex++) {
+            if (results[resultIndex].player === '陈浚铭') results[resultIndex].voters.push('张函瑞');
+        }
+    }
+    var found = civilianVoteRound === 7 || civilianVoteRound === 8;
+    if (civilianVoteRound !== 7 && civilianVoteRound !== 8) {
+        for (var i = 0; i < results.length; i++) {
+            if (results[i].player === playerVote) {
+                results[i].voters.push('\u73A9\u5BB6');
+                found = true;
+                break;
+            }
+        }
+    }
+    if (!found) {
+        results.push({ player: playerVote, voters: ['\u73A9\u5BB6'] });
+    }
+    var popup = document.createElement('div');
+    popup.id = 'voteResultPopup';
+    popup.style.cssText = 'position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);z-index:200;background:rgba(0,0,0,0.85);border:2px solid rgba(255,255,255,0.15);border-radius:16px;padding:20px 24px;text-align:center;color:white;max-width:320px;width:100%;';
+    var html = '<div style="font-size:16px;font-weight:700;margin-bottom:12px;">\u6295\u7968\u7ED3\u679C</div>';
+    for (var i = 0; i < results.length; i++) {
+        var r = results[i];
+        html += '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center;padding:6px 0;">';
+        html += getVoteAvatarHTML(r.player, 32);
+        html += '<span style="color:#ccc;font-size:12px;margin:0 2px;">' + r.voters.length + '\u7968</span>';
+        r.voters.forEach(function(v) {
+            html += getVoteAvatarHTML(v, 26);
+        });
+        html += '</div>';
+        if (i < results.length - 1) {
+            html += '<div style="border-top:1px solid rgba(255,255,255,0.15);margin:2px 0;"></div>';
+        }
+    }
+    html += '</div>';
+    html += '<div style="margin-top:12px;"><button id="civilianVoteResultClose" onclick="enterCivilian1AAfterVote();return false;" style="padding:8px 24px;background:#333;color:white;border:none;border-radius:0;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.2s;">关闭</button></div>';
+    popup.innerHTML = html;
+    var pg = document.getElementById('werewolfPage');
+    if (pg) pg.appendChild(popup);
+}
+function enterCivilian1AAfterVote() {
+    if (civilianVoteTimer) {
+        clearInterval(civilianVoteTimer);
+        civilianVoteTimer = null;
+    }
+    var p = document.getElementById('voteResultPopup');
+    if (p) p.remove();
+    var voteArea = document.getElementById('civilianVoteArea');
+    if (voteArea) voteArea.remove();
+    if (typeof civilianTypingGeneration !== 'number' || !Number.isFinite(civilianTypingGeneration)) civilianTypingGeneration = 0;
+    civilianTypingGeneration++;
+    if (civilianTypingTimer) clearTimeout(civilianTypingTimer);
+    civilianTypingTimer = null;
+    civilianTyping = false;
+    var cd = document.getElementById('werewolfTextContent');
+    if (cd) cd.innerHTML = '';
+    var tb = document.getElementById('werewolfTextBox');
+    if (tb) tb.onclick = null;
+    // 先启动剧情。任何头像清理异常都不能阻断分支续接。
+    if (civilianVoteRound === 8) {
+        markCivilianPlayerOut('聂玮辰');
+        if (civilianPendingMessages) showCivilianMessages(civilianPendingMessages, civilianPendingIndex || 0);
+    } else if (civilianVoteRound === 7) {
+        markCivilianPlayerOut('王橹杰');
+        if (civilianPendingMessages) showCivilianMessages(civilianPendingMessages, civilianPendingIndex || 0);
+    } else if (civilianVoteRound === 6) {
+        markCivilianPlayerOut('左奇函');
+        if (civilianPendingMessages) showCivilianMessages(civilianPendingMessages, civilianPendingIndex || 0);
+    } else if (civilianVoteRound === 5) {
+        if (civilianLastVote === '张桂源') {
+            markCivilianPlayerOut('张桂源');
+            markCivilianPlayerOut('玩家');
+            showCivilianMessages(getCivilian1BaMessages(), 0);
+        } else {
+            markCivilianPlayerOut('王橹杰');
+            showCivilianMessages(getCivilian1BbMessages(), 0);
+        }
+    } else if (civilianVoteRound === 4) {
+        markCivilianPlayerOut('杨博文');
+        if (civilianPendingMessages) showCivilianMessages(civilianPendingMessages, civilianPendingIndex || 0);
+    } else if (civilianVoteRound === 3) {
+        markCivilianPlayerOut('陈浚铭');
+        if (civilianPendingMessages) showCivilianMessages(civilianPendingMessages, civilianPendingIndex || 0);
+    } else if (civilianVoteRound === 2) {
+        if (civilianLastVote === '陈思罕') {
+            markCivilianPlayerOut('陈思罕');
+            showCivilianMessages(getCivilian1AaMessages(), 0);
+        } else {
+            markCivilianPlayerOut('陈浚铭');
+            showCivilianMessages(getCivilian1AbMessages(), 0);
+        }
+    } else {
+        if (civilianLastVote === '陈奕恒') {
+            markCivilianPlayerOut('陈奕恒');
+            showCivilianMessages(getCivilian1BMessages(), 0);
+        } else if (civilianLastVote === '左奇函') {
+            markCivilianPlayerOut('左奇函');
+            showCivilianMessages(getCivilian1AMessages(), 0);
+        } else {
+            showCivilianMessages(getCivilian1CMessages(), 0);
+        }
+    }
+    try {
+        document.querySelectorAll('#werewolfAvatarContainer [data-name]').forEach(function(el) {
+            el.onclick = null;
+            el.style.cursor = 'default';
+            el.style.outline = 'none';
+            el.style.boxShadow = 'none';
+            var voteButton = el.querySelector('.vote-inline-btn');
+            if (voteButton) voteButton.remove();
+        });
+    } catch (error) {
+        console.warn('投票头像清理失败，但剧情已继续：', error);
+    }
+}
+function continueCivilianAfterVote() {
+    enterCivilian1AAfterVote();
+}
+function closeVoteResult(playerVote) {
+    if (playerVote) civilianLastVote = playerVote;
+    continueCivilianAfterVote();
+}
+
+
+function enterHunterLine() {
+    setupWerewolfBranchCommon();
+    // 🏹 后续在这里写猎人线剧情
+}
+
+// ===== 狼人杀分线共用场景 =====
+function setupWerewolfBranchCommon() {
+    // 注入毒药动画CSS
+    if (!document.getElementById('witchBranchAnim')) {
+        var style = document.createElement('style');
+        style.id = 'witchBranchAnim';
+        style.textContent = '@keyframes liquidFlow { 0% { opacity:0; transform:scale(0.3); } 100% { opacity:1; transform:scale(1); } }';
+        document.head.appendChild(style);
+    }
+    
+    // 移除身份显示和卡牌
+    var oldIdentity = document.getElementById('identityDisplay');
+    if (oldIdentity) oldIdentity.remove();
+    var oldCards = document.getElementById('identityCardsContainer');
+    if (oldCards) oldCards.remove();
+    
+    // 清除文本框内容
+    var textContent = document.getElementById('werewolfTextContent');
+    if (textContent) {
+        textContent.innerHTML = '';
+    }
+    
+    // 更换背景
+    var page = document.getElementById('werewolfPage');
+    if (page) {
+        page.style.background = "url(lrsbj.jpg) center/cover no-repeat";
+    }
+    
+    // 如果已存在旧的头像容器则移除
+    var oldContainer = document.getElementById('werewolfAvatarContainer');
+    if (oldContainer) oldContainer.remove();
+    
+    // 创建头像容器
+    var avatarContainer = document.createElement('div');
+    avatarContainer.id = 'werewolfAvatarContainer';
+    avatarContainer.style.cssText = 'position:absolute;top:60px;left:0;right:0;bottom:33.33vh;overflow-y:auto;z-index:100;';
+    
+    // 左边竖列：5个头像
+    var leftCol = document.createElement('div');
+    leftCol.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:12px;position:absolute;left:16px;top:50%;transform:translateY(-50%);';
+    var leftAvatars = [
+        { number: 1, name: '王橹杰', img: 'wljwx.jpg' },
+        { number: 2, name: '陈浚铭', img: 'cjmwx.jpg' },
+        { number: 3, name: '陈思罕', img: 'cshwx.jpg' },
+        { number: 4, name: '左奇函', img: 'zqhwx.jpg' },
+        { number: 5, name: '聂玮辰', img: 'nwcwx.jpg' }
+    ];
+    leftAvatars.forEach(function(item) {
+        var wrapper = makeAvatarWrapper(item);
+        leftCol.appendChild(wrapper);
+    });
+    avatarContainer.appendChild(leftCol);
+    
+    // 右边竖列：5个头像
+    var rightCol = document.createElement('div');
+    rightCol.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:12px;position:absolute;right:16px;top:50%;transform:translateY(-50%);';
+    var rightAvatars = [
+        { number: 6, name: '陈奕恒', img: 'cyhwx.jpg' },
+        { number: 7, name: '张桂源', img: 'zgyweixin.png' },
+        { number: 8, name: '玩家', img: 'player' },
+        { number: 9, name: '杨博文', img: 'ybwwx.jpg' },
+        { number: 10, name: '张函瑞', img: 'zhrwx.jpg' }
+    ];
+    rightAvatars.forEach(function(item) {
+        var wrapper = makeAvatarWrapper(item);
+        rightCol.appendChild(wrapper);
+    });
+    avatarContainer.appendChild(rightCol);
+    
+    // 将头像容器插入到 werewolfPage
+    if (page) {
+        page.appendChild(avatarContainer);
+    }
+}
+
+// ===== 生成单个头像元素 =====
+function makeAvatarWrapper(item) {
+    var wrapper = document.createElement('div');
+    wrapper.dataset.name = item.name;
+    wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:center;';
+    
+    var avatarEl = document.createElement('div');
+    avatarEl.style.cssText = 'width:46px;height:46px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,0.6);flex-shrink:0;';
+    
+    if (item.name === '玩家') {
+        var playerAvatar = null;
+        try {
+            playerAvatar = localStorage.getItem('player_avatar');
+        } catch (error) {
+            // file:// 或隐私模式可能禁止访问 localStorage，使用默认玩家头像即可。
+            console.warn('无法读取玩家头像，已使用默认头像。', error);
+        }
+        if (playerAvatar && playerAvatar.startsWith('data:image')) {
+            avatarEl.innerHTML = '<img src="' + playerAvatar + '" style="width:100%;height:100%;object-fit:cover;">';
+        } else {
+            avatarEl.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#E85D75;color:white;font-size:18px;">🐰</div>';
+        }
+    } else {
+        avatarEl.innerHTML = '<img src="' + item.img + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'">';
+    }
+    
+    var nameEl = document.createElement('div');
+    nameEl.style.cssText = 'color:white;font-size:11px;margin-top:4px;text-shadow:0 1px 6px rgba(0,0,0,0.8);white-space:nowrap;text-align:center;';
+    nameEl.textContent = item.number + '号 ' + item.name;
+    
+    wrapper.appendChild(avatarEl);
+    wrapper.appendChild(nameEl);
+    return wrapper;
+}
+
+// ===== 狼人杀结局系统 =====
+function getWerewolfEndingDefinitions() {
+    return {
+        1: { icon: '🏆', camp: '第三方阵营获胜', title: '我们的胜利' },
+        2: { icon: '🎟️', camp: '狼人阵营获胜', title: '恋人体验卡？吗？' },
+        3: { icon: '🐺', camp: '狼人阵营获胜', title: '真拿你没办法' },
+        4: { icon: '💘', camp: '第三方阵营获胜', title: '真兄妹？' },
+        5: { icon: '🛡️', camp: '好人阵营获胜', title: '要是能一起赢就好了' }
+    };
+}
+
+// 狼人杀不再保存局内进度；移除旧版本遗留的独立存档数据。
+try {
+    localStorage.removeItem('werewolf_save_slot_0');
+    localStorage.removeItem('werewolf_save_slot_1');
+} catch (e) {}
+
+function getUnlockedWerewolfEndings() {
+    var definitions = getWerewolfEndingDefinitions();
+    try {
+        var saved = JSON.parse(localStorage.getItem('werewolf_unlocked_endings_v1') || '[]');
+        return Array.isArray(saved) ? saved.map(Number).filter(function(id) { return definitions[id]; }) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function unlockWerewolfEnding(endingId) {
+    var unlocked = getUnlockedWerewolfEndings();
+    if (unlocked.indexOf(endingId) === -1) {
+        unlocked.push(endingId);
+        unlocked.sort(function(a, b) { return a - b; });
+        try { localStorage.setItem('werewolf_unlocked_endings_v1', JSON.stringify(unlocked)); } catch (e) {}
+    }
+}
+
+function createWerewolfEndingCard(endingId) {
+    var ending = getWerewolfEndingDefinitions()[endingId];
+    return '<div style="background:linear-gradient(145deg,#211a2b,#100d16);border:1px solid rgba(177,52,67,.55);border-radius:18px;padding:22px 16px;text-align:center;color:white;box-shadow:0 12px 30px rgba(0,0,0,.25);">' +
+        '<div style="font-size:48px;line-height:1;margin-bottom:10px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.45));">' + ending.icon + '</div>' +
+        '<div style="font-size:11px;letter-spacing:2px;color:#b8aebf;margin-bottom:8px;">' + ending.camp + '</div>' +
+        '<div style="font-size:17px;font-weight:700;color:#f4e9eb;">结局' + endingId + '：' + ending.title + '</div>' +
+        '</div>';
+}
+
+function openWerewolfEndingGallery() {
+    var old = document.getElementById('werewolfEndingGallery');
+    if (old) old.remove();
+    var unlocked = getUnlockedWerewolfEndings();
+    var modal = document.createElement('div');
+    modal.id = 'werewolfEndingGallery';
+    modal.className = 'full-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(4,3,8,.78);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(5px);';
+    var cards = unlocked.length ? unlocked.map(createWerewolfEndingCard).join('') : '<div style="padding:38px 10px;text-align:center;color:#999;font-size:14px;">尚未解锁结局</div>';
+    modal.innerHTML = '<div style="background:#17131d;border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:22px 18px;width:100%;max-width:380px;max-height:82vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.55);">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.1);">' +
+        '<div style="font-size:19px;font-weight:700;color:#f3edf5;letter-spacing:3px;">结局</div>' +
+        '<button onclick="this.closest(\'.full-modal\').remove()" style="background:none;border:none;color:#aaa;font-size:25px;cursor:pointer;">×</button></div>' +
+        '<div style="display:grid;gap:14px;">' + cards + '</div></div>';
+    document.body.appendChild(modal);
+    modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+}
+
+function unlockAndShowWerewolfEnding(endingId) {
+    var ending = getWerewolfEndingDefinitions()[endingId];
+    if (!ending) return;
+    unlockWerewolfEnding(endingId);
+    var old = document.getElementById('werewolfEndingAchieved');
+    if (old) old.remove();
+    var overlay = document.createElement('div');
+    overlay.id = 'werewolfEndingAchieved';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(3,2,6,.82);opacity:0;transition:opacity 1.2s ease;padding:24px;backdrop-filter:blur(4px);';
+    overlay.innerHTML = '<div style="text-align:center;color:#f4e9eb;transform:translateY(8px);animation:werewolfEndingRise 1.2s ease forwards;">' +
+        '<div style="font-size:14px;letter-spacing:4px;color:#c7bbc9;margin-bottom:13px;">' + ending.camp + '</div>' +
+        '<div style="font-size:13px;letter-spacing:5px;color:#a93645;margin-bottom:18px;">达成结局' + endingId + '</div>' +
+        '<div style="font-family:STKaiti,KaiTi,serif;font-size:31px;font-weight:700;text-shadow:0 3px 18px rgba(169,54,69,.5);">' + ending.title + '</div>' +
+        '<div style="font-size:12px;color:#8f8794;margin-top:30px;">点击查看已解锁结局</div></div>';
+    if (!document.getElementById('werewolfEndingAnimationStyle')) {
+        var style = document.createElement('style');
+        style.id = 'werewolfEndingAnimationStyle';
+        style.textContent = '@keyframes werewolfEndingRise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}';
+        document.head.appendChild(style);
+    }
+    document.body.appendChild(overlay);
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function() { overlay.style.opacity = '1'; });
+    else setTimeout(function() { overlay.style.opacity = '1'; }, 20);
+    overlay.onclick = function() {
+        overlay.remove();
+        openWerewolfEndingGallery();
+    };
+}
+
+// 旧存档管理入口保留为结局入口，避免旧页面缓存调用时报错。
+// ===== 退出狼人杀 =====
+function exitWerewolf() {
+    // 移除身份显示
+    var identityDisplay = document.getElementById('identityDisplay');
+    if (identityDisplay) identityDisplay.remove();
+    
+    // 移除卡牌容器
+    var cardContainer = document.getElementById('identityCardsContainer');
+    if (cardContainer) cardContainer.remove();
+    
+    // 关闭狼人杀页面
+    var werewolfPage = document.getElementById('werewolfPage');
+    if (werewolfPage) {
+        werewolfPage.remove();
+    }
+    
+    // 恢复之前的页面
+    var pages = document.querySelectorAll('.page');
+    pages.forEach(function(p) {
+        if (p.style.display === 'none' || p.style.display === '') {
+            p.style.display = 'block';
+            p.classList.add('active');
+        }
+    });
+    
+    // 回到地图页
+    switchPage('story');
 }
 </script>
 </body>
