@@ -1442,7 +1442,8 @@ onclick="showCompanySchedule()">
                 <option value="gpt-4-turbo">GPT-4-Turbo</option>
                 <option value="claude-3-opus">Claude 3 Opus</option>
                 <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-                <option value="deepseek-chat">DeepSeek Chat</option>
+                        <option value="deepseek-v4-flash">DeepSeek V4 Flash（推荐）</option>
+                        <option value="deepseek-v4-pro">DeepSeek V4 Pro</option>
                 <option value="custom">自定义</option>
             </select>
             
@@ -1566,7 +1567,8 @@ onclick="showCompanySchedule()">
                 <option value="gpt-4-turbo">GPT-4-Turbo</option>
                 <option value="claude-3-opus">Claude 3 Opus</option>
                 <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-                <option value="deepseek-chat">DeepSeek Chat</option>
+                        <option value="deepseek-v4-flash">DeepSeek V4 Flash（推荐）</option>
+                        <option value="deepseek-v4-pro">DeepSeek V4 Pro</option>
                 <option value="custom">自定义</option>
             </select>
         </div>
@@ -8311,6 +8313,15 @@ function loadApiSettings() {
         var baseUrl = localStorage.getItem('api_base_url');
         var apiKey = localStorage.getItem('api_key');
         var model = localStorage.getItem('api_model');
+        var savedCustomModel = localStorage.getItem('api_custom_model');
+
+        // DeepSeek 已停用旧模型名，自动迁移用户此前保存的设置
+        if (model === 'deepseek-chat' || model === 'deepseek-reasoner' ||
+            (model === 'custom' && (savedCustomModel === 'deepseek-chat' || savedCustomModel === 'deepseek-reasoner'))) {
+            model = 'deepseek-v4-flash';
+            localStorage.setItem('api_model', model);
+            localStorage.removeItem('api_custom_model');
+        }
         
         if (baseUrl) document.getElementById('apiBaseUrl').value = baseUrl;
         if (apiKey) document.getElementById('apiKey').value = apiKey;
@@ -24070,6 +24081,15 @@ function loadApiSettings2() {
         var baseUrl = localStorage.getItem('api_base_url');
         var apiKey = localStorage.getItem('api_key');
         var model = localStorage.getItem('api_model');
+        var savedCustomModel = localStorage.getItem('api_custom_model');
+
+        // DeepSeek 已停用旧模型名，自动迁移用户此前保存的设置
+        if (model === 'deepseek-chat' || model === 'deepseek-reasoner' ||
+            (model === 'custom' && (savedCustomModel === 'deepseek-chat' || savedCustomModel === 'deepseek-reasoner'))) {
+            model = 'deepseek-v4-flash';
+            localStorage.setItem('api_model', model);
+            localStorage.removeItem('api_custom_model');
+        }
         if (baseUrl) document.getElementById('apiBaseUrl2').value = baseUrl;
         if (apiKey) document.getElementById('apiKey2').value = apiKey;
         if (model) {
