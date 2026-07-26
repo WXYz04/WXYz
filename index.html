@@ -22569,6 +22569,43 @@ function getPersonalityMap() {
     
     return customMap;
 }
+// ================= 朋友圈 AI 请求兼容处理 =================
+function getMomentApiSettings() {
+    var baseUrl = (localStorage.getItem('api_base_url') || '').trim().replace(/\/+$/, '');
+    var apiKey = localStorage.getItem('api_key') || '';
+    var model = localStorage.getItem('api_model');
+    var customModel = localStorage.getItem('api_custom_model');
+    var finalModel = model === 'custom' ? customModel : model;
+
+    // 旧用户可能从未重新打开 API 设置页，因此朋友圈请求处也必须主动迁移
+    if (finalModel === 'deepseek-chat' || finalModel === 'deepseek-reasoner') {
+        finalModel = 'deepseek-v4-flash';
+        localStorage.setItem('api_model', finalModel);
+        localStorage.removeItem('api_custom_model');
+    }
+    // 更早版本可能只保存了 DeepSeek 地址，没有保存模型
+    if (!finalModel && baseUrl.indexOf('deepseek.com') !== -1) {
+        finalModel = 'deepseek-v4-flash';
+        localStorage.setItem('api_model', finalModel);
+    }
+
+    return {
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        model: finalModel,
+        endpoint: baseUrl ? baseUrl + '/chat/completions' : ''
+    };
+}
+
+function persistMomentInteractions() {
+    try {
+        localStorage.setItem('momentsData', JSON.stringify(momentsData || []));
+        localStorage.setItem('myMoments', JSON.stringify(myMoments || []));
+    } catch (e) {
+        console.log('保存朋友圈互动失败:', e);
+    }
+}
+
 // ================= 朋友圈 AI 回复（完整版） =================
 function generateMomentAIReplies(moment) {
      // 提取文字内容
@@ -22960,11 +22997,10 @@ function generateMomentAIReplies(moment) {
 }
 
 function generateInteractionReply3(moment, person, to, context, prompt, callback) {
-    var baseUrl = localStorage.getItem('api_base_url');
-    var apiKey = localStorage.getItem('api_key');
-    var model = localStorage.getItem('api_model');
-    var customModel = localStorage.getItem('api_custom_model');
-    var finalModel = model === 'custom' ? customModel : model;
+    var apiSettings = getMomentApiSettings();
+    var baseUrl = apiSettings.baseUrl;
+    var apiKey = apiSettings.apiKey;
+    var finalModel = apiSettings.model;
     
     var displayName = getContactDisplayName(person.name);
     var toDisplay = getContactDisplayName(to);
@@ -22989,7 +23025,7 @@ function generateInteractionReply3(moment, person, to, context, prompt, callback
         return;
     }
     
-    fetch(baseUrl + '/chat/completions', {
+    fetch(apiSettings.endpoint, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -22997,6 +23033,7 @@ function generateInteractionReply3(moment, person, to, context, prompt, callback
         },
         body: JSON.stringify({
             model: finalModel || 'gpt-3.5-turbo',
+            thinking: { type: 'disabled' },
             messages: messages,
             max_tokens: 50,
             temperature: 0.9
@@ -23054,11 +23091,10 @@ console.log('生成的text:', text);
 }
 // ================= 初始评论生成 =================
 function callInitialComment2(content, person, moment, sentenceCount, isFirst, callback) {
-    var baseUrl = localStorage.getItem('api_base_url');
-    var apiKey = localStorage.getItem('api_key');
-    var model = localStorage.getItem('api_model');
-    var customModel = localStorage.getItem('api_custom_model');
-    var finalModel = model === 'custom' ? customModel : model;
+    var apiSettings = getMomentApiSettings();
+    var baseUrl = apiSettings.baseUrl;
+    var apiKey = apiSettings.apiKey;
+    var finalModel = apiSettings.model;
     
     var displayName = getContactDisplayName(person.name);
     var sentenceHint = sentenceCount === 2 ? '你必须回复2句话，用换行分隔' : '回复1句话';
@@ -23095,19 +23131,29 @@ function callInitialComment2(content, person, moment, sentenceCount, isFirst, ca
         var reply = fallback[Math.floor(Math.random() * fallback.length)];
         var text = displayName + '：' + reply;
         moment.comments.push({ text: text, author: person.name });
+        persistMomentInteractions();
         renderMoments();
         if (callback) callback(text, person.name);
         return;
     }
     
-    fetch(baseUrl + '/chat/completions', {
+    if (!moment.comments) moment.comments = [];
+    var requestFinished = false;
+    var requestController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var requestTimer = setTimeout(function() {
+        if (requestController) requestController.abort();
+    }, 15000);
+
+    fetch(apiSettings.endpoint, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + apiKey
         },
+        signal: requestController ? requestController.signal : undefined,
         body: JSON.stringify({
             model: finalModel || 'gpt-3.5-turbo',
+            thinking: { type: 'disabled' },
             messages: messages,
             max_tokens: 60,
             temperature: 0.95
@@ -23119,7 +23165,12 @@ function callInitialComment2(content, person, moment, sentenceCount, isFirst, ca
     })
     .then(function(data) {
         var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (reply) {
+        if (!reply) {
+            throw new Error('API 返回内容格式异常');
+        }
+        if (reply && !requestFinished) {
+            requestFinished = true;
+            clearTimeout(requestTimer);
             var cleanReply = reply.trim().replace(/^["']+|["']+$/g, '');
             // ✅ 把回复内容里的原始微信名替换成备注名
 var nameMap = {
@@ -23143,16 +23194,21 @@ for (var key in nameMap) {
                 var text = displayName + '：' + line.trim();
                 moment.comments.push({ text: text, author: person.name });
             });
+            persistMomentInteractions();
             renderMoments();
             if (callback) callback(lines.join('\n'), person.name);
         }
     })
     .catch(function(error) {
+        if (requestFinished) return;
+        requestFinished = true;
+        clearTimeout(requestTimer);
         console.log('API 调用失败:', error);
         var fallback = ['哈哈', '不错', '支持', '来了'];
         var reply = fallback[Math.floor(Math.random() * fallback.length)];
         var text = displayName + '：' + reply;
         moment.comments.push({ text: text, author: person.name });
+        persistMomentInteractions();
         renderMoments();
         if (callback) callback(text, person.name);
     });
@@ -23160,11 +23216,10 @@ for (var key in nameMap) {
 
 // ================= 互动回复生成 =================
 function generateInteractionReply2(moment, person, to, prompt, callback) {
-    var baseUrl = localStorage.getItem('api_base_url');
-    var apiKey = localStorage.getItem('api_key');
-    var model = localStorage.getItem('api_model');
-    var customModel = localStorage.getItem('api_custom_model');
-    var finalModel = model === 'custom' ? customModel : model;
+    var apiSettings = getMomentApiSettings();
+    var baseUrl = apiSettings.baseUrl;
+    var apiKey = apiSettings.apiKey;
+    var finalModel = apiSettings.model;
     
     var displayName = getContactDisplayName(person.name);
     var toDisplay = getContactDisplayName(to);
@@ -23201,7 +23256,7 @@ function generateInteractionReply2(moment, person, to, prompt, callback) {
         return;
     }
     
-    fetch(baseUrl + '/chat/completions', {
+    fetch(apiSettings.endpoint, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -23209,6 +23264,7 @@ function generateInteractionReply2(moment, person, to, prompt, callback) {
         },
         body: JSON.stringify({
             model: finalModel || 'gpt-3.5-turbo',
+            thinking: { type: 'disabled' },
             messages: messages,
             max_tokens: 50,
             temperature: 0.9
