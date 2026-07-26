@@ -23369,6 +23369,7 @@ function sendMomentReply(momentId, commentIndex, author, replyText) {
         text: playerName + ' 回复 ' + author + '：' + replyText,
         author: playerName
     });
+    persistMomentInteractions();
     renderMoments();
     
     // 触发AI回复（被回复的人回复玩家）
@@ -23445,11 +23446,10 @@ function generateReplyToPlayer2(m, originalAuthor, playerReply, playerName) {
     var person = personMap[originalAuthor];
     if (!person) return;
     
-    var baseUrl = localStorage.getItem('api_base_url');
-    var apiKey = localStorage.getItem('api_key');
-    var model = localStorage.getItem('api_model');
-    var customModel = localStorage.getItem('api_custom_model');
-    var finalModel = model === 'custom' ? customModel : model;
+    var apiSettings = getMomentApiSettings();
+    var baseUrl = apiSettings.baseUrl;
+    var apiKey = apiSettings.apiKey;
+    var finalModel = apiSettings.model;
     
     if (!baseUrl || !apiKey) {
         var fallback = ['哈哈', '真的吗', '好哦', '可以可以'];
@@ -23458,6 +23458,7 @@ function generateReplyToPlayer2(m, originalAuthor, playerReply, playerName) {
             text: displayName + ' 回复 ' + playerName + '：' + reply,
             author: originalAuthor
         });
+        persistMomentInteractions();
         renderMoments();
         checkZhangEatVinegar2(m, originalAuthor, playerName);
         return;
@@ -23470,14 +23471,22 @@ function generateReplyToPlayer2(m, originalAuthor, playerReply, playerName) {
         { role: 'user', content: '请回复：' }
     ];
     
-    fetch(baseUrl + '/chat/completions', {
+    var requestFinished = false;
+    var requestController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var requestTimer = setTimeout(function() {
+        if (requestController) requestController.abort();
+    }, 15000);
+
+    fetch(apiSettings.endpoint, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + apiKey
         },
+        signal: requestController ? requestController.signal : undefined,
         body: JSON.stringify({
             model: finalModel || 'gpt-3.5-turbo',
+            thinking: { type: 'disabled' },
             messages: messages,
             max_tokens: 60,
             temperature: 0.9
@@ -23489,7 +23498,12 @@ function generateReplyToPlayer2(m, originalAuthor, playerReply, playerName) {
     })
     .then(function(data) {
         var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (reply) {
+        if (!reply) {
+            throw new Error('API 返回内容格式异常');
+        }
+        if (reply && !requestFinished) {
+            requestFinished = true;
+            clearTimeout(requestTimer);
             var cleanReply = reply.trim().replace(/^["']+|["']+$/g, '');
             var nameMap = {
                 '张桂源': getContactDisplayName('张桂源'),
@@ -23526,17 +23540,22 @@ function generateReplyToPlayer2(m, originalAuthor, playerReply, playerName) {
                     });
                 }
             });
+            persistMomentInteractions();
             renderMoments();
         }
         checkZhangEatVinegar2(m, originalAuthor, playerName);
     })
     .catch(function(error) {
+        if (requestFinished) return;
+        requestFinished = true;
+        clearTimeout(requestTimer);
         console.log('API 调用失败:', error);
         var fallback = ['哈哈', '真的吗', '好哦', '可以可以'];
         m.comments.push({
             text: displayName + ' 回复 ' + playerName + '：' + fallback[Math.floor(Math.random() * fallback.length)],
             author: originalAuthor
         });
+        persistMomentInteractions();
         renderMoments();
         checkZhangEatVinegar2(m, originalAuthor, playerName);
     });
