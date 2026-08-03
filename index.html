@@ -1144,7 +1144,7 @@
 
    <div id="gameScreen">
     <div class="bottom-nav">
-        <button class="nav-item" data-nav="story">📖<span>日程</span></button>
+        <button class="nav-item" data-nav="story">📖<span>剧情</span></button>
         <button class="nav-item" data-nav="chat">💬<span>微信</span></button>
         <button class="nav-item" data-nav="moments">🌄<span>朋友圈</span></button>
         <button class="nav-item" data-nav="weibo">🐦<span>微博</span></button>
@@ -1361,7 +1361,7 @@ onclick="showCompanySchedule()">
         <div id="searchUserResult" style="display:none;padding:12px 16px;border-bottom:1px solid #F5F5F5;display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:10px;">
                 <div style="width:40px;height:40px;border-radius:50%;background:#F0F0F0;display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;">
-                    <img id="searchUserAvatar" src="zgyweixin.png" style="width:100%;height:100%;object-fit:cover;display:block;">
+                    <img id="searchUserAvatar" src="zgyx.jpg" style="width:100%;height:100%;object-fit:cover;display:block;">
                 </div>
                 <div>
                     <div id="searchUserName" style="font-weight:600;font-size:14px;color:#1A1A1A;">张桂源</div>
@@ -3680,6 +3680,7 @@ function getAllSavesFromIndexedDB() {
         unlockedChapters: unlockedChapters || [true, false, false, false],
         completedChapters: completedChapters || [false, false, false, false],
         chatData: chatData || {},
+        chapter4State: chapter4GetSaveState(),
         allMoments: (allMoments || []).slice(0, 20),
         myMoments: (myMoments || []).slice(0, 20),
         momentsData: (momentsData || []).slice(0, 20),
@@ -4575,6 +4576,9 @@ function renderChatList() {
     var container = document.getElementById("chatList");
     if (!container) return;
     ensureEnding2SocialUpdates();
+    if (localStorage.getItem("chapter4_forced_contacts_deleted") === "true") {
+        chapter4EnforceForcedContactDeletion();
+    }
 
     var html = "";
     for (var i = 0; i < friends.length; i++) {
@@ -4607,7 +4611,7 @@ function renderChatList() {
         // 头像映射
         var avatar = "";
         if (friend === "张桂源") {
-            avatar = '<img src="zgyweixin.png" style="width:52px; height:52px; border-radius:12px; object-fit:cover;" onerror="this.style.display=\'none\'">';
+            avatar = '<img src="zgyx.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;" onerror="this.style.display=\'none\'">';
         } else if (friend === "左奇函" || friend === "哈哈哈") {
             avatar = '<img src="zqhwx.jpg" style="width:52px; height:52px; border-radius:12px; object-fit:cover;" onerror="this.style.display=\'none\'">';
         } else if (friend === "陈浚铭" || friend === "陈太帅") {
@@ -4690,6 +4694,23 @@ function renderChatList() {
         html += '</div>';
     }
 
+    // 第四章新增群聊
+    if (chatData["everybody 棒棒"] && chatData["everybody 棒棒"].messages.length > 0) {
+        var chapter4GroupData = chatData["everybody 棒棒"];
+        var chapter4Last = chapter4GroupData.messages[chapter4GroupData.messages.length - 1];
+        var chapter4Preview = String(chapter4Last.text || "[图片]").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+        var chapter4Unread = chapter4GroupData.messages.filter(function(msg) { return msg && msg.read === false; }).length;
+        var chapter4GroupAvatar = '<div style="width:52px;height:52px;border-radius:12px;overflow:hidden;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:1px;background:#ddd;">' +
+            ['zgyx.jpg','zhrwx.jpg','zqhwx.jpg','cjmwx.jpg','cyhwx.jpg','ybwwx.jpg','wljwx.jpg','cshwx.jpg','gjc.jpg'].map(function(src) {
+                return '<img src="' + src + '" style="width:100%;height:100%;object-fit:cover;">';
+            }).join('') + '</div>';
+        html += '<div class="chat-contact" data-contact="everybody 棒棒" style="display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid #EFEFEF;cursor:pointer;position:relative;">';
+        html += '<div class="chat-avatar">' + chapter4GroupAvatar + '</div>';
+        html += '<div class="chat-info"><div class="chat-name">everybody 棒棒</div><div class="chat-preview">' + chapter4Preview + '</div></div>';
+        if (chapter4Unread > 0 || chapter4GroupData.newMsg) html += '<div class="red-dot single-digit">' + Math.max(1, chapter4Unread) + '</div>';
+        html += '</div>';
+    }
+
     container.innerHTML = html;
     // 结局2后，群聊固定排在新增联系人“陈奕恒”上方
     var groupChatRow = container.querySelector('.chat-contact[data-contact="我玩狼人杀不骗人"]');
@@ -4697,12 +4718,19 @@ function renderChatList() {
     if (groupChatRow && chenYihengRow) {
         container.insertBefore(groupChatRow, chenYihengRow);
     }
+    // 第四章群聊固定紧跟在狼人杀群聊下方。
+    var chapter4GroupRow = container.querySelector('.chat-contact[data-contact="everybody 棒棒"]');
+    if (groupChatRow && chapter4GroupRow) {
+        container.insertBefore(chapter4GroupRow, groupChatRow.nextSibling);
+    }
 
     document.querySelectorAll(".chat-contact").forEach(function(el) {
         el.addEventListener("click", function() {
             var contact = this.dataset.contact;
             if (contact === "我玩狼人杀不骗人") {
                 openGroupChat();
+            } else if (contact === "everybody 棒棒") {
+                openChapter4GroupChat();
             } else {
                 openChat(contact);
             }
@@ -4776,7 +4804,7 @@ function appendEnding2GroupFollowupLegacy(data) {
         { from: "王橹杰", text: "至少七天", time: "23:50", avatar: "wljwx.jpg" },
         { from: "左奇函", text: "七天已经不错了", time: "23:50", avatar: "zqhwx.jpg" },
         { from: "左奇函", text: "今天有人两个小时", time: "23:50", avatar: "zqhwx.jpg" },
-        { from: "张桂源", text: "……", time: "23:50", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "……", time: "23:50", avatar: "zgyx.jpg" },
         { from: "聂玮辰", text: "哈哈哈哈哈哈哈哈哈哈哈哈", time: "23:50", avatar: "nwcwx.jpg" },
         { from: "陈思罕", text: "哈哈哈哈哈哈哈哈哈哈", time: "23:50", avatar: "cshwx.jpg" },
         { from: "官俊臣", text: "？", time: "23:50", avatar: "gjc.jpg" },
@@ -4803,7 +4831,7 @@ function appendEnding2GroupFollowupLegacy(data) {
         { from: "杨涵博", text: "+1。", time: "23:50", avatar: "yhb.jpg" },
         { from: "李煜东", text: "我也", time: "23:50", avatar: "lydwx.jpg" },
         { from: "张函瑞", text: "😶", time: "23:50", avatar: "zhrwx.jpg" },
-        { from: "张桂源", text: "……", time: "23:50", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "……", time: "23:50", avatar: "zgyx.jpg" },
         { from: "左奇函", text: "@" + playerWechatName, time: "23:50", avatar: "zqhwx.jpg" },
         { from: "左奇函", text: "交代一下？", time: "23:50", avatar: "zqhwx.jpg" }
     ];
@@ -4848,7 +4876,7 @@ function getEnding2GroupPreChoiceMessages() {
         m("聂玮辰","我也快到了","23:16","nwcwx.jpg"),
         m("左奇函","我也，刚刚和陈浚铭去买烧烤吃了","23:16","zqhwx.jpg"),
         m("左奇函",'<img src="dyzj.jpg" style="width:170px;border-radius:10px;max-width:100%;display:block;">',"23:16","zqhwx.jpg"),
-        m("张桂源","666陈浚铭还吃，在店里面吃那么多了","23:16","zgyweixin.png","哈哈哈","我也，刚刚和陈浚铭去买烧烤吃了"),
+        m("张桂源","666陈浚铭还吃，在店里面吃那么多了","23:16","zgyx.jpg","哈哈哈","我也，刚刚和陈浚铭去买烧烤吃了"),
         m("官俊臣","你们玩这么晚啊","23:16","gjc.jpg"),
         m("陈奕恒","刚到","23:45","cyhwx.jpg"),
         m("左奇函","怎么这么晚？","23:45","zqhwx.jpg"),
@@ -4874,8 +4902,8 @@ function getEnding2GroupPreChoiceMessages() {
         m("张函瑞",'<img src="xqxns.jpg" style="width:170px;border-radius:10px;max-width:100%;display:block;">',"23:50","zhrwx.jpg"),
         m("李煜东","？","23:50","lydwx.jpg"),
         m("李煜东","这么整齐","23:50","lydwx.jpg"),
-        m("张桂源","对陈浚铭没话说","23:50","zgyweixin.png"),
-        m("张桂源","一直在送","23:50","zgyweixin.png"),
+        m("张桂源","对陈浚铭没话说","23:50","zgyx.jpg"),
+        m("张桂源","一直在送","23:50","zgyx.jpg"),
         m("官俊臣","哪几个玩的狼啊","23:50","gjc.jpg"),
         m("陈浚铭","你还说，谁让你直接跳守卫的","23:50","cjmwx.jpg"),
         m("陈浚铭","被毒了吧","23:50","cjmwx.jpg"),
@@ -4897,7 +4925,7 @@ function getEnding2GroupPreChoiceMessages() {
         m("左奇函","七天已经不错了","23:50","zqhwx.jpg"),
         m("左奇函","今天有人两个小时","23:50","zqhwx.jpg"),
         m("左奇函","@张桂源","23:50","zqhwx.jpg"),
-        m("张桂源","？？","23:50","zgyweixin.png"),
+        m("张桂源","？？","23:50","zgyx.jpg"),
         m("聂玮辰","哈哈哈哈哈哈哈哈哈哈哈哈","23:50","nwcwx.jpg"),
         m("陈思罕","哈哈哈哈哈哈哈哈哈哈","23:50","cshwx.jpg"),
         m("官俊臣","？","23:50","gjc.jpg"),
@@ -4925,7 +4953,7 @@ function getEnding2GroupPreChoiceMessages() {
         m("杨涵博","+1。","23:50","yhb.jpg"),
         m("李煜东","我也","23:50","lydwx.jpg"),
         m("张函瑞","😶","23:50","zhrwx.jpg"),
-        m("张桂源","你们啥意思啊","23:50","zgyweixin.png"),
+        m("张桂源","你们啥意思啊","23:50","zgyx.jpg"),
         m("左奇函","@" + (player.wechatName || player.name || "玩家"),"23:50","zqhwx.jpg"),
         m("左奇函","交代一下？","23:50","zqhwx.jpg")
     ];
@@ -4938,7 +4966,7 @@ function getEnding2GroupBranchMessages(choice) {
             m("官俊臣","？","23:50","gjc.jpg"), m("魏子宸","什么意思","23:50","wzcwx.jpg"),
             m("杨涵博","为什么他知道，你们不都知道吗","23:50","yhb.jpg"),
             m("左奇函","😁","23:50","zqhwx.jpg"), m("陈浚铭","🤐","23:50","cjmwx.jpg"),
-            m("张桂源","我不知道","23:50","zgyweixin.png"), m("陈思罕","哇塞","23:50","cshwx.jpg"),
+            m("张桂源","我不知道","23:50","zgyx.jpg"), m("陈思罕","哇塞","23:50","cshwx.jpg"),
             m("左奇函","不知道就不知道吧","23:50","zqhwx.jpg"), m("左奇函","😌","23:50","zqhwx.jpg"),
             m("官俊臣","？？？","23:50","gjc.jpg"), m("官俊臣","不是","23:50","gjc.jpg"),
             m("官俊臣","你们今天到底发生什么了","23:50","gjc.jpg"),
@@ -4947,8 +4975,8 @@ function getEnding2GroupBranchMessages(choice) {
         ];
     }
     return [
-        m("陈思罕","？","23:50","cshwx.jpg"), m("张桂源","你不知道？","23:50","zgyweixin.png"),
-        m("聂玮辰","哈哈哈哈哈哈哈哈","23:50","nwcwx.jpg"), m("张桂源","行行行","23:50","zgyweixin.png"),
+        m("陈思罕","？","23:50","cshwx.jpg"), m("张桂源","你不知道？","23:50","zgyx.jpg"),
+        m("聂玮辰","哈哈哈哈哈哈哈哈","23:50","nwcwx.jpg"), m("张桂源","行行行","23:50","zgyx.jpg"),
         m("陈奕恒","这是真不知道还是假不知道","23:50","cyhwx.jpg"),
         m("左奇函","不知道就算了吧😌","23:50","zqhwx.jpg"), m("陈浚铭","不知道不知道🙈","23:50","cjmwx.jpg"),
         m("魏子宸","？？？","23:50","wzcwx.jpg"), m("官俊臣","你们几个今天怎么回事。","23:50","gjc.jpg"),
@@ -4967,7 +4995,7 @@ function getEnding2GroupCommonMessages() {
         m("杨涵博","晚安","0:30","yhb.jpg"), m("魏子宸","好","0:30","wzcwx.jpg"),
         m("官俊臣","都早点休息","0:30","gjc.jpg"), m("陈浚铭","晚安🥱","0:30","cjmwx.jpg"),
         m("陈浚铭","姐姐早点休息哦","0:30","cjmwx.jpg",(player.wechatName || player.name || "玩家"),"晚安"),
-        m("张桂源","陈浚铭你管挺宽的","0:30","zgyweixin.png"),
+        m("张桂源","陈浚铭你管挺宽的","0:30","zgyx.jpg"),
         m("聂玮辰","晚安","0:30","nwcwx.jpg"), m("陈思罕","明天公司见","0:30","cshwx.jpg"),
         m("陈奕恒","@左奇函","0:30","cyhwx.jpg"), m("陈奕恒","双排？","0:30","cyhwx.jpg"),
         m("左奇函","来","0:30","zqhwx.jpg"), m("李煜东","我也要来","0:30","lydwx.jpg"),
@@ -5236,7 +5264,7 @@ function deliverEnding2ZhangPrivateMessage() {
     });
     if (!followupMessage) {
         followupMessage = {
-            from: "other", text: "睡了吗", time: "0:31", avatar: "zgyweixin.png",
+            from: "other", text: "睡了吗", time: "0:31", avatar: "zgyx.jpg",
             date: "2023年10月15日", read: false, isEnding2ZhangFollowup: true
         };
         data.messages.push(followupMessage);
@@ -5250,7 +5278,7 @@ function deliverEnding2ZhangPrivateMessage() {
         data.ending2ZhangPopupShown = true;
         showMessageNotification(
             "张桂源",
-            '<img src="zgyweixin.png" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">',
+            '<img src="zgyx.jpg" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">',
             getContactDisplayName("张桂源"),
             "睡了吗",
             function() { openChat("张桂源"); }
@@ -5831,6 +5859,7 @@ function blockContact(contact) {
     var groupNicknames = {
         "陈思罕": "憨憨",
         "魏子辰": "金枪鱼罐头",
+        "魏子宸": "金枪鱼罐头",
         "李煜东": "东不落",
         "聂玮辰": "来比个耶",
         "杨博文": "木易北北",
@@ -5864,7 +5893,7 @@ function blockContact(contact) {
             html += '<img src="cshwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
             html += '<img src="nwcwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
             html += '<img src="zqhwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
-            html += '<img src="zgyweixin.png" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+            html += '<img src="zgyx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
             html += '<img src="zhrwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
             html += '<img src="wljwx.jpg" style="width:100%;height:100%;object-fit:cover;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
             html += '</div>';
@@ -5915,10 +5944,10 @@ function blockContact(contact) {
             }
         } else {
             // 群聊特殊头像映射
-            if (currentChatContact === "我玩狼人杀不骗人") {
+            if (currentChatContact === "我玩狼人杀不骗人" || currentChatContact === "everybody 棒棒") {
                 var from = msg.from || "";
                 if (from === "张桂源") {
-                    avatar = '<img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
+                    avatar = '<img src="zgyx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
                 } else if (from === "陈浚铭" || from === "陈太帅") {
                     avatar = '<img src="cjmwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\'">';
                 } else if (from === "左奇函" || from === "哈哈哈") {
@@ -5951,7 +5980,7 @@ function blockContact(contact) {
             } else {
                 // 普通聊天头像
                 if (currentChatContact === "张桂源") {
-                    avatar = '<img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'🏀\'">';
+                    avatar = '<img src="zgyx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'🏀\'">';
                 } else if (currentChatContact === "陈太帅") {
                     avatar = '<img src="cjmwx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'👤\'">';
                 } else if (currentChatContact === "哈哈哈") {
@@ -6006,7 +6035,7 @@ function blockContact(contact) {
                 html += '<div class="message-avatar">' + avatar + '</div>';
                 // 群聊时在气泡上方显示昵称
                 // 群聊时在气泡上方显示昵称
-if (currentChatContact === "我玩狼人杀不骗人") {
+if (currentChatContact === "我玩狼人杀不骗人" || currentChatContact === "everybody 棒棒") {
     var displayName = msg.from || "";
     var nickname = groupNicknames[displayName] || displayName;
     html += '<div style="display:flex;flex-direction:column;align-items:flex-start;max-width:80%;flex-shrink:0;">';
@@ -6336,6 +6365,18 @@ document.getElementById("chatContactName").style.paddingLeft = "20px";
 // ========== 张桂源 ==========
 
 if (contact === "张桂源") {
+    // 第四章运动会聊天优先于旧章节/结局后的自由聊天逻辑
+    if (chatData["张桂源"] && chatData["张桂源"].chapter4StoryChat && chatData["张桂源"].chapter4StoryChat.active) {
+        document.getElementById("chatBackBtn").onclick = function() {
+            document.getElementById("chatDetailScreen").style.display = "none";
+            document.getElementById("chatListScreen").style.display = "block";
+            renderChatList();
+        };
+        renderChatMessages();
+        chapter4LockChatInput(chatData["张桂源"].chapter4StoryChat.complete ? "聊天已完成，请返回剧情页面继续" : "请点击选项回复");
+        setTimeout(resumeChapter4StoryChat, 250);
+        return;
+    }
     // 结局2后“睡了吗”开启自由私聊，优先于旧章节的完成锁定
     if (chatData["张桂源"].ending2AbCustomChatUnlocked === true) {
         inputBox.innerText = "";
@@ -6734,7 +6775,7 @@ function showFriendChatOptions(contact) {
             let typingRow = document.createElement("div");
             typingRow.className = "message-row";
             typingRow.style.justifyContent = "flex-start";
-            let typingAvatar = contact === "张桂源" ? `<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`: "👯";
+            let typingAvatar = contact === "张桂源" ? `<img src="zgyx.jpg" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`: "👯";
             typingRow.innerHTML = `<div class="message-avatar">${typingAvatar}</div><div class="typing-indicator">对方正在输入...</div>`;
             container.appendChild(typingRow);
             container.scrollTop = container.scrollHeight;
@@ -7064,7 +7105,7 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
                 });
             } else if (reply.from) {
                 // 对方回复
-                await sendChatMessage(reply.text, reply.time, reply.from, contact, reply.from === "张桂源" ? `<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">` : "👯", reply.isVoice || false);
+                await sendChatMessage(reply.text, reply.time, reply.from, contact, reply.from === "张桂源" ? `<img src="zgyx.jpg" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">` : "👯", reply.isVoice || false);
             }
         }
     }
@@ -7092,7 +7133,7 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
             }
             
             if (step.type === "other") {
-                await sendChatMessage(step.text, step.time, step.from, "张桂源", `<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`);
+                await sendChatMessage(step.text, step.time, step.from, "张桂源", `<img src="zgyx.jpg" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`);
                 flowIndex++;
             }
             else if (step.type === "player_option") {
@@ -7106,7 +7147,7 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
                         }
                         if (step.nextOthers && step.nextOthers.length > 0) {
                             for (let reply of step.nextOthers) {
-                                await sendChatMessage(reply.text, reply.time, reply.from, "张桂源", `<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`);
+                                await sendChatMessage(reply.text, reply.time, reply.from, "张桂源", `<img src="zgyx.jpg" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`);
                              // ✅ 检查是否发送了"等我回来"
                     if (reply.text === "等我回来") {
                         // 标记对话任务已完成
@@ -7177,7 +7218,7 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
                         // 处理视频
                         if (selected.hasVideo && selected.videoDesc) {
                             videoModeFlag = true;
-                            await sendChatMessage(selected.videoDesc, "22:00", "张桂源", "张桂源", `<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`, true);
+                            await sendChatMessage(selected.videoDesc, "22:00", "张桂源", "张桂源", `<img src="zgyx.jpg" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`, true);
                         }
                         await sendReplySequence(selected.replies, "张桂源");
                         while (zhangChatFlow[flowIndex] && zhangChatFlow[flowIndex].type !== "branch2_end") {
@@ -7200,7 +7241,7 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
                             renderMyPage();
                         }
                         for (let reply of step.replies) {
-                            await sendChatMessage(reply.text, reply.time, reply.from, "张桂源",`<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">` );
+                            await sendChatMessage(reply.text, reply.time, reply.from, "张桂源",`<img src="zgyx.jpg" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">` );
                         }
                         flowIndex++;
                         resolve();
@@ -7223,7 +7264,7 @@ function showMessageNotification(contact, avatar, name, previewText, onTap) {
                             });
                         });
                     } else if (reply.from) {
-                        await sendChatMessage(reply.text, reply.time, reply.from, "张桂源", `<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`);
+                        await sendChatMessage(reply.text, reply.time, reply.from, "张桂源", `<img src="zgyx.jpg" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`);
                     }
                 }
                 flowIndex++;
@@ -7479,7 +7520,7 @@ function getAvatarSrc(name, avatar) {
 
     // 按优先级匹配
     if (cleanName === "张桂源" || name === "张桂源" || cleanName === "三点水的yuan" || name === "三点水的yuan") {
-        return "zgyweixin.png";
+        return "zgyx.jpg";
     }
     if (cleanName === "陈太帅" || name === "陈太帅" || cleanName === "陈浚铭" || name === "陈浚铭") {
         return "cjmwx.jpg";
@@ -7597,7 +7638,7 @@ function renderMoments() {
     // ========== 核心修复：更精准的匹配逻辑 ==========
     // 先检查是否包含核心关键词
     if (cleanName.includes("张桂源") || name.includes("张桂源") || cleanName === "三点水的yuan") {
-        return "zgyweixin.png";
+        return "zgyx.jpg";
     }
     if (cleanName.includes("陈浚铭") || name.includes("陈浚铭") || cleanName === "陈太帅" || name.includes("陈太帅")) {
         return "cjmwx.jpg";
@@ -9323,7 +9364,7 @@ document.getElementById("profileCard").innerHTML = `
         <div style="position:absolute; bottom:-35px; left:50%; transform:translateX(-50%); display:flex; align-items:center; justify-content:center;">
             <!-- 张桂源头像 -->
             <div style="width:80px; height:80px; border-radius:50%; overflow:hidden; z-index:2; margin-right:-8px;">
-                <img src="zgyweixin.png" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🏀'">
+                <img src="zgyx.jpg" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🏀'">
             </div>
             <!-- 玩家头像 -->
             <div id="avatarContainer" style="width:80px; height:80px; border-radius:50%; overflow:hidden; z-index:1;">
@@ -10214,7 +10255,7 @@ function addNewMoments() {
         {
             id: "moment_zgy_" + Date.now(),
             author: "张桂源",
-            avatar: '<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">',
+            avatar: '<img src="zgyx.jpg" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">',
             time: "2023年10月7日 22:30",
             content: "第一次路演，<br>帅吗？不用回答，我知道答案。",
             likes: ["陈浚铭", "左奇函", "张函瑞"],
@@ -10268,7 +10309,7 @@ function initMomentsData() {
         {
             id: "zhang0",
             author: "张桂源",
-            avatar: `<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`,
+            avatar: `<img src="zgyx.jpg" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`,
             time: "2022年2月15日 21:45",
             content: "吃汤圆咯🥳，元宵节快乐<br><br><img src='ty.jpg' style='width:50%; border-radius:12px; margin-top:8px;'>",
             likes: [],
@@ -10281,7 +10322,7 @@ function initMomentsData() {
         {
             id: "zhang1",
             author: "张桂源",
-            avatar: `<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`,
+            avatar: `<img src="zgyx.jpg" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`,
             time: "2022年12月15日 21:45",
             content: "今天老师说我是进步最大的✌️<br>练到最后一个走的 但是值了<br>继续加油吧",
             likes: [],
@@ -10295,7 +10336,7 @@ function initMomentsData() {
         {
             id: "zhang2",
             author: "张桂源",
-            avatar: `<img src="zgyweixin.png" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`,
+            avatar: `<img src="zgyx.jpg" style="width:44px; height:44px; border-radius:12px; object-fit:cover;">`,
             time: "2022年12月22日 19:30",
             content: "今天休息 去🏀投了几个三分 你龙哥还是不错的好吧",
             likes: [],
@@ -10333,8 +10374,8 @@ function initMomentsData() {
     const chapterNames = [
         "重庆的夏天永远不会结束",
         "他和他的朋友",
-        "第三章（预留）",
-        "第四章（预留）"
+        "恋人体验卡",
+        "升温"
     ];
 
     var html = "";
@@ -10359,6 +10400,11 @@ for (var i = 0; i < totalChapters; i++) {
             isLocked = false;
             unlockedChapters[2] = true;
         }
+        // 第四章无需前置条件，默认解锁
+        if (i === 3) {
+            isLocked = false;
+            unlockedChapters[3] = true;
+        }
     }
 
     if (isLocked) {
@@ -10382,7 +10428,7 @@ for (var i = 0; i < totalChapters; i++) {
             <div class="chapter-card ${isLocked ? 'locked' : ''}" data-index="${i}" ${isLocked ? 'style="cursor:not-allowed;"' : ''}>
                 <div>
                     <div class="chapter-title-text">第${i+1}章 · ${chapterNames[i]}</div>
-                    <div class="chapter-sub">${i === 0 ? '2022年 重庆' : i === 1 ? '2023年 重庆' : '（预留）'}</div>
+                    <div class="chapter-sub">${i === 0 ? '2022年 重庆' : i === 1 ? '2023年 重庆' : i === 3 ? '2023年 重庆' : '（预留）'}</div>
                     ${extraHint}
                 </div>
                 <div class="chapter-status ${statusClass}">${statusText}</div>
@@ -10407,6 +10453,12 @@ for (var i = 0; i < totalChapters; i++) {
     document.getElementById("chapterSelectPage").style.display = "none";
     document.getElementById("storyDetailPage").style.display = "block";
 
+    // ========== 第四章 ==========
+    if (index === 3) {
+        openChapter4Story();
+        return;
+    }
+
     // ========== 第二章 ==========
 if (index === 1) {
     document.getElementById("chapterTitle").innerText = "第2章 · 他和他的朋友";
@@ -10430,7 +10482,7 @@ if (index === 1) {
 
    // ========== 第三章 ==========
 if (index === 2) {
-    document.getElementById("chapterTitle").innerText = "第3章 · 狼人杀之夜";
+    document.getElementById("chapterTitle").innerText = "第3章 · 恋人体验卡";
     
     // 直接触发弹窗和消息
     triggerChapter3Message();
@@ -10665,7 +10717,7 @@ function showIncomingCall() {
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:space-between;height:90%;padding:30px 0 40px 0;">
             <div style="display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:20px;">
                 <div style="width:120px;height:120px;border-radius:16px;overflow:hidden;border:2px solid rgba(255,255,255,0.15);">
-                    <img src="zgyweixin.png" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:50px;color:#999;\\'>🏀</div>'">
+                    <img src="zgyx.jpg" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:50px;color:#999;\\'>🏀</div>'">
                 </div>
                 <div style="color:white;font-size:28px;font-weight:500;letter-spacing:1px;">张桂源</div>
                 <div style="color:rgba(255,255,255,0.4);font-size:15px;letter-spacing:2px;">正在来电...</div>
@@ -10846,7 +10898,7 @@ function showChapter1CallReplies() {
         var typingRow = document.createElement("div");
         typingRow.className = "message-row";
         typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
         container.appendChild(typingRow);
         container.scrollTop = container.scrollHeight;
 
@@ -10908,7 +10960,7 @@ function showForgotReply() {
         var typingRow = document.createElement("div");
         typingRow.className = "message-row";
         typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
         container.appendChild(typingRow);
         container.scrollTop = container.scrollHeight;
 
@@ -10963,7 +11015,7 @@ function showPickupAReply() {
         var typingRow = document.createElement("div");
         typingRow.className = "message-row";
         typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
         container.appendChild(typingRow);
         container.scrollTop = container.scrollHeight;
 
@@ -11024,7 +11076,7 @@ function showPickupBReply() {
         var typingRow = document.createElement("div");
         typingRow.className = "message-row";
         typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
         container.appendChild(typingRow);
         container.scrollTop = container.scrollHeight;
 
@@ -11074,7 +11126,7 @@ function sendMultipleReplies(replies, date, callback) {
         var typingRow = document.createElement("div");
         typingRow.className = "message-row";
         typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
         container.appendChild(typingRow);
         container.scrollTop = container.scrollHeight;
 
@@ -11634,7 +11686,7 @@ setTimeout(() => {
     var displayName = getContactDisplayName("张桂源");
     showMessageNotification(
         "张桂源",
-        `<img src="zgyweixin.png" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">`,
+        `<img src="zgyx.jpg" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">`,
         displayName,
         "你今天放学旁边那个人是谁",
         function() {
@@ -11664,9 +11716,1900 @@ setTimeout(() => {
     backToChapterList();
     }
     
+    // ================= 第四章剧情 =================
+    var chapter4PageIndex = 0;
+    var chapter4Pages = [];
+    var chapter4Scene = 1;
+    var chapter4TypingTimer = null;
+    var chapter4TypingText = "";
+    var chapter4TypingPos = 0;
+    var chapter4Transitioning = false;
+    var chapter4SessionActive = false;
+    var chapter4ChatTriggered = false;
+    var chapter4ChatComplete = false;
+    var chapter4StoryChoiceShown = false;
+    var chapter4GroupTriggered = false;
+    var chapter4GroupComplete = false;
+    var chapter4GroupBranch = 0;
+    var chapter4AbandonRoute = false;
+    var chapter4AbandonChatTriggered = false;
+    var chapter4AbandonChatComplete = false;
+
+    function getChapter4Paragraphs() {
+        return `自从那场狼人杀结束以后，你和张桂源之间，好像有什么东西悄悄变得不太一样了。
+张桂源出现在手机里的次数，不知道从什么时候起，已经变得越来越频繁了。
+有时是你晚上九点多放学回家的路上，或者是你洗完澡，坐到书桌前准备写作业
+大多数时候，视频接通以后，你看到的都不是他一个人，而是一整间吵吵闹闹的练习室。
+某天晚上，张桂源刚把视频打过来，镜头里便忽然闯进了两道纠缠在一起的身影
+陈奕恒不知道怎么惹到了左奇函，被他从背后勾住肩膀，两个人以扭打的方式冲进训练室，一路从镜子旁边闹到地板上
+陈奕恒嘴里还在含糊不清地嚷着什么，左奇函却笑得一脸从容，顺势将他按在了身下。
+#左，“来啊起来继续。”
+#左“刚刚不是挺能打的吗？”
+陈奕恒被压的双脚扑腾
+#陈“我这样%￥#%怎么用力？”
+旁边的杨博文不知道从哪里拿来一只水瓶，一本正经地替两个人讲解
+#杨“现在我们看到的是，陈奕恒选手正在尝试翻身”
+陈奕恒撑着地面挣扎了一下
+#杨“oh陈奕恒以每秒1米的速度起来了，真是太棒了”
+杨博文继续说道：“很遗憾的第一次尝试失败，陈奕恒选手加油啊”
+左奇函低着头笑起来。
+#陈“杨博文！！！”陈奕恒艰难地偏过脸，“help me。”
+#杨“我不参与”杨博文语气平静，“陈奕恒选手请不要贿赂导播”
+#张，张桂源坐在手机前，很认真地对你说：“你看吧，还是我比较成熟”
+你还没来得及说话，被压在地上的陈奕恒忽然停止挣扎，口齿不清地开口：#陈“诶！！那！！拍视频啊有人”
+左奇函顺着他的目光回过头，下一秒，两个人像是突然找到了共同目标，左奇函松开手，陈奕恒也立刻从地上爬起来，一前一后朝镜头冲了过来。
+#左“张桂源，你在拍什么？”
+#左“给我看看。”
+张桂源脸上那点“成熟稳重”瞬间消失，抓起手机就要往后躲。
+#张“没拍什么。”
+#左“没拍什么你躲什么？”
+画面很快乱成一团。你只看见左奇函的手从镜头前晃过，紧接着是陈奕恒放大的半张脸，张桂源在旁边喊了一句“莫动我手机啊”，手机便不知道被谁碰翻在了地上。
+手机朝下，只剩一片黑暗，吵闹声持续了好一会儿
+“你还成熟吗？”你隔着屏幕问
+没有人回答
+大概过了半分钟，陈浚铭从旁边走过来，弯腰将倒在地上的手机捡起
+#陈浚铭“你们手机都不要了？”
+他说着，顺手把镜头转向自己，直到你的脸重新出现在屏幕上，他才明显愣了一下。
+#陈jm“诶？”
+他朝镜头凑近了一点，像是确认了两秒：#陈jm“姐姐好啊”
+随后抬起头，冲着还在打闹的几个人喊道：
+#陈“张桂源，你在跟姐姐打视频啊？”
+练习室里短暂地安静了一瞬。
+张桂源几乎立刻回过头，大步走来把手机从陈浚铭手里夺了回去。
+#张“还给我啊”
+陈浚铭已经笑了起来。
+#陈“我又没干什么”
+#张“你不要乱碰”
+#陈“我就帮你捡一”
+你还没听完，视频就被挂断了
+可没过多久，你又在另一次视频里亲眼看见，这个自称成熟的人蹲在练习室的角落，神神秘秘地从身后拿出了一个好丽友派。
+#张“我给你看个好东西。”
+他将手机靠在水瓶旁，后面摸出一个好丽友派
+他捧在手心里向你展示，脸上带着一种觅食成功的得意。
+#张“厉害吧我刚刚发现的。”
+#你“谁的？”
+#张“不知道。”张桂源回答得理直气壮，“放在化妆室又没写名字”
+#你“那你还吃？”
+#张“应该没人要了”
+他说着，已经低头撕开包装。巧克力味的派刚咬了一口，练习室的门便从外面被推开。
+陈思罕和陈浚铭一前一后走了进来。
+两个人显然刚上完课，气喘吁吁的进来，陈思罕第一眼便看见张桂源手里的东西，脚步立刻停了。
+#陈浚铭“你吃什么？”
+张桂源下意识把好丽友派往身后藏，陈浚铭已经走到他旁边蹲下来。
+#陈思罕“给我看看”
+#张“没有”
+#陈jm“我都看见了”
+#张“就一个”
+#陈jm“一个也可以分”
+张桂源还没来得及拒绝，陈思罕已经在另一边坐下，伸手掰走了一小块。陈浚铭紧跟着也分走一点，原本就不大的好丽友派在三个人手里转了一圈，最后只给张桂源剩下不到一半。
+他低头看着手里那点可怜的残骸，明显有些不满。
+#张“不是，这是我找到的”
+三个人正小声争论，门外忽然传来脚步声。
+左奇函和王橹杰一边说话，一边从走廊走进来。
+#左“我明明放在衣服后面了”左奇函的声音先传进来，
+王橹杰跟在旁边，神情淡淡的。
+#王“我不行了吧肯定早就被瓜分了”
+左奇函走进来以后，看了看坐在地上的三个人，又看了看他们手里还没来得及藏起来的包装袋。
+沉默了两秒
+#左“好吃吗？”
+陈思罕反应最快，立刻伸手指向张桂源。
+#陈思罕“他拿的”
+陈浚铭也跟着点头：#陈jm“张桂源先吃的”
+#张“又是我吃的了？？”张桂源不可置信地看着他们，“你们两个刚才没吃？”
+#陈jm“吃了”陈浚铭承认得很坦然，“但是是你拿的”
+王橹杰站在旁边看了一会儿：#王“这次竟然不是陈浚铭拿的吗”
+左奇函朝三个人走过去。
+张桂源见情况不对，立刻拿起手机从地上站起来。画面随着他的动作剧烈晃动，你只来得及看见左奇函笑着伸手去抓他，视频便被匆匆挂断了。
+他真正回到学校的次数明明越来越少，可你却通过这些凌乱的、没有什么重要意义的视频，越来越熟悉他不在学校时的生活，熟悉练习室镜子反射出的灯光，熟悉那群少年吵闹时彼此叠在一起的声音。
+好像无论新认识了多少人，他总能记得，手机的另一边还有一个你。
+只是他在手机里出现得越来越频繁，学校里的位置却空得越来越久。
+最开始，他每天还会抽空回来上半天课；后来变成两三天一次，再后来，连他自己也说不清下一次究竟是什么时候。
+自从那场狼人杀结束，你已经整整一个星期没有见过他。
+下周就是运动会。
+班里的女子八百米始终凑不齐人数，班主任最后干脆让体育委员抽签，你原本以为自己不会那么倒霉，直到“八百米”三个字在你手中的纸条中出现
+你盯着看了好一会儿，心情一点一点低落下去。
+直到周日下午，他忽然打来视频。
+画面接通以后，张桂源没有像往常一样待在吵闹的练习室里，而是站在公司的楼道中。身后的安全门关得严严实实，他说话的声音也压得很低，隔一会儿便要回头看一眼，像是在防着谁突然出来。
+你看着他鬼鬼祟祟的模样，有些奇怪。（以下a是我说的，b是张桂源说的）
+a“你怎么跑楼道里来了？”
+b“里面不方便”
+a“有什么不方便的？”
+张桂源没有回答，只是低头笑了一下。
+b“明天是不是运动会？”
+你愣了一下。
+a“怎么了”
+a“你会回来吗？”
+b“你猜”
+张桂源盯着你，眼睛亮亮的。
+b“明天给你一个惊喜，开幕式的时候往前坐点”`.split("\n").filter(function(line) { return line.trim(); });
+    }
+
+    function getChapter4Scene2Paragraphs() {
+        return `运动会那天
+你刚走进校门，便看见教学楼前挂起了新做的横幅。两侧的树上系着彩旗，风一吹，红的、黄的、蓝的布料便在晨光里哗啦啦地响。
+操场入口被来来往往的学生堵得严严实实，有人抱着整箱矿泉水往操场里面送，有人扛着彩旗，还有几个男生一人抓着一条桌腿，从人群里横冲直撞地抬过去
+主席台上的音响已经开始试音
+“喂喂喂__一——二——三——四——”
+巨大的回声从操场这一头荡到另一头，又和各班的说笑声混在一起。
+每个人似乎都有事情做。
+有人在讨论哪个班的班服好看，有人在分零食，有人已经提前约好了上午去看谁跑一百米，下午又要去给哪个篮球队加油。
+可你走进操场以后，却怎么也融不进这份热闹中。
+你站在人群边上，目光越过一块块高高举起的班牌，先看向主席台旁边临时搭出的候场区，又望向教学楼通往操场的那条路。
+到处都是人。
+就是没有张桂源。
+你跟着班里的队伍向前走了几步，仍旧忍不住回头。
+有时操场入口处刚好出现一道身形相似的身影，你的目光便会下意识停在那里，等那人走近，发现只是别班的学生
+身边的同学正兴奋地商量着等会儿要拍多少照片，你一句也没有听清
+昨天晚上，张桂源还笑着说要给你一个惊喜
+他说得那么笃定，害得你从昨晚开始便忍不住去猜，可现在，开幕式都快开始了，他还是没有出现。
+仿佛周围所有喧闹都只是背景
+你真正想见的，从始至终只有一个人(以下a是我说的，b是w说的,没有标注的对话作为旁白）
+b“喂。”
+肩膀忽然被人从后面轻轻拍了一下。
+你转过身，看见W从两个班的队伍中间绕了过来，她手里捏着两根棒棒糖，一根已经拆开叼在嘴里，另一根直接递到了你面前。
+b“给你。”
+你接过棒棒糖
+a“你怎么过来了？”
+b“我们班还乱着呢，就来找你玩咯”
+她看了看你班上的队伍
+b“张呢？”
+b“他今天不来？”
+a“我也不知道。”
+b“你八百米别紧张。”
+她轻轻碰了一下你的胳膊。
+b“到时候我陪你去检录，而且就算张桂源真来了，他也没什么用。”
+a“为什么？”
+b“他能陪你一起跑？估计明天你的身份证就被开出来了”
+a“有这么夸张？？其实……我没跟他说。”
+b“啊？为什么不说？”
+a“又不是什么大事。”
+你低着头，把皱起来的糖纸一点点抚平。
+其实你也说不清为什么没有告诉他。
+也许是觉得他每天练习已经够累了，没必要再听你为一次运动会抱怨；也许是害怕自己表现得太差，被他看见会觉得丢脸；又或许，只是因为你们最近明明每天都在说话，你却仍旧不知道，该用怎样的语气告诉他——
+我下午要跑八百米
+我有一点害怕
+你能不能来看看我？？
+这些话太像是在期待什么，明明是很正常的一些话，但是你怕被他拒绝
+所以你什么都没有说。
+b“我先回去了，开幕式结束再找你”
+她跑回自己班时，广播里恰好响起了集合通知。
+散落在操场四周的学生纷纷归队，一块块班牌重新被高高举起，你跟着人群站进十一班的方阵，周围的说话声渐渐低下去，却并没有彻底安静。
+阳光越过教学楼，落在鲜红的塑胶跑道上。
+升旗，奏国歌，校长致辞，运动员代表宣誓。
+开幕式按部就班地进行。
+你站在人群里，手中的棒棒糖已经只剩下一根白色塑料杆。
+张桂源仍旧没有出现。
+直到主持人的声音重新从音响里传出来。
+“接下来，请欣赏本届运动会开幕式的第一个节目。”
+“由我校舞蹈团带来舞蹈表演——”
+音乐名称从广播中报出的一瞬间，你怔了一下。
+这首歌，你听过很多次。
+过去的这段时间里，张桂源隔三岔五便会把手机架在练习室的水瓶旁，给你看这支舞的新进度
+你看过他反复练习同一个转身。
+看过他因为一处节拍没踩准，皱着眉重新放音乐。
+也看过他练到额前的头发全被汗水打湿，还是一遍一遍纠正细节。
+你原以为那是公司给他安排的舞台
+舞蹈团的成员从主席台侧面依次走了出来。
+统一的白衬衫，黑色长裤，没有太多舞台装饰，也没有夸张的妆容，只有落在舞台上的阳光，和一群站在光里的少年。
+张桂源站在队伍最前面领舞的位置。
+你几乎一眼便看见了他。
+他的白衬衫袖口挽到手肘，露出清瘦的小臂，头发没有做复杂的造型，只是柔软地落在额前，脸上也没有化妆。
+周围很快传来窃窃私语。
+“领舞那个是不是十一班的？”
+“好像是，叫张桂源。”
+“是不是那个练习生吧”
+“对，我刷到过他”
+“我去本人竟然这么帅”
+“哪个啊？最前面那个吗？还真挺帅的啊”
+每一个动作，你都无比熟悉，你甚至能预测他下一个动作是什么
+但是视频里的他，总是在动作结束以后立刻跑到镜头前，弯下腰看你有没有说话，喘着气问你跳的怎么样。
+而现在，他站在舞蹈团的最前方，带着身后所有人的动作向前，白衬衫的衣摆随着转身扬起，阳光落在他的侧脸上
+身后有人低声惊叹了一句。
+“张桂源跳的好好啊”
+你望着台上的他，心里忽然生出一种很奇怪的感觉。
+像是你偷偷看过一颗星星还没有升起来时的模样，可如今，周围所有人都在看他。
+只有你知道，这些看起来轻松又漂亮的动作背后，藏着多少个深夜。
+音乐走到最后，张桂源站在队伍最前方，随着最后一个节拍定住动作。短暂的安静过后，掌声和欢呼声同时响起。
+舞蹈团的成员并排站好，一起朝台下鞠躬。
+他起身时，视线下意识扫过十一班的方向。
+操场上站着那么多人，你不知道他究竟能不能找到自己。
+开幕式结束以后，各班依次退到操场旁划分好的休息区域，整齐的方阵很快散开，周围重新变得嘈杂起来。有好几个女生一边往回走，一边来你们班打听张桂源
+你跟着大部队回到十一班的位置。
+没过多久，身后便传来一阵热闹的声音。
+“回来了？”
+“刚才跳得可以啊”
+“你今天还走不走？”
+你忍不住回过头。
+张桂源已经换上了校服外套，里面仍旧是刚才表演时穿的白衬衫。他被几个男生围着，走向自己的位置。
+他仰头喝了两口水，放下瓶子时，才像是不经意般朝你的方向看过来。
+目光相撞的那一刻，他的眼睛很轻地弯了一下
+随后立刻移开
+几秒后，你放在手里的手机震动起来`.split("\n").filter(function(line) { return line.trim(); });
+    }
+
+    function getChapter4CommonParagraphs() {
+        return `你收回手机
+广播里已经开始通知上午第一项比赛检录，体育委员拿着名单，一边走一边喊上午比赛的同学先过来确认项目。
+名单传到你手里的时候，你想再确认一遍比赛时间。
+女子八百米。
+你的名字端端正正印在那一栏，这几天只要一想到八百米，胃里都会莫名发紧。
+你轻轻吸了口气，正准备把名单递给后面的同学，视线却顺着纸张往下滑了一格。
+篮球，张桂源。
+你的动作顿了一下。
+身后有人轻轻碰了碰你的手臂。
+"看完了吗？"
+你回过神，把名单递了过去，下意识抬起头，目光越过前面几排同学，朝男生那边望过去。
+篮球队的人已经开始往球场走了。
+几个男生抱着球，说说笑笑地走在最前面，时不时有人回头催一句："快点啊。"
+张桂源走在最后，像是早就料到你会抬头一样。
+几乎是在你望过去的同时，他也看见了你。
+隔着大半个操场，他没有立刻跟上前面的队伍，只是站在那里，冲你笑了一下。
+前面的男生又回头喊了他一声。
+他侧过脸应了一句，抬手示意马上过去，却还是没有动。
+广播里不断重复着检录通知，旁边几个班正往另一块场地走，人群来来往往，不停有人从你们中间穿过去。
+他却一直站在那里，只能看见他的嘴唇缓缓动着，像是在说一句很长的话。
+前半句，他说得很慢，几乎每说一个字都会停顿一下，像是在等你跟上。
+#张：等下过来。
+你愣了一下。
+还没来得及反应，他已经继续往下说。
+他说后半句的时候，嘴角一直扬着，眼睛也弯弯的，一边说，还一边抬起手，轻轻指了指自己怀里的篮球。
+#张：给我加油。
+最后四个字，你一下子就看懂了。
+隔着那么远，你朝他点了点头。
+张桂源这才笑着转过身，小跑着追上前面的队友。几个男生不知道在说什么，自然的把手搭在张桂源肩上，很快便闹成一团。
+你站在人群里，看着他们一路朝篮球场走去，忽然想起自己的比赛是在下午。
+时间还早，幸好篮球赛是上午
+“通知，通知——”
+操场上方的广播突然响了起来。
+原本还在休息区聊天的同学慢慢停下了声音，大家抬头朝主席台的方向看过去。
+“因赛事安排调整，女子八百米比赛时间提前，请参加该项目的运动员立即到检录处集合。”
+广播里的声音通过音响传遍整个操场，隔了几秒，又重复了一遍。
+“通知，通知，请参加女子八百米比赛的运动员立即到检录处集合。”
+这一次，周围彻底热闹起来。
+“八百米提前了？”
+“不是下午吗？”
+“怎么突然改时间？”
+旁边几个原本还坐着休息的同学站了起来，体育委员拿着名单在人群里确认名字，一大堆参加项目的运动员也开始往检录处走。
+你坐在那里，没有马上动，明明广播里的每一个字你都听清楚了，可那一刻却像是没有真正反应过来。
+脑子里空空的，什么都没有想，甚至连害怕都没有来得及产生。
+只是当体育委员走过来喊你的名字时，你下意识站了起来。
+然后跟着人群往前走。
+明明大脑像断开了一样，没有认真想过要不要去，也没有想好等会儿该怎么办，可身体已经顺着人群走到了检录处。
+等你回过神的时候，自己已经站在人群里面了。
+前面是正在确认信息的运动员，旁边不断有人经过，工作人员低头核对着名单。
+你站在那里，看着手里的号码牌，突然不知道该做什么。（以下a是我说的，b是w说的）
+b“让一下，让一下。”
+熟悉的声音从人群外传来。
+W的声音很快靠近，刚站到你旁边，她先看了一眼周围，又看了看你。
+b“我靠。”
+b“谁改的啊？”
+b“脑子有病吧。”
+她声音不算小，旁边几个同样在等待检录的女生听见以后，都忍不住往这边看了一眼。
+b“不是，怎么突然改到现在？刚刚广播一响，我还以为我听错了。”
+可是你一句都听不进去，你只是盯着前面的跑道入口，感觉胸口闷闷的。
+W看了你一会儿，伸手在你背上轻轻拍了两下。
+b“别紧张。”
+她的声音放低了一些。
+b“没事，现在还没开始呢，你别自己吓自己”
+你接过水，小口喝了一点。
+冰凉的水顺着喉咙下去，好像终于让你稍微回过神。
+你低头看着手里的号码牌，小声说：
+a“我有点害怕”
+这句话说出来以后，反而轻松了一点。
+b“害怕多正常啊”
+b“本来就是傻吊体育委员强迫你的，神人想出来的抽签”
+她看着前面的跑道，停了一会儿，又转回来。
+b“但是如果你想跑的话”
+b“我会和你一起跑。”
+你看着她，心里那股乱糟糟的感觉慢慢平了一点。
+可是看向前面的跑道时，紧张依旧存在。
+八百米就在前面。
+你不知道自己到底能不能跑下来。
+工作人员开始喊下一组运动员准备检录。
+W轻轻推了推你的肩膀。
+b“走吧。”
+b“先去检录。”
+请做出你的选择：`.split("\n").filter(function(line) { return line.trim(); });
+    }
+
+    function getChapter4RouteABeforeJs() {
+        return `真正站到起跑线上的时候，你才发现比刚刚在检录处还要紧张
+工作人员举起发令枪的时候，你的手心还是湿的。
+红色的塑胶跑道在阳光下有些刺眼。
+体育课的时候，平时老师让跑两圈，你虽然也会觉得累，而且都是熟悉的同学，大家一边嫌弃埋怨老师，一边慢慢跑完，有时候你跟不上了，也不会觉得有什么压力。
+可是现在不一样。
+你站在运动会的跑道上，旁边的人都在认真比赛，跑道外还有那么多双眼睛看着，你甚至觉得自己的每一个动作都会被放大。
+W站在跑道外侧，朝你挥了挥手。
+枪声响起。
+所有人同时冲了出去。
+你没有跟着最前面的人加速，而是按照自己的速度往前跑。
+刚开始的时候，你甚至觉得还可以接受，呼吸虽然比平时快一点，但还没有到难受的程度。
+跑过第一个弯道的时候，你还能听见W的声音。
+b“我靠你太牛了”
+b“xx（此处读取玩家的昵称）你是我女神”
+进入第二圈以后，身体开始慢慢反应过来，刚才还能忽略的疲惫，一点一点变得明显。
+腿开始发酸，呼吸也没有办法像刚开始一样控制。
+你想维持刚才的速度，可身体却不像第一圈那么听话。
+旁边的人陆续超过你。
+明明平时体育课两圈跑完也没有这么痛苦，可是为什么现在才第二圈，你就已经觉得这么累了。
+你早就知道自己大概率不会跑得很好，可是当你真的站在这里，当所有人都在往前，被一个个超越过后，那种失落还是会慢慢冒出来
+身体的疲惫越来越明显，连抬腿都变成了一件需要努力的事情
+你开始数还有多少距离还剩多少，什么时候才能结束
+就在你快要坚持不下去的时候，脑海里突然想起了以前刷到过的一句话
+有人说，跑八百米的时候，如果想着自己喜欢的人，好像就会更容易坚持下来
+以前看到的时候，你觉得这句话特别夸张，喜欢一个人怎么可能真的变成力气
+可是现在，你累得脑子都快没有办法思考的时候，最先出现的人，竟然还是张桂源
+想到这里，你突然又有了一点力气
+但是这点力气没持续多久，你还是没坚持下来，开始走了起来
+算了，不喜欢你了
+这个想法冒出来的时候，你自己都觉得有点幼稚
+b“加油！”
+终点方向传来W的声音。
+你抬起头。
+她站在那里，用力朝你挥手。
+b“快到了！”
+b“再坚持一下！”
+你看到了终点线
+也看到了那个一直在那里等你的朋友
+最后几十米，你已经没有办法想太多，你只是凭着本能往前
+直到冲过终点的那一刻，你才终于停下来
+那一瞬间，整个人像被抽空了力气。
+你弯下腰，大口喘着气，耳边所有声音都变得模糊。
+下一秒，W已经跑过来扶住了你。
+她扶着你的胳膊，让你不要一下蹲下去。
+b“先走两步。”
+你靠着她，连说话的力气都没有，嗓子一股涌上来的血腥味
+回去的路上，你几乎把大部分重量都靠在她身上。
+其实你已经能自己走了，可W还是一直扶着你。
+路过操场的时候，广播里的声音还在继续，刚结束一场比赛，下一场又开始检录，整个校园依旧热闹，教学楼这边，反而安静了很多。`.split("\n").filter(function(line) { return line.trim(); });
+    }
+
+    function getChapter4RouteAJs() {
+        return `你回到座位上，几乎刚坐下，就趴到了桌子上。
+刚才跑的时候还靠着一股劲撑着，现在停下来以后，连手指都懒得动。
+W站在旁边看了你一会儿。
+她伸手碰了一下你的额头，又看了看你的脸色。
+b“你等会儿。”
+b“我去给你拿点葡……”
+你原本闭着眼睛，感觉教室里突然安静了一点。
+你侧过脸，看见站在门口的人。
+张桂源。
+他像是刚从篮球场赶过来，身上的球衣还没有换，额前的头发被汗水打湿，几缕碎发贴在眉间，呼吸也还没有完全平稳下来。
+他的视线落在你身上以后，明显停了一下，下一秒，他快步走过来，在你面前蹲了下来。
+你低头看着他。
+他的脸就在你面前。
+近到你能看见他因为刚运动完微微泛红的脸颊，也能看见额前还没有擦干的汗珠顺着发梢落下来。
+他只是仰头看着你，眉头轻轻皱着。(以下a是我说的，b是张桂源说的）
+b“现在还难受吗？”
+他的声音比平时低了一点，可能是刚跑过来的原因，还有些喘。
+其实你已经缓过来很多了，可是看着他蹲在那里，一直盯着你看，突然不知道该说什么。
+a“还好。”
+你小声说。
+张桂源没有立刻放心。
+他看着你，又问了一遍。
+b“真的？”
+你点了点头。
+b“真的。”
+他这才稍微松了一口气，可视线还是没有从你身上移开。
+b“有没有哪里不舒服？”
+b“头晕吗？”
+b“腿还酸不酸？”
+你摇了摇头。
+a“就是有点累。”
+听见这句话以后，张桂源才轻轻呼出一口气。
+b“吓我一跳。”
+他说得很轻。
+你愣了一下。
+a“啊？”
+张桂源低头笑了一下，有些不好意思地抿了抿唇。
+b“刚听W说你跑800，我都快吓死了”
+他伸手把手里的杯子递给你。
+b“先喝点葡萄糖”
+你低头，这才注意到他手里一直拿着一个透明杯子。
+a“你去弄的？”
+你看着他。
+张桂源点了点头。
+b“嗯。”
+b“篮球比赛那边刚好有。”
+窗外的广播声还在继续，操场上的欢呼声隔着玻璃传进来，热闹得和安静的教室形成了很明显的对比。
+你低头接过那杯葡萄糖，喝完那杯葡萄糖以后，张桂源才像终于放心了一点。
+a“你篮球比赛呢？”
+你看着他。
+张桂源靠在椅背上，安静了两秒，突然轻轻叹了一口气。
+b“输了。”
+你的心一下提了起来。
+a“啊？”
+b“本来打得好好的。”
+b“然后收到消息，就回来了。”
+你愣住了。
+a“所以……”
+你看着他，有些不知道该说什么。
+虽然你知道运动会的篮球比赛没有那么重要，可如果真的是因为你，让他放弃比赛回来，你心里还是会有一点过意不去。
+a“那怎么办？”
+你小声问。
+张桂源抬头看你。
+b“什么怎么办？”
+a“就是……”
+你停了一下。
+a“你不是输了吗？”
+a“因为我吗？”
+张桂源看着你，眼底慢慢浮出一点笑意。
+可是他没有解释。
+反而故意顺着你的话说：
+b“嗯。”
+b“因为你。”
+你一下不知道该怎么接。
+窗外广播里的声音还在继续，操场上的欢呼声一阵一阵传进来，可教室里安静得只能听见你们两个人的声音。`.split("\n").filter(function(line) { return line.trim(); });
+    }
+
+    function getChapter4CompensationRoute1() {
+        return `a“那……”
+你看着他。
+a“要怎么补偿你？”
+话刚说出口，你自己都觉得有点奇怪。
+明明应该是他自己跑回来的，可不知道为什么，被他说了几句以后，好像真的变成了你的责任。
+张桂源看着你，脸上有点震惊，像是没有想到你真的会认真问。
+过了一会儿，他双手撑在你的桌面上，微微俯下身。
+b“嗯……”
+b“让我想想。”
+你看着他。
+a“你刚刚不是还说得很严重吗？”
+a“怎么现在又开始想了？”
+张桂源笑了一下。
+b“这种事情当然要认真想。”
+b“毕竟是你的补、偿”
+他说完，故意停顿了一下。
+b“我想要……”
+他看着你。
+b“你……”
+你的呼吸停了一瞬，张桂源自己也愣了一下。
+那一刻，两个人都没有说话。
+他像是突然意识到刚才那个字太容易让人误会，视线很快移开。
+b“你……”
+b“你的文具盒。”
+a你：“？”
+你看着他，张桂源仿佛故意不看你，摆弄着你的文具盒
+b“对啊”
+b“你的文具盒。”
+b“怎么了？你把链接发我”
+你忍不住笑。
+a“你是不是根本没想好？”
+他没有回答，只是偏开头笑了一下。
+b“算了。”
+他把一样东西拿出来，金色的奖牌出现在他手里。
+b“这是……”
+张桂源低头看了一眼奖牌，又看向你。
+b“我今天篮球第一。”
+b“所以……”
+他停顿了一下。
+b“我觉得呢也可以给某位跑完800米的朋友一个奖励”
+你这才反应过来。
+a“你骗我？”
+张桂源终于笑了出来。
+b“嗯。”
+b“谁让你刚才真的相信了。”
+你还没来得及说什么，张桂源已经起身站到了你面前。
+你抬头看他。
+a“干嘛？”
+b“给你戴上。”
+奖牌的带子从他手里绕过。
+你下意识坐直了一点。
+他的手从你肩侧经过，手指不小心碰到了你的脸侧。
+张桂源像是被烫到一样，立刻收回手。
+b“那个……”
+下一秒，他飞快地补了一句：
+b“哎呀，刚刚打球。”
+b“把手打累了有点抖”
+你愣了一下。
+a“？我发现你今天说话很莫名其妙诶”
+b“真的，刚刚比赛太累了。你都不知道隔壁班几个多猛”
+你忍不住笑了一下。
+b“好了。”
+b“现在是你的了。”
+你低头看着胸前的奖牌。
+a“所以是给我了？”
+b“对啊，学校不给你颁奖我给你颁奖嘛”`.split("\n").filter(function(line) { return line.trim(); });
+    }
+
+    function getChapter4CompensationRoute2() {
+        return `a“对不起……”
+明明应该是他自己跑回来的，可不知道为什么，被他说了几句以后，好像真的变成了你的责任。
+张桂源看着你，脸上有点震惊
+b“啊……不是，我逗你的”
+b“你还真信啊”
+怕你不信似的，他连忙从兜里掏出一枚奖牌在你面前晃了晃
+b“对我这么没有信心啊？有我在的局能输？”
+你意识到自己好像被耍了，故意撇过头不理他
+b“哎呀，w给我发信息的时候正在颁奖呢”
+b“我一看到就回来了啊”
+见你还是没有说话，他立刻急了
+b“而且就算比赛没结束，你要是有事我也会立刻回来的啊”
+b“比赛又没有你重要……”
+最后一句他说的很小声，但是你还是听到了，心情好了很多
+你冲他招了招手，然后伸出手
+然后一阵冰冰凉凉的触感传来，一枚奖牌被轻轻放在你手上
+a“那这个给我”
+b“哎呀本来就想给你的，不要生气了嘛”`.split("\n").filter(function(line) { return line.trim(); });
+    }
+
+    function getChapter4PostCompensationCommon() {
+        return `你笑了笑，手机传来一阵震动`.split("\n").filter(function(line) { return line.trim(); });
+    }
+
+    function getChapter4GroupEnding1() {
+        return `群里还在一条条蹦出信息，但是你没有继续看下去
+从发完那张图片后，你的心就一直怦怦跳个不停
+你也不知道自己在干嘛，只是当时头脑一热就拍照发出去了，你也不敢看旁边的张桂源
+a“我……我去看比赛了，等下被检查的发现在教室要扣分”
+你只想逃离这个地方，拿着奖牌匆匆往外走
+b“其实他们都知道是你……”
+b“不会是其他人”
+a“你跟我说这个干嘛？”
+b“因为我……”
+话还没说完，教室门口出现响声
+紧接着一道人影出现在门口，有同学回来拿东西
+好在同学并没有注意你们，只是自己低头往前面走
+你松了一口气，回头看了一下
+张桂源一手撑着下巴，往窗外看去
+尽管他的手遮住了大半张脸，可是红红的耳尖还是出卖了他
+原来脸红的不只是你啊
+第三章结束`.split("\n").filter(function(line) { return line.trim(); });
+    }
+
+    function getChapter4GroupEnding2() {
+        return `群里还在一条条蹦出信息，但是你没有继续看下去
+从发完那句话，你的心就一直怦怦跳个不停
+你也不知道自己在干嘛，只是当时头脑一热就发出去了，你也不敢看旁边的张桂源
+a“我……我去看比赛了，等下被检查的发现在教室要扣分”
+你只想逃离这个地方，拿着奖牌匆匆往外走
+b“所以你还想要什么奖励呢？”张桂源站起来一把扯住奖牌
+b“不想要这个吗？那你想要什么？”
+他只是站在原地，你没有回头都能感受到他的笑意
+你只感觉到双脸在发热，还没想好该怎么回答，教室门口出现响声
+紧接着一道人影出现在门口，有同学回来拿东西
+几乎是同时，张桂源松开了拉着的手
+奖牌落在桌面上，发出啪嗒的响声
+好在同学并没有注意你们，只是自己低头往前面走
+你回头看了一下
+张桂源一手撑着下巴，往窗外看去
+尽管他的手遮住了大半张脸，可是红红的耳尖还是出卖了他
+原来脸红的不只是你啊
+第三章结束`.split("\n").filter(function(line) { return line.trim(); });
+    }
+
+    function getChapter4GroupCommonMessages() {
+        return [{"from":"张桂源","text":"[图片]","image":"jp.jpg"},{"from":"张桂源","text":"实力"},{"from":"左奇函","text":"啥时候回来"},{"from":"左奇函","text":"上午发了新的舞蹈demo"},{"from":"陈浚铭","text":"你这啥对手啊太拉了吧"},{"from":"陈奕恒","text":"cool"},{"from":"陈奕恒","text":"强"},{"from":"张函瑞","text":"你们这奖牌还挺好看的"},{"from":"张桂源","text":"下午","quoteText":"左奇函啥时候回来"},{"from":"张桂源","text":"陈浚铭你来来来"},{"from":"张桂源","text":"给你嚣张完了"},{"from":"张桂源","text":"就你还在这叫"},{"from":"陈浚铭","text":"你让我来就来啊"},{"from":"张桂源","text":"啥时候约上","quoteText":"陈奕恒太强了"},{"from":"陈浚铭","text":"我不信除非你把奖牌带过来看看"},{"from":"张桂源","text":"不在我这"},{"from":"陈浚铭","text":"我也要来","quoteText":"啥时候约上"},{"from":"左奇函","text":"哟哟哟不在我这~"},{"from":"王橹杰","text":"奖牌是长脚飞走了吗"},{"from":"张桂源","text":"奖励给别人了"},{"from":"左奇函","text":"别人？别人是谁"},{"from":"陈浚铭","text":"666是金子吗还奖励"},{"from":"王橹杰","text":"全世界最爱打哑谜之人"},{"from":"陈浚铭","text":"我宁愿要金币巧克力"},{"from":"张函瑞","text":"0秒猜出别人是谁，你也来试试吧!"},{"from":"陈思罕","text":"其实并非哑谜"},{"from":"左奇函","text":"咋不奖励给我？"},{"from":"陈浚铭","text":"我也要奖励@张桂源"},{"from":"左奇函","text":"我也要奖励@张桂源"},{"from":"张桂源","text":"奖励？你好意思"}];
+    }
+
+    function getChapter4GroupBranch1Messages() {
+        return [{"from":"陈思罕","text":"？？？"},{"from":"聂玮辰","text":"我靠"},{"from":"左奇函","text":"好意内啊"},{"from":"陈浚铭","text":"？姐姐你也去打篮球了"},{"from":"王橹杰","text":"所以这个群是你们play的一环吗"},{"from":"张函瑞","text":"退群键在哪……"},{"from":"陈奕恒","text":"@xx（此处读取玩家的微信名）有空一起打？"},{"from":"左奇函","text":"过来我给你吃的，一边玩去吧","quoteText":"？姐姐你也去打篮球了"},{"from":"左奇函","text":"你更是一边玩去","quoteText":"有空一起打？"},{"from":"陈思罕","text":"退群了"},{"from":"陈浚铭","text":"真的假的，你在哪啊，训练室吗"},{"from":"左奇函","text":"假的"},{"from":"陈浚铭","text":"？？？那你说什么"},{"from":"张奕然","text":"所以你们俩现在一个地方啊"},{"from":"左奇函","text":"这俩人呆在一块还在群里发信息"},{"from":"左奇函","text":"退群了"},{"from":"陈思罕","text":"退群了"},{"from":"王橹杰","text":"退群了"},{"from":"陈奕恒","text":"退群了"},{"from":"聂玮辰","text":"退群了"},{"from":"张函瑞","text":"麻烦群主解散一下吧谢谢"},{"from":"张桂源","text":"群主是我"},{"from":"张函瑞","text":"小官啥时候转让给你的"},{"from":"左奇函","text":"我受不了了"},{"from":"左奇函","text":"敢不敢现在开群视频"},{"from":"聂玮辰","text":"来啊你们接啊"},{"from":"陈奕恒","text":"我喜欢"},{"from":"王橹杰","text":"？"},{"from":"左奇函","text":"？"},{"from":"王橹杰","text":"在喜欢什么"}];
+    }
+
+    function getChapter4GroupBranch2Messages() {
+        return [{"from":"陈浚铭","text":"@张桂源 听见没姐姐说他要奖励"},{"from":"左奇函","text":"我靠我真受不了了"},{"from":"左奇函","text":"666"},{"from":"王橹杰","text":"申请退群中"},{"from":"张函瑞","text":"申请退群中"},{"from":"陈思罕","text":"申请退群中"},{"from":"聂玮辰","text":"我感觉身上亮亮的"},{"from":"杨博文","text":"刚看手机"},{"from":"杨博文","text":"我觉得还是别看了"},{"from":"张函瑞","text":"张桂源你怎么不开腔"},{"from":"左奇函","text":"他俩线下在一块呢"},{"from":"左奇函","text":"我真的服了这俩还在群里发信息"},{"from":"左奇函","text":"群主能不能把他俩踢出去啊"},{"from":"张桂源","text":"我是群主"}];
+    }
+
+    // ===== 第四章：放弃800米完整分支（来源：最新版第四章剧情.docx） =====
+    function getChapter4AbandonMain() {
+        return ["不远处就是检录处。","可你的目光却不受控制地落向篮球场的方向。","广播又响了一遍。","W站在你旁边，看了看检录处，又顺着你的目光望向篮球场，忽然像是明白了什么。","b“你不会……”","她眨了眨眼。","b“想去看张桂源吧？”","你没有说话。","其实连你自己都觉得这个想法有点疯狂。","八百米是班里的比赛。","可不知道为什么，你心里那个念头却越来越明显。","你真的很想去,想看他比赛。","你不知道他以后还会不会回来","这可能是他在学校最后一次运动会","W看着你纠结的样子，忽然笑了一下。","b“那还站着干嘛？”","她一把拉住你的手。","b“快跑啊！”","你还没反应过来，人已经被她拉着往篮球场的方向跑。","风从耳边呼啸而过，广播里的检录通知渐渐被甩在身后，你们穿过操场，绕过人群，朝着篮球场一路跑过去。","b“今天肯定好多人来看张桂源。”","她说得一点都没错，还没走近篮球场，你就已经听见那边震耳欲聋的欢呼声。","围观的人几乎把整个球场围得水泄不通，里三层外三层，女生举着手机，男生站在人群后面踮着脚往里看，连旁边的树荫下都站满了人。","W拉着你挤进去。","b“借过一下——”","b“麻烦让让。”","可人实在太多了。","你踮起脚，只能看见一片晃动的人影，根本看不到球场里面。","就在你有些失落的时候，身后忽然有人喊了你一声，你回过头。","体育委员正站在不远处朝你招手。","“我们班的在那边。”","他指了指篮球场侧边一小块已经拉好的区域。","“这边专门留了位置，坐这里看就行。”","你顺着他指的方向望过去，那一块位置离球场很近，几乎正对着替补席。","你回头看向W。","W看了一眼篮球场，又看了一眼你，忽然耸了耸肩。","b“我就不去了”","b“没看到有帅哥”","她朝你挥挥手，笑得意味深长。","b“唯一帅的好像有主了”","b“你好好看”","b“我先溜了”","说完，她转身走了。","你刚坐下，球场另一边忽然传来一阵欢呼。","你抬起头，张桂源正站在替补席旁边。","他手里拿着一条白色毛巾，刚比赛完第一场，额前的头发已经被汗水打湿，正随意地擦着头发。","他像是有所感应一样，忽然抬起头，朝观众席望了过来。","隔着整个篮球场，你们的目光撞在了一起。","他愣了一瞬。","擦头发的动作也停住了。","下一秒，他眼睛弯了起来。","刚才一路跑过来的慌张、犹豫，还有心里那一点点因为放弃八百米而产生的愧疚，好像都在这一刻慢慢散开了。","随着裁判吹响哨声，比赛开始了。","裁判将篮球高高抛起。","随着一声清脆的哨响，双方球员同时跃起，篮球被拍向前场，场边原本还有些零散的议论声瞬间被欢呼淹没。","你其实不太爱看篮球。","以前体育课偶尔看男生打球，也只是知道谁投进了、谁没投进，至于什么战术、什么挡拆，你几乎一窍不通。","可是今天，你的目光却始终落在同一个人身上。","平时总喜欢笑着逗你的人，此刻神情却格外认真","运球、变向、突破，一连串动作干净利落，你甚至还没反应过来，他已经从防守队员身边穿了过去。","场边顿时爆发出一阵欢呼。","“23号！漂亮——”","你下意识跟着人群望过去。","张桂源已经把球传给了队友，笑着抬起手，和队友重重击了一下掌。","阳光落在少年身上，白色球衣被汗水浸湿了一点，整个人肆意又耀眼。","你忽然有些明白，为什么那么多人喜欢看打球了。","一些没有意义的事情可以因为喜欢一个人而被赋予意义","比赛进行得很快。","双方比分一直咬得很紧，几乎谁都拉不开差距。","张桂源接过队友传来的球，站在三分线外，防守的人几乎已经贴到了他面前。","下一秒，他忽然侧身，一个干净利落的后撤步，篮球脱手而出，在半空划出一道漂亮的弧线。","“唰——”","场边瞬间沸腾起来。","队友冲过去拍他的肩膀，他却只是笑了一下，然后往观众席这边看了一眼。","你低下头笑了笑。","可没过多久，当他再次投进一球以后，又下意识朝这边望了一眼。","然后是第三次。","第四次。","到后来，你甚至有些不敢和他对视了，每当他的目光扫过观众席，你都会下意识移开视线，可没过几秒，又忍不住偷偷抬起头。","像是在玩一个只有你们两个人知道的小秘密。","他的球衣后背已经湿了一片，呼吸也越来越重，可脚步却一点都没有慢下来。","每次队友进球，他都会第一个笑着跑过去庆祝；每次失误，他又会立刻拍一拍队友的肩膀，示意没关系。","比赛很快进入下半场。","刚开始还领先的比分，不知道什么时候又被对面追了回来。","电子计分板上的数字不断跳动，两边几乎咬得死死的，谁都没办法真正把分差拉开。","场边的欢呼声也渐渐少了，大家都开始紧张起来。","“还有一分钟！”","不知道是谁喊了一声。","你下意识抬头。","计时器上的数字正在一点一点往下跳。","五十八。","五十七。","五十六……","空气像突然绷紧了一样。","张桂源额前的头发已经完全被汗水打湿，白色球衣的后背也湿了一大片。他弯下腰，双手撑着膝盖，低头喘了两口气，裁判把球递过来的时候，他只是抬起手，随意擦了一下下巴上的汗，又重新站直身体。","他一边观察着场上的位置，一边不断和队友比着手势，嘴唇轻轻动着，像是在安排最后一波进攻。","哨声再次响起，篮球重新发出。","张桂源接到球以后没有立刻突破，而是慢慢运着球，眼睛不断扫过场上的位置。","对面的人贴得很紧。","他连续两次变向，对方都没有失位。","时间越来越少。","场边已经有人急得站了起来。","“传啊！”","“快投！”","你紧紧攥着校服袖口。","连自己什么时候站起来都没有发现。","张桂源依旧没有投。","他还在等。","等一个机会。","忽然，对方防守的人被队友挡了一下。","就是这一瞬间。","张桂源猛地后撤半步。","起跳。","篮球脱手。","时间仿佛一下慢了下来。","全场几乎没有声音。","所有人都盯着半空中那颗旋转的篮球。","你甚至忘了呼吸。","“哐——”","篮球砸在篮筐前沿。","你的心也跟着猛地沉了一下。","可下一秒，篮球高高弹起，又轻轻落了进去。","“进了——！！”","整个篮球场瞬间沸腾。","尖叫声、欢呼声、掌声一下子全部炸开。","连坐在你旁边的同学都激动得跳了起来。","“我靠！！”","“张桂源！！”","“牛逼！！”","可比赛还没有结束。","对方很快发球，最后二十几秒，所有人又重新紧张起来。","你看见张桂源已经完全顾不上擦汗了。","他不停回防，脚步越来越快，胸口剧烈起伏着，眼睛却始终盯着对面持球的人。","终场前最后十秒，比分依旧只差两分。","整个篮球馆安静得只剩下鞋底摩擦地面的声音。","你忽然觉得手心全是汗，明明不是你在比赛。","可你却比刚才准备跑八百米的时候还紧张。","眼看对面已经冲到三分线外。","不知道为什么，你突然什么都顾不上了。","a“23号——加油！！”","声音从人群里传出去的时候，你自己都愣了一下。","周围像是被带动了一样。","“23号加油——！”","“防住！！”","“冠军！！”","无数声音一起响了起来。","下一秒，他猛地上前一步，干净利落地将对方手里的球断了下来。","裁判的哨声几乎同时响起。","——比赛结束。","全场欢呼。","队友一拥而上，把张桂源围在了中间。","不知道是谁第一个扑过去抱住了他，紧接着，整个球队的人都笑着围了上去，篮球被高高抛向半空，场边的欢呼声一浪高过一浪。","你坐在人群里，看着那个被围在人群中央的少年。","他低着头笑，额前的碎发早就被汗水浸湿，白色球衣贴在后背，胸口随着呼吸轻轻起伏着，刚才最后那一球几乎耗尽了他所有力气。","旁边的女生已经激动得开始讨论。","“刚刚最后那个防守真的太帅了！”","“我靠23号太绝了吧”","“我刚刚录像全拍下来了！”","“我去我要粉上了他有没有微博啊”","金色的奖牌挂在他的胸前。","他站在人群中央，和队友一起举起冠军奖杯，台下响起此起彼伏的掌声，闪光灯不断亮起。","就在摄影老师喊着“看镜头”的时候，他却悄悄偏了一下头。","目光又一次落到了你这里，嘴角压都压不下去","你忍不住低下头笑了。","真是……","怎么老往这边看。","领奖结束以后，人群开始慢慢散开。"];
+    }
+    function getChapter4AbandonClassroom() {
+        return ["你小声嘀咕了一句。","a“哪有人这样催人的。”","嘴上这么说，脚步却已经朝教学楼的方向走去，阳光穿过走廊，窗外操场上的广播依旧热闹。","等你推开教室门的时候，里面空荡荡的只有张桂源一个人","他懒洋洋地靠在你的课桌旁，手中摆弄着你的文具盒，听见开门声以后才抬起头。","b“我还以为你真不来了。”","他说着站直身体，假装随意抬手拨了拨还有些湿的头发","b“唉”","他故意扬了扬胸前那块金灿灿的奖牌。","b“今天有点帅过头了”","教室里很安静。","b“冠军能不能获得啥奖励呢？”"];
+    }
+    function getChapter4AbandonRewardA() {
+        return ["你看着他那副眼巴巴等着奖励的样子，忽然觉得有点好笑。","明明刚才在球场上还是所有人的焦点，站在领奖台上的时候笑得那么耀眼，现在却靠在你的桌边，一本正经地和你讨奖励。","你低头笑了一下。","a“奖励啊……”","你看着他，忽然不知道为什么，手比脑子先动了。","等你反应过来的时候，指尖已经轻轻落在了他的头发上。","你自己都愣住了。","张桂源整个人像是被按了暂停键一样，站在原地，一动不动。","b“啥啊”","他看着你，声音都有点不自然。","b“你摸我头干嘛？”","你这才后知后觉地把手收回来","脸也开始发热","a“我……”","a“情不自禁就……”","话说出口，你自己都觉得这个理由有点离谱","他忽然往前走了一步。","b“要摸也是……”","他抬起手，你还没反应过来，他已经轻轻揉了一下你的头。","b“我摸你。”","你整个人都愣住了，下一秒才反应过来","a“张桂源——！”","你一下站起来","a“你摸我头干嘛！”","张桂源已经笑着往后退了一步。","b“礼尚往来。”","a“谁跟你礼尚往来！”","b“你先摸的。”","a“张桂源！”","你追着他绕过第一排课桌。","张桂源一边笑一边往后退，嘴里还不停喊着。","b“诶诶诶——”","b“君子动口不动手”","b“你别追了”","a“谁跟你是君子了？？”"];
+    }
+    function getChapter4AbandonRewardB() {
+        return ["你低头想了一会儿。","最后从兜里拿出一根棒棒糖。","本来是上午w塞给你的","你把糖递到他面前。","a“奖励。”","张桂源低头看了一眼。","b“就这个？”","a“不要算了。”","你作势要收回来，他立刻伸手拿走。","b“谁说不要。”","张桂源低头研究了一下包装，故意皱起眉。","b“可是……”","b“我打不开。”","你忍不住笑。","a“打不开？”","b“嗯。”","他一本正经地点头。","b“刚刚打球打太久了。”","b“手好软啊”","你看着他演。","a“那就别吃了。”","说完，你伸手就要把棒棒糖拿回来。","b“诶——”","张桂源立刻把手缩回去。","b“我要吃。”","a“不是打不开吗？”","b“现在突然又可以了。”","他说完，飞快把棒棒糖背到身后，生怕你抢回去。","张桂源把棒棒糖放进嘴里，忽然朝你笑了一下。","b“嗯。”","b“奖励不错。”"];
+    }
+    function getChapter4AbandonBeforeGroup() {
+        return ["你和他闹了一会儿，就坐在位置上玩起了手机，没一会儿，就收到了一条群聊消息"];
+    }
+    function getChapter4AbandonGroupMessages() {
+        return [{"from":"张桂源","text":"[图片]","image":"jp.jpg"},{"from":"张桂源","text":"实力"},{"from":"左奇函","text":"啥时候回来"},{"from":"左奇函","text":"上午发了新的舞蹈demo"},{"from":"陈浚铭","text":"你这啥对手啊太拉了吧"},{"from":"陈奕恒","text":"cool"},{"from":"陈奕恒","text":"强"},{"from":"张函瑞","text":"你们这奖牌还挺好看的"},{"from":"张桂源","text":"引用左奇函啥时候回来：下午"},{"from":"张桂源","text":"陈浚铭你来来来"},{"from":"张桂源","text":"给你嚣张完了"},{"from":"张桂源","text":"就你还在这叫"},{"from":"陈浚铭","text":"你让我来就来啊"},{"from":"张桂源","text":"引用陈奕恒太强了：啥时候约上"},{"from":"陈浚铭","text":"我不信除非你把奖牌带过来看看"},{"from":"张桂源","text":"不给"},{"from":"陈浚铭","text":"引用啥时候约上：我也要来"},{"from":"张桂源","text":"其实冠军不只有奖牌还有其他奖励"},{"from":"张桂源","text":"你们不懂"},{"from":"左奇函","text":"老铁"},{"from":"左奇函","text":"0个人问了"},{"from":"王橹杰","text":"习惯了"},{"from":"陈浚铭","text":"啥奖励啊发了零食吗"},{"from":"左奇函","text":"@陈浚铭 你好的坏的"},{"from":"陈浚铭","text":"我不管"},{"from":"陈浚铭","text":"我也要奖励@张桂源"},{"from":"左奇函","text":"哦哦"},{"from":"左奇函","text":"我也要奖励@xxx（此处读取玩家微信名）"},{"from":"张桂源","text":"？"},{"from":"陈奕恒","text":"？？"},{"from":"杨博文","text":"这几天是我错过了什么吗"},{"from":"陈奕恒","text":"哥们你……"},{"from":"王橹杰","text":"张桂源防盗意识有待加强"},{"from":"陈奕恒","text":"来真的啊"},{"from":"张桂源","text":"引用来真的啊：什么真的？"},{"from":"张桂源","text":"说话啊"},{"from":"陈浚铭","text":"那姐姐我也要@xxx（此处读取玩家微信名）"},{"from":"聂玮辰","text":"你们都要我也要@xxx（此处读取玩家微信名）"},{"from":"张函瑞","text":"陈浚铭你们继续添乱吧"},{"from":"左奇函","text":"你猜啊？"}];
+    }
+
+    function chapter4StampDocumentTimes(messages, initialTime, changes) {
+        var currentTime = initialTime;
+        return messages.map(function(message, index) {
+            if (changes && changes[index]) currentTime = changes[index];
+            return Object.assign({}, message, { time: currentTime });
+        });
+    }
+    function getChapter4TimedGroupCommonMessages() {
+        return chapter4StampDocumentTimes(getChapter4GroupCommonMessages(), "11:06", { 5:"11:07", 12:"11:08", 18:"11:09", 26:"11:10", 29:"11:11" });
+    }
+    function getChapter4TimedGroupBranch1Messages() {
+        return chapter4StampDocumentTimes(getChapter4GroupBranch1Messages(), "11:11", { 5:"11:12", 14:"11:13", 21:"11:14", 26:"11:16" });
+    }
+    function getChapter4TimedGroupBranch2Messages() {
+        return chapter4StampDocumentTimes(getChapter4GroupBranch2Messages(), "11:11", { 9:"11:12", 13:"11:13" });
+    }
+    function getChapter4TimedAbandonGroupMessages() {
+        return chapter4StampDocumentTimes(getChapter4AbandonGroupMessages(), "11:15", { 2:"11:20", 11:"11:21", 18:"11:22", 25:"11:23", 35:"11:24" });
+    }
+    function getChapter4AbandonAfterGroup() {
+        return ["你刚想回复，手机就被张桂源抽走","a“你干嘛？”","b“不干嘛啊”","b“你很想回吗？”","你刚想反驳，就看到他的手指在你手机屏幕上滑动起来","b“哦，原来私下还有联系啊”","张桂源低着头，手指慢慢往上滑着聊天记录。","b“聊得还挺多。”","你忍着笑，没有接话。","张桂源退回聊天列表，目光又落在一个又一个聊天框上，左奇函、陈浚铭、王橹杰、陈奕恒……","b“加的人也挺多啊”","他说着，把手机举起来晃了晃，终于转过头看你。","b“每天回复得过来吗？”","你看着他，忽然就起了逗他的心思。","a“还好吧。”","a“反正他们都挺有意思的。”","b“好好好他们有意思，我没意思呗”","你能很明显地感觉到，他嘴角那点笑意已经慢慢消失了。","a“怎么了？”","你故意凑过去一点，歪着头看他。","a“吃醋了？”","张桂源像是听见了什么很好笑的话，抬起头看了你一眼，轻轻笑了一声。","b“我？”","b“吃醋？”","b“没有啊。”","他忽然抬起头，看着你笑了一下。","b“难怪”","b“之前给你打视频”","b“你还问我”","他学着你的语气。","b“你怎么跑楼道里来了？”","b“原来是碍着你和他们视频了是吗？”","你不语，只是一味憋笑","b“删了啊”","a“删谁？删你啊？”","b“他们”","a“为什么？明明之前在桌游店你看着我们加的”","b“之前是之前现在是现在”","a“那我以后有什么事呢？”","b“？不是，你有什么事不应该找我吗”","b“而且有群聊啊”","他说着，又把手机往你面前递了一点。","b“所以。”","b“删不删？”"];
+    }
+    function getChapter4AbandonDelete() {
+        return ["你看着他一本正经的样子，终于还是笑着叹了口气。","a“好吧。”","张桂源愣了一下。","他好像根本没想到你会答应得这么快。","b“真的？”","a“嗯。”","你把手机拿回来，当着他的面，一个一个点下删除。","张桂源一直站在旁边，最开始嘴角还带着一点得逞的笑，可慢慢地，那点笑意却一点一点淡了下去。","直到最后一个联系人删掉。","你抬起头。","a“好了。”","a“现在满意了？”","张桂源却没有说话。","他低着头，看着你的手机屏幕，沉默了很久。","a“张桂源？”","你轻轻叫了他一声。","他这才回过神。","低低\"嗯\"了一声。","b“其实……”","他抿了一下唇。","b“我刚才就是随口说说。”","b“你不用真的删。”","你愣住。","a“可是你不是让我删吗？”","b“我就是……”","他停顿了很久。","像是在想怎么说。","教室里却安静得只剩下风吹动窗帘的声音。","b“其实有时候我觉得”","他轻轻笑了一下。","那笑意却有点勉强。","b“我可能并没有他们优秀”","你怔住。","a“你在说什么啊”","张桂源没有马上回答。","他只是低头看着自己的鞋尖。","b“有时候我会想……”","你忽然打断了他，你看着他的眼睛。","a“你到底在害怕什么啊？”","a“你是不相信你自己。”","你顿了一下。","a“还是你不相信我？”","空气突然安静下来。","张桂源愣愣地看着你。","像是从来没有想过这个问题。","他张了张嘴。","b“我没有……”","b“我只是……”","b“我——”","他的声音慢慢小下去","你忽然觉得很好笑","a“所以你还是不懂我的意思是吗？”","a“还是说你根本就没那意思”","你说完，脸还是止不住红起来，他抬头满脸的震惊","b“我……”"];
+    }
+    function getChapter4AbandonKeep() {
+        return ["你一把把手机抱进怀里。","a“不删。”","张桂源挑了挑眉。","b“真的？”","a“真的。”","你故意笑着补了一句。","a“删、不、了”","张桂源安静了两秒。","忽然点点头。","b“行”","b“我懂了”","你还没反应过来。","下一秒。","他动作快得离谱。","趁你一个不注意，又把手机抽了过去。","不管你在旁边如何扑腾，他拿着手机一个一个把你的之前加的好友全删了","接着飞快点开了群聊。","按住语音。","b“奖励只有今天冠军才有。”","b“你们想去吧。”","你瞪大眼睛。","a“张桂源！！！”","你整个人扑过去抢手机。","张桂源笑着举高。","b“诶诶诶。”","b“别抢。”","b“已经发出去了。”","a“你撤回！”","b“不行”","你气得追着他绕了一圈。","最后还是把手机抢了回来。","群里已经炸了。","你正准备撤回。","张桂源却忽然站住了。","他看着你。","笑意慢慢淡下来。","b“你是不是……”","他停了一下。","b“喜欢左奇函啊？”","你整个人愣住。","a“啊？？？？”","你看着他，忍不住笑了。","a“张桂源”","b“嗯？”","a“我的心意。”","你往前走了一步。","看着他的眼睛。","a“你还不知道吗？”","a“还是说你根本就没那意思”","你说完，脸还是止不住红起来，他抬头满脸的震惊","b“我……”"];
+    }
+    function getChapter4AbandonEnding() {
+        return ["话还没说完，教室门口出现响声","紧接着一道人影出现在门口，有同学回来拿东西","几乎是同时，你和张桂源拉开距离","好在同学并没有注意你们，只是自己低头往前面走","你总觉得自己再待下去会有什么不可挽回的结果","赶紧逃离教室","你回头看了一下","张桂源一手撑着下巴，往窗外看去","尽管他的手遮住了大半张脸，可是红红的耳尖还是出卖了他","原来脸红的不只是你啊"];
+    }
+
+    function buildChapter4AbandonMainPages() {
+        var source = getChapter4AbandonMain().slice();
+        source.push("你的手机轻轻震动了一下。");
+        return chapter4CreateParagraphPages(source);
+    }
+
+    function buildChapter4Pages() {
+        return chapter4CreateParagraphPages(getChapter4Paragraphs());
+    }
+
+    function buildChapter4Scene2Pages(sourceParagraphs) {
+        var paragraphs = sourceParagraphs || getChapter4Scene2Paragraphs();
+        return chapter4CreateParagraphPages(paragraphs);
+    }
+
+    function buildChapter4CommonPages() {
+        return buildChapter4Scene2Pages(getChapter4CommonParagraphs());
+    }
+
+    function buildChapter4RouteAPages(source) {
+        var nickname = player.nickname || player.name || "你";
+        var paragraphs = source.map(function(line) {
+            return line.replace("xx（此处读取玩家的昵称）", nickname);
+        });
+        return buildChapter4Scene2Pages(paragraphs);
+    }
+
+    function chapter4CreateParagraphPages(paragraphs) {
+        var currentOther = "张桂源";
+        return paragraphs.map(function(rawText) {
+            var text = rawText;
+            var speakerHint = "";
+
+            // 括号内是作者给出的说话人/呈现说明，不作为正文显示。
+            if (/b是w(?:说的|的对话)/i.test(text)) currentOther = "W";
+            if (/b是张桂源(?:说的|的对话)/i.test(text)) currentOther = "张桂源";
+            text = text.replace(/[（(]以下[^）)]*a[^）)]*b[^）)]*[）)]/gi, "").trim();
+
+            // 前半段#姓氏缩写、后半段a/b均只用来识别说话人，正式文本中隐藏。
+            var marker = text.match(/#(陈浚铭|陈思罕|陈jm|左|张|杨|王|你|陈)[，,:：]?/i);
+            if (marker) {
+                var code = marker[1];
+                var map = { "左":"左奇函", "张":"张桂源", "杨":"杨博文", "王":"王橹杰", "你":"你", "陈浚铭":"陈浚铭", "陈jm":"陈浚铭", "陈思罕":"陈思罕" };
+                if (code === "陈") {
+                    speakerHint = /(杨博文|help me|这样%￥#%|被压在地上|拍视频啊有人)/.test(text) ? "陈奕恒" : "陈浚铭";
+                } else {
+                    speakerHint = map[code] || map[code.toLowerCase()] || "";
+                }
+                text = text.replace(marker[0], "").trim();
+            }
+            if (/^a你[：:]?/.test(text)) {
+                speakerHint = "你";
+                text = text.replace(/^a你[：:]?\s*/, "").trim();
+            } else if (/^a(?=[“"])/.test(text)) {
+                speakerHint = "你";
+                text = text.slice(1).trim();
+            } else if (/^b(?=[“"])/.test(text)) {
+                var cleanBText = text.slice(1).replace(/^[“"]|[”"]$/g, "").trim();
+                // 跑步段落的b均为W；不能被此前旁白中出现的“张桂源”一词改变。
+                var wMarkedLines = [
+                    "我靠你太牛了", "加油！", "快到了！", "再坚持一下！", "先走两步。", "我去给你拿点葡……",
+                    "你不会……", "想去看张桂源吧？", "那还站着干嘛？", "快跑啊！", "今天肯定好多人来看张桂源。",
+                    "你等会儿。", "借过一下——", "麻烦让让。", "我就不去了", "没看到有帅哥", "唯一帅的好像有主了", "你好好看", "我先溜了"
+                ];
+                speakerHint = wMarkedLines.indexOf(cleanBText) !== -1 || /你是我女神/.test(cleanBText) ? "W" : (currentOther || "张桂源");
+                text = text.slice(1).trim();
+            }
+            text = text.replace(/xx（此处读取玩家的昵称）/g, player.nickname || player.name || "你");
+
+            // 只认文档明确写出的 # / a / b 标记；其余内容（即便含引号）全部作为旁白。
+            var speaker = speakerHint;
+            return { text: text, speaker: speaker || "", side: speaker === "你" ? "right" : "left" };
+        });
+    }
+
+    function chapter4DetectSpeaker(text, previousText, previousSpeaker, currentOther) {
+        var hasDialogue = /[“”]/.test(text) || /^".*"$/.test(text);
+        if (!hasDialogue) return "";
+        var beforeQuote = text.split(/[“"]/)[0];
+        if (/你[^。]{0,20}(说|问|开口|重复|小声)/.test(beforeQuote) || /^你：/.test(text)) return "你";
+        var explicit = beforeQuote.match(/(张桂源|左奇函|陈奕恒|杨博文|陈浚铭|陈思罕|张函瑞|王橹杰|聂玮辰|W)[^。]{0,24}(说|问|喊|道|声音|开口|嚷)/);
+        if (explicit) return explicit[1];
+        if (/主持人/.test(previousText) || /主持人/.test(beforeQuote)) return "主持人";
+        if (/广播/.test(previousText) || /广播/.test(beforeQuote)) return "广播";
+
+        var clean = text.replace(/^[“"]|[”"]$/g, "").trim();
+        var userLines = [
+            "你怎么跑楼道里来了？","有什么不方便的？","你会回来吗？","你怎么过来了？","我也不知道。","为什么？",
+            "有这么夸张？？其实……我没跟他说。","又不是什么大事。","我有点害怕","还好。","真的。","就是有点累。","啊？",
+            "你去弄的？","你篮球比赛呢？","啊？","所以……","那怎么办？","就是……","你不是输了吗？","因为我吗？",
+            "那……","要怎么补偿你？","你刚刚不是还说得很严重吗？","怎么现在又开始想了？","？","你是不是根本没想好？",
+            "这是……","你骗我？","干嘛？","？我发现你今天说话很莫名其妙诶","所以是给我了？","对不起……","那这个给我",
+            "我……我去看比赛了，等下被检查的发现在教室要扣分","你跟我说这个干嘛？"
+        ];
+        if (userLines.indexOf(clean) !== -1) return "你";
+        var wLines = [
+            "喂。","给你。","我们班还乱着呢，就来找你玩咯","张呢？","他今天不来？","你八百米别紧张。",
+            "到时候我陪你去检录，而且就算张桂源真来了，他也没什么用。","他能陪你一起跑？估计明天你的身份证就被开出来了",
+            "啊？为什么不说？","我先回去了，开幕式结束再找你","我靠你太牛了","快到了！","再坚持一下！",
+            "先走两步。","我靠。","谁改的啊？","脑子有病吧。","别紧张。","没事，现在还没开始呢，你别自己吓自己",
+            "害怕多正常啊","本来就是傻吊体育委员强迫你的，神人想出来的抽签","但是如果你想跑的话","我会和你一起跑。","走吧。","先去检录。"
+        ];
+        if (wLines.indexOf(clean) !== -1) return "W";
+
+        if (/^你[^“"]{0,18}[：:]/.test(text)) return "你";
+        if (/^(他|她)/.test(previousText) && /(说|问|声音|喊|道|补了一句)/.test(previousText)) return currentOther;
+        if (/^你/.test(previousText) && /(说|问|开口|小声|重复)/.test(previousText)) return "你";
+        if (previousSpeaker === "你") return currentOther || "张桂源";
+        if (previousSpeaker && previousSpeaker !== "主持人" && previousSpeaker !== "广播") return "你";
+        return currentOther || "张桂源";
+    }
+
+    function openChapter4Story() {
+        hideChapter4Story();
+        chapter4Pages = buildChapter4Pages();
+        chapter4PageIndex = 0;
+        chapter4Scene = 1;
+        chapter4Transitioning = false;
+        chapter4SessionActive = true;
+        chapter4ChatTriggered = false;
+        chapter4ChatComplete = false;
+        chapter4StoryChoiceShown = false;
+        chapter4GroupTriggered = false;
+        chapter4GroupComplete = false;
+        chapter4GroupBranch = 0;
+        chapter4AbandonRoute = false;
+        chapter4AbandonChatTriggered = false;
+        chapter4AbandonChatComplete = false;
+        var overlay = document.createElement("div");
+        overlay.id = "chapter4StoryOverlay";
+        overlay.innerHTML = `
+            <button id="chapter4BackBtn" aria-label="返回章节列表">←</button>
+            <div id="chapter4TextBox">
+                <button id="chapter4SkipBtn" type="button">Skip</button>
+                <div id="chapter4NamePlate"></div>
+                <div id="chapter4Text"></div>
+                <div id="chapter4Continue">点击继续</div>
+            </div>`;
+        document.getElementById("gameScreen").appendChild(overlay);
+
+        if (!document.getElementById("chapter4StoryStyle")) {
+            var style = document.createElement("style");
+            style.id = "chapter4StoryStyle";
+            style.textContent = `
+                #chapter4StoryOverlay{position:fixed;top:0;bottom:70px;left:50%;transform:translateX(-50%);width:100%;max-width:500px;z-index:90;background:linear-gradient(rgba(0,0,0,.08),rgba(0,0,0,.16)),url('lxs.jpg') center/cover no-repeat;overflow:hidden}
+                #chapter4SkipBtn{position:absolute;left:50%;top:-30px;transform:translateX(-50%);height:28px;padding:0 12px;border:1px solid rgba(255,255,255,.55);border-radius:3px;background:rgba(0,0,0,.78);color:#fff;font-size:12px;letter-spacing:.5px;cursor:pointer;z-index:3}
+                #chapter4BackBtn{position:absolute;top:max(18px,env(safe-area-inset-top));left:18px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(0,0,0,.58);color:#fff;font-size:25px;line-height:42px;z-index:2;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+                #chapter4TextBox{position:absolute;left:14px;right:14px;bottom:14px;min-height:150px;padding:22px 22px 30px;border:1px solid rgba(255,255,255,.24);border-radius:10px;background:rgba(5,5,8,.84);box-shadow:0 8px 28px rgba(0,0,0,.42);color:#fff;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+                #chapter4NamePlate{display:none;position:absolute;top:-34px;min-width:92px;height:35px;padding:0 20px;background:rgba(5,5,8,.9);border:1px solid rgba(255,255,255,.24);border-bottom:0;color:#fff;font-size:14px;font-weight:600;letter-spacing:1px;align-items:center;justify-content:center;box-shadow:0 -4px 12px rgba(0,0,0,.18)}
+                #chapter4NamePlate.left{display:flex;left:-1px;border-radius:8px 8px 0 0}
+                #chapter4NamePlate.right{display:flex;right:-1px;border-radius:8px 8px 0 0}
+                #chapter4Text{font-size:15px;line-height:1.85;white-space:pre-wrap;text-align:left;text-shadow:0 1px 2px #000}
+                #chapter4Continue{position:absolute;right:18px;bottom:9px;color:rgba(255,255,255,.62);font-size:11px;letter-spacing:1px;animation:chapter4Hint 1.4s ease-in-out infinite}
+                #chapter4SceneCurtain{position:absolute;inset:0;background:#000;z-index:8;transform:translateX(100%);pointer-events:none}
+                #chapter4SceneCurtain.play{animation:chapter4CurtainLeft 1.35s cubic-bezier(.65,0,.35,1) forwards}
+                #chapter4CompleteLayer{position:absolute;inset:0;z-index:12;display:flex;align-items:center;justify-content:center;background:#050505;color:#fff;font-size:25px;font-weight:600;letter-spacing:5px;opacity:0;pointer-events:none}
+                #chapter4CompleteLayer.play{animation:chapter4CompleteFade 2.4s ease forwards}
+                @keyframes chapter4Hint{0%,100%{opacity:.35}50%{opacity:1}}
+                @keyframes chapter4CurtainLeft{0%{transform:translateX(100%)}43%,57%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+                @keyframes chapter4CompleteFade{0%{opacity:0}25%,72%{opacity:1}100%{opacity:0}}
+                @media(max-width:380px){#chapter4TextBox{left:10px;right:10px;bottom:10px;padding:18px 18px 27px;min-height:142px}#chapter4Text{font-size:14px;line-height:1.75}}
+            `;
+            document.head.appendChild(style);
+        }
+        document.getElementById("chapter4BackBtn").addEventListener("click", function(event) {
+            event.stopPropagation();
+            closeChapter4Story();
+        });
+        document.getElementById("chapter4SkipBtn").addEventListener("click", function(event) {
+            event.stopPropagation();
+            skipChapter4ToFirstChoice();
+        });
+        document.getElementById("chapter4TextBox").addEventListener("click", advanceChapter4Story);
+        showChapter4Page(0);
+    }
+
+    function skipChapter4ToFirstChoice() {
+        clearInterval(chapter4TypingTimer);
+        chapter4TypingTimer = null;
+        document.querySelectorAll(".option-modal").forEach(function(modal) { modal.remove(); });
+        if (chatData["张桂源"] && chatData["张桂源"].chapter4StoryChat) {
+            chatData["张桂源"].chapter4StoryChat.active = false;
+        }
+        chapter4ChatTriggered = true;
+        chapter4ChatComplete = true;
+        chapter4Scene = 3;
+        chapter4Pages = buildChapter4CommonPages();
+        chapter4PageIndex = Math.max(0, chapter4Pages.length - 1);
+        chapter4StoryChoiceShown = false;
+        var overlay = document.getElementById("chapter4StoryOverlay");
+        if (overlay) overlay.style.backgroundImage = "linear-gradient(rgba(0,0,0,.08),rgba(0,0,0,.16)),url('cc.jpg')";
+        var skip = document.getElementById("chapter4SkipBtn");
+        if (skip) skip.style.display = "none";
+        showChapter4Page(chapter4PageIndex);
+        if (chapter4TypingTimer) {
+            clearInterval(chapter4TypingTimer);
+            chapter4TypingTimer = null;
+            chapter4TypingPos = chapter4TypingText.length;
+            var textElement = document.getElementById("chapter4Text");
+            if (textElement) textElement.textContent = chapter4TypingText;
+        }
+        updateChapter4Hint();
+        showChapter4StoryChoice();
+    }
+
+    function showChapter4Page(index) {
+        clearInterval(chapter4TypingTimer);
+        chapter4TypingTimer = null;
+        var page = chapter4Pages[index] || { text: "", speaker: "", side: "left" };
+        if (typeof page === "string") page = { text: page, speaker: "", side: "left" };
+        chapter4TypingText = page.text || "";
+        chapter4TypingPos = 0;
+        var textElement = document.getElementById("chapter4Text");
+        var hint = document.getElementById("chapter4Continue");
+        var namePlate = document.getElementById("chapter4NamePlate");
+        if (!textElement) return;
+        if (namePlate) {
+            namePlate.className = "";
+            namePlate.textContent = "";
+            namePlate.style.display = "";
+            if (page.speaker) {
+                namePlate.textContent = page.speaker;
+                namePlate.classList.add(page.side === "right" ? "right" : "left");
+            } else {
+                namePlate.style.display = "none";
+            }
+        }
+        textElement.textContent = "";
+        hint.textContent = "点击显示全文";
+        chapter4TypingTimer = setInterval(function() {
+            chapter4TypingPos++;
+            textElement.textContent = chapter4TypingText.slice(0, chapter4TypingPos);
+            if (chapter4TypingPos >= chapter4TypingText.length) {
+                clearInterval(chapter4TypingTimer);
+                chapter4TypingTimer = null;
+                updateChapter4Hint();
+                onChapter4PageFullyShown();
+            }
+        }, 34);
+    }
+
+    function advanceChapter4Story() {
+        if (chapter4Transitioning) return;
+        var textElement = document.getElementById("chapter4Text");
+        var hint = document.getElementById("chapter4Continue");
+        if (chapter4TypingTimer) {
+            clearInterval(chapter4TypingTimer);
+            chapter4TypingTimer = null;
+            chapter4TypingPos = chapter4TypingText.length;
+            textElement.textContent = chapter4TypingText;
+            updateChapter4Hint();
+            onChapter4PageFullyShown();
+            return;
+        }
+        if (chapter4Scene === 11 && chapter4PageIndex === 2) {
+            transitionChapter4AbandonToClassroom();
+        } else if (chapter4PageIndex < chapter4Pages.length - 1) {
+            chapter4PageIndex++;
+            showChapter4Page(chapter4PageIndex);
+        } else if (chapter4Scene === 1) {
+            transitionChapter4ToScene2();
+        } else if (chapter4Scene === 2) {
+            if (!chapter4ChatTriggered) triggerChapter4StoryChat();
+            if (chapter4ChatComplete) startChapter4CommonStory();
+        } else if (chapter4Scene === 3) {
+            showChapter4StoryChoice();
+        } else if (chapter4Scene === 4) {
+            transitionChapter4ToJsScene();
+        } else if (chapter4Scene === 5) {
+            showChapter4CompensationChoice();
+        } else if (chapter4Scene === 7 || chapter4Scene === 8) {
+            startChapter4PostCompensationCommon();
+        } else if (chapter4Scene === 9) {
+            if (!chapter4GroupTriggered) triggerChapter4GroupChat();
+            if (chapter4GroupComplete) startChapter4GroupEndingStory();
+        } else if (chapter4Scene === 10) {
+            if (chapter4AbandonRoute) {
+                if (!chapter4AbandonChatTriggered) triggerChapter4AbandonChat();
+                if (chapter4AbandonChatComplete) startChapter4AbandonClassroom();
+            } else {
+                completeChapter4Story();
+            }
+        } else if (chapter4Scene === 11) {
+            showChapter4AbandonRewardChoice();
+        } else if (chapter4Scene === 12 || chapter4Scene === 13) {
+            startChapter4AbandonGroupLead();
+        } else if (chapter4Scene === 14) {
+            if (!chapter4GroupTriggered) triggerChapter4AbandonGroupChat();
+            if (chapter4GroupComplete) startChapter4AbandonAfterGroup();
+        } else if (chapter4Scene === 15) {
+            showChapter4AbandonDeleteChoice();
+        } else if (chapter4Scene === 16 || chapter4Scene === 17) {
+            startChapter4AbandonEnding();
+        } else if (chapter4Scene === 18) {
+            completeChapter4Story();
+        }
+    }
+
+    function completeChapter4Story() {
+        var overlay = document.getElementById("chapter4StoryOverlay");
+        if (!overlay || chapter4Transitioning) return;
+        chapter4Transitioning = true;
+        var layer = document.createElement("div");
+        layer.id = "chapter4CompleteLayer";
+        layer.textContent = "第四章完成";
+        overlay.appendChild(layer);
+        requestAnimationFrame(function() { layer.classList.add("play"); });
+        setTimeout(function() {
+            completedChapters[3] = true;
+            unlockedChapters[3] = true;
+            chapter4SessionActive = false;
+            hideChapter4Story();
+            document.getElementById("storyDetailPage").style.display = "none";
+            document.getElementById("chapterSelectPage").style.display = "block";
+            renderChapterList();
+            chapter4Transitioning = false;
+            if (typeof autoSaveGame === "function") autoSaveGame();
+        }, 2400);
+    }
+
+    function updateChapter4Hint() {
+        var hint = document.getElementById("chapter4Continue");
+        if (!hint) return;
+        if (chapter4PageIndex < chapter4Pages.length - 1) {
+            hint.textContent = "点击继续";
+        } else if (chapter4Scene === 1) {
+            hint.textContent = "点击进入下一幕";
+        } else if (chapter4Scene === 2) {
+            hint.textContent = chapter4ChatComplete ? "点击继续剧情" : "请查看微信消息";
+        } else if (chapter4Scene === 3) {
+            hint.textContent = "请选择";
+        } else if (chapter4Scene === 4) {
+            hint.textContent = "点击进入下一幕";
+        } else if (chapter4Scene === 5) {
+            hint.textContent = "请选择";
+        } else if (chapter4Scene === 7 || chapter4Scene === 8) {
+            hint.textContent = "点击继续剧情";
+        } else if (chapter4Scene === 9) {
+            hint.textContent = chapter4GroupComplete ? "点击继续剧情" : "请查看群聊消息";
+        } else if (chapter4Scene === 10) {
+            hint.textContent = chapter4AbandonRoute ? (chapter4AbandonChatComplete ? "点击继续剧情" : "请查看微信消息") : "本段剧情结束";
+        } else if (chapter4Scene === 11 || chapter4Scene === 15) {
+            hint.textContent = "请选择";
+        } else if (chapter4Scene === 12 || chapter4Scene === 13 || chapter4Scene === 16 || chapter4Scene === 17) {
+            hint.textContent = "点击继续剧情";
+        } else if (chapter4Scene === 14) {
+            hint.textContent = chapter4GroupComplete ? "点击继续剧情" : "请查看群聊消息";
+        } else {
+            hint.textContent = "本段剧情结束";
+        }
+    }
+
+    function onChapter4PageFullyShown() {
+        var currentPage = chapter4Pages[chapter4PageIndex] || {};
+        var currentText = typeof currentPage === "string" ? currentPage : String(currentPage.text || "");
+        if ((chapter4Scene === 16 && currentText.indexOf("你把手机拿回来，当着他的面，一个一个点下删除。") !== -1) ||
+            (chapter4Scene === 17 && currentText.indexOf("不管你在旁边如何扑腾，他拿着手机一个一个把你的之前加的好友全删了") !== -1)) {
+            chapter4RemoveForcedContacts();
+        }
+        if (chapter4Scene === 2 && chapter4PageIndex === chapter4Pages.length - 1) {
+            triggerChapter4StoryChat();
+        } else if (chapter4Scene === 3 && chapter4PageIndex === chapter4Pages.length - 1) {
+            showChapter4StoryChoice();
+        } else if (chapter4Scene === 5 && chapter4PageIndex === chapter4Pages.length - 1) {
+            showChapter4CompensationChoice();
+        } else if (chapter4Scene === 9 && chapter4PageIndex === chapter4Pages.length - 1) {
+            triggerChapter4GroupChat();
+        } else if (chapter4Scene === 10 && chapter4AbandonRoute && chapter4PageIndex === chapter4Pages.length - 1) {
+            triggerChapter4AbandonChat();
+        } else if (chapter4Scene === 11 && chapter4PageIndex === chapter4Pages.length - 1) {
+            showChapter4AbandonRewardChoice();
+        } else if (chapter4Scene === 14 && chapter4PageIndex === chapter4Pages.length - 1) {
+            triggerChapter4AbandonGroupChat();
+        } else if (chapter4Scene === 15 && chapter4PageIndex === chapter4Pages.length - 1) {
+            showChapter4AbandonDeleteChoice();
+        }
+    }
+
+    function startChapter4CommonStory() {
+        chapter4Scene = 3;
+        chapter4Pages = buildChapter4CommonPages();
+        chapter4PageIndex = 0;
+        chapter4StoryChoiceShown = false;
+        showChapter4Page(0);
+    }
+
+    function createChapter4StoryChoicePanel(id, options, callback) {
+        var overlay = document.getElementById("chapter4StoryOverlay");
+        if (!overlay) return null;
+        var old = document.getElementById(id);
+        if (old) old.remove();
+        var panel = document.createElement("div");
+        panel.id = id;
+        panel.className = "chapter4-story-choice-panel";
+        panel.style.cssText = "position:absolute;left:28px;right:28px;top:47%;transform:translateY(-50%);z-index:7;display:flex;flex-direction:column;gap:12px;align-items:stretch;";
+        options.forEach(function(option, index) {
+            var button = document.createElement("button");
+            button.type = "button";
+            button.textContent = option;
+            button.style.whiteSpace = "pre-line";
+            button.dataset.choice = index;
+            button.style.cssText = "width:100%;min-height:48px;padding:12px 18px;background:rgba(0,0,0,.86);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:2px;font-size:15px;line-height:1.5;letter-spacing:.5px;white-space:pre-line;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;text-align:center;";
+            button.onclick = function(event) {
+                event.stopPropagation();
+                panel.remove();
+                callback(index);
+            };
+            panel.appendChild(button);
+        });
+        overlay.appendChild(panel);
+        return panel;
+    }
+
+    function showChapter4StoryChoice() {
+        if (chapter4StoryChoiceShown || chapter4Scene !== 3) return;
+        chapter4StoryChoiceShown = true;
+        var skip = document.getElementById("chapter4SkipBtn");
+        if (skip) skip.style.display = "none";
+        createChapter4StoryChoicePanel("chapter4StoryChoiceModal", [
+            "留下来参加女子800米比赛",
+            "选择放弃这场比赛\n（此线有强制删其他好友剧情介意勿选）"
+        ], function(choice) {
+                chapter4StoryChoiceShown = false;
+                if (choice === 0) {
+                    chapter4Scene = 4;
+                    chapter4Pages = buildChapter4RouteAPages(getChapter4RouteABeforeJs());
+                    chapter4PageIndex = 0;
+                    showChapter4Page(0);
+                } else {
+                    chapter4AbandonRoute = true;
+                    chapter4Scene = 10;
+                    chapter4Pages = buildChapter4AbandonMainPages();
+                    chapter4PageIndex = 0;
+                    showChapter4Page(0);
+                }
+        });
+    }
+
+
+    function triggerChapter4AbandonChat() {
+        if (!chapter4AbandonRoute) return;
+        if (chapter4AbandonChatTriggered) return;
+        chapter4AbandonChatTriggered = true;
+        if (!chatData["张桂源"]) chatData["张桂源"] = { messages: [], newMsg: false };
+        var data = chatData["张桂源"];
+        data.chapter4StoryChat = { active: true, abandon: true, stage: "abandon_then", running: false, complete: false };
+        data.chapter4PrivateTime = "10:45";
+        chapter4AddChatMessage("other", "我回教室歇会", false, "10:45");
+        data.newMsg = true;
+        showMessageNotification("张桂源", '<img src="zgyx.jpg" style="width:48px;height:48px;border-radius:12px;object-fit:cover;">', "张桂源", "我回教室歇会", function() {
+            switchPage("chat"); openChat("张桂源");
+        });
+        updateChapter4Hint();
+    }
+
+    function resumeChapter4AbandonChat(state) {
+        if (state.running || state.complete) return;
+        if (state.stage === "abandon_then") {
+            chapter4AskReply(["然后呢？"], function() {
+                chapter4QueueOtherMessages(["？", "你不来吗"], function() { state.stage = "abandon_why"; resumeChapter4AbandonChat(state); });
+            });
+        } else if (state.stage === "abandon_why") {
+            chapter4AskReply(["我来干嘛？"], function() {
+                chapter4QueueOtherMessages([{ text:"不许", time:"10:46" }, "快点", "我在教室等你"], function() {
+                    state.complete = true; state.stage = "complete"; chapter4AbandonChatComplete = true;
+                    chapter4LockChatInput("聊天已完成，请返回剧情页面继续"); updateChapter4Hint();
+                    showMessageNotification("第四章剧情", "📖", "第四章剧情", "聊天完成，返回剧情页面继续", function() { switchPage("story"); });
+                });
+            });
+        }
+    }
+
+    function startChapter4AbandonClassroom() {
+        chapter4Scene = 11; chapter4Pages = chapter4CreateParagraphPages(getChapter4AbandonClassroom()); chapter4PageIndex = 0; chapter4StoryChoiceShown = false; showChapter4Page(0);
+    }
+    function transitionChapter4AbandonToClassroom() {
+        var overlay = document.getElementById("chapter4StoryOverlay");
+        if (!overlay || chapter4Transitioning) return;
+        chapter4Transitioning = true;
+        var curtain = document.createElement("div");
+        curtain.id = "chapter4SceneCurtain";
+        overlay.appendChild(curtain);
+        requestAnimationFrame(function() { curtain.classList.add("play"); });
+        setTimeout(function() {
+            overlay.style.backgroundImage = "linear-gradient(rgba(0,0,0,.08),rgba(0,0,0,.16)),url('js.jpg')";
+            chapter4PageIndex = 3;
+            showChapter4Page(chapter4PageIndex);
+        }, 675);
+        setTimeout(function() {
+            curtain.remove();
+            chapter4Transitioning = false;
+        }, 1400);
+    }
+    function showChapter4AbandonRewardChoice() {
+        if (chapter4StoryChoiceShown || chapter4Scene !== 11) return;
+        chapter4StoryChoiceShown = true;
+        createChapter4StoryChoicePanel("chapter4AbandonRewardChoice", ["摸头", "给他一个棒棒糖"], function(choice) {
+            chapter4StoryChoiceShown = false; chapter4Scene = choice === 0 ? 12 : 13;
+            chapter4Pages = chapter4CreateParagraphPages(choice === 0 ? getChapter4AbandonRewardA() : getChapter4AbandonRewardB()); chapter4PageIndex = 0; showChapter4Page(0);
+        });
+    }
+    function startChapter4AbandonGroupLead() {
+        chapter4Scene = 14; chapter4Pages = chapter4CreateParagraphPages(getChapter4AbandonBeforeGroup()); chapter4PageIndex = 0; showChapter4Page(0);
+    }
+    function triggerChapter4AbandonGroupChat() {
+        if (chapter4GroupTriggered) return;
+        chapter4GroupTriggered = true;
+        var list = getChapter4TimedAbandonGroupMessages();
+        chatData["everybody 棒棒"] = { messages: [], newMsg: true, chapter4Flow: { active: true, stage: "abandon_common", running: false, complete: false } };
+        chapter4AddGroupMessage(list[0], true);
+        showMessageNotification("everybody 棒棒", chapter4GroupGridAvatarHtml(48), "everybody 棒棒", "张桂源：[图片]", function() { switchPage("chat"); openChapter4GroupChat(); });
+        updateChapter4Hint();
+    }
+    function startChapter4AbandonAfterGroup() {
+        chapter4Scene = 15; chapter4Pages = chapter4CreateParagraphPages(getChapter4AbandonAfterGroup()); chapter4PageIndex = 0; chapter4StoryChoiceShown = false; showChapter4Page(0);
+    }
+    function showChapter4AbandonDeleteChoice() {
+        if (chapter4StoryChoiceShown || chapter4Scene !== 15) return;
+        chapter4StoryChoiceShown = true;
+        createChapter4StoryChoicePanel("chapter4AbandonDeleteChoice", ["删掉", "不删"], function(choice) {
+            chapter4StoryChoiceShown = false; chapter4Scene = choice === 0 ? 16 : 17;
+            chapter4Pages = chapter4CreateParagraphPages(choice === 0 ? getChapter4AbandonDelete() : getChapter4AbandonKeep()); chapter4PageIndex = 0; showChapter4Page(0);
+        });
+    }
+    function chapter4EnforceForcedContactDeletion() {
+        var keep = { "张桂源": true, "WXYz": true, "我玩狼人杀不骗人": true, "everybody 棒棒": true };
+        Object.keys(chatData || {}).forEach(function(key) {
+            if (!keep[key]) delete chatData[key];
+        });
+        if (Array.isArray(friends)) {
+            friends = friends.filter(function(name) { return !!keep[name]; });
+            ["张桂源", "WXYz"].forEach(function(name) {
+                if (friends.indexOf(name) === -1) friends.push(name);
+            });
+        }
+    }
+    function chapter4RemoveForcedContacts() {
+        localStorage.setItem("chapter4_forced_contacts_deleted", "true");
+        chapter4EnforceForcedContactDeletion();
+        currentChatContact = "";
+        renderChatList();
+    }
+    function startChapter4AbandonEnding() {
+        var source = getChapter4AbandonEnding().slice();
+        source.push("第三章结束");
+        source.push("第四章预告：时间线为2024到2025年初中毕业那年，从第五章之后就会有大分歧了（不会只写甜的）");
+        chapter4Scene = 18; chapter4Pages = chapter4CreateParagraphPages(source); chapter4PageIndex = 0; showChapter4Page(0);
+    }
+
+    function showChapter4CompensationChoice() {
+        if (chapter4StoryChoiceShown || chapter4Scene !== 5) return;
+        chapter4StoryChoiceShown = true;
+        createChapter4StoryChoicePanel("chapter4CompensationChoiceModal", [
+            "那要怎么补偿你",
+            "对不起……"
+        ], function(choice) {
+            chapter4StoryChoiceShown = false;
+            if (choice === 0) {
+                chapter4Scene = 7;
+                chapter4Pages = buildChapter4RouteAPages(getChapter4CompensationRoute1());
+                chapter4PageIndex = 0;
+                showChapter4Page(0);
+            } else {
+                chapter4Scene = 8;
+                chapter4Pages = buildChapter4RouteAPages(getChapter4CompensationRoute2());
+                chapter4PageIndex = 0;
+                showChapter4Page(0);
+            }
+        });
+    }
+
+    function startChapter4PostCompensationCommon() {
+        chapter4Scene = 9;
+        chapter4Pages = chapter4CreateParagraphPages(getChapter4PostCompensationCommon());
+        chapter4PageIndex = 0;
+        showChapter4Page(0);
+    }
+
+    function startChapter4GroupEndingStory() {
+        chapter4Scene = 10;
+        var source = chapter4GroupBranch === 1 ? getChapter4GroupEnding1() : getChapter4GroupEnding2();
+        source = source.slice();
+        if (source.indexOf("第四章预告：时间线为2024到2025年初中毕业那年，从第五章之后就会有大分歧了（不会只写甜的）") === -1) {
+            source.push("第四章预告：时间线为2024到2025年初中毕业那年，从第五章之后就会有大分歧了（不会只写甜的）");
+        }
+        chapter4Pages = chapter4CreateParagraphPages(source);
+        chapter4PageIndex = 0;
+        showChapter4Page(0);
+    }
+
+    function transitionChapter4ToJsScene() {
+        var overlay = document.getElementById("chapter4StoryOverlay");
+        if (!overlay || chapter4Transitioning) return;
+        chapter4Transitioning = true;
+        var curtain = document.createElement("div");
+        curtain.id = "chapter4SceneCurtain";
+        overlay.appendChild(curtain);
+        requestAnimationFrame(function() { curtain.classList.add("play"); });
+        setTimeout(function() {
+            overlay.style.backgroundImage = "linear-gradient(rgba(0,0,0,.08),rgba(0,0,0,.16)),url('js.jpg')";
+            chapter4Scene = 5;
+            chapter4Pages = buildChapter4RouteAPages(getChapter4RouteAJs());
+            chapter4PageIndex = 0;
+            showChapter4Page(0);
+        }, 675);
+        setTimeout(function() {
+            curtain.remove();
+            chapter4Transitioning = false;
+        }, 1400);
+    }
+
+    function transitionChapter4ToScene2() {
+        var overlay = document.getElementById("chapter4StoryOverlay");
+        if (!overlay || chapter4Transitioning) return;
+        chapter4Transitioning = true;
+        var curtain = document.createElement("div");
+        curtain.id = "chapter4SceneCurtain";
+        overlay.appendChild(curtain);
+        requestAnimationFrame(function() { curtain.classList.add("play"); });
+
+        setTimeout(function() {
+            overlay.style.backgroundImage = "linear-gradient(rgba(0,0,0,.08),rgba(0,0,0,.16)),url('cc.jpg')";
+            chapter4Scene = 2;
+            chapter4Pages = buildChapter4Scene2Pages();
+            chapter4PageIndex = 0;
+            showChapter4Page(0);
+        }, 675);
+
+        setTimeout(function() {
+            curtain.remove();
+            chapter4Transitioning = false;
+        }, 1400);
+    }
+
+    function triggerChapter4StoryChat() {
+        if (chapter4ChatTriggered) return;
+        chapter4ChatTriggered = true;
+        if (!chatData["张桂源"]) chatData["张桂源"] = { messages: [], newMsg: false };
+        var data = chatData["张桂源"];
+        data.chapter4StoryChat = { active: true, stage: "opening", running: false, complete: false };
+        data.messages.push({
+            from: "other", text: "帅不帅", time: getCurrentTime(), avatar: "zgyx.jpg",
+            date: "2023年10月22日", read: false, chapter4Story: true
+        });
+        data.chapter4PrivateTime = data.messages[data.messages.length - 1].time;
+        data.newMsg = true;
+        renderChatList();
+        showMessageNotification(
+            "张桂源",
+            '<img src="zgyx.jpg" style="width:48px;height:48px;border-radius:12px;object-fit:cover;">',
+            "张桂源",
+            "帅不帅",
+            function() {
+                switchPage("chat");
+                openChat("张桂源");
+            }
+        );
+        updateChapter4Hint();
+    }
+
+    function chapter4AddChatMessage(from, text, isImage, explicitTime) {
+        var data = chatData["张桂源"];
+        if (explicitTime) data.chapter4PrivateTime = explicitTime;
+        if (!data.chapter4PrivateTime) data.chapter4PrivateTime = getCurrentTime();
+        data.messages.push({
+            from: from,
+            text: isImage ? '<img src="' + text + '" style="width:160px;border-radius:10px;max-width:100%;display:block;">' : text,
+            time: data.chapter4PrivateTime,
+            avatar: from === "other" ? "zgyx.jpg" : "",
+            date: "2023年10月22日",
+            read: true,
+            isImage: !!isImage,
+            chapter4Story: true
+        });
+        if (currentChatContact === "张桂源" && document.getElementById("chatDetailScreen").style.display !== "none") {
+            renderChatMessages();
+        }
+        renderChatList();
+    }
+
+    function chapter4ShowTyping() {
+        if (currentChatContact !== "张桂源" || document.getElementById("chatDetailScreen").style.display === "none") return;
+        var container = document.getElementById("chatMessages");
+        if (!container || document.getElementById("chapter4ChatTyping")) return;
+        var row = document.createElement("div");
+        row.id = "chapter4ChatTyping";
+        row.className = "message-row";
+        row.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        container.appendChild(row);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function chapter4QueueOtherMessages(items, done) {
+        var data = chatData["张桂源"];
+        var state = data.chapter4StoryChat;
+        state.running = true;
+        var index = 0;
+        function sendNext() {
+            if (index >= items.length) {
+                var last = items.length ? items[items.length - 1] : "";
+                var lastLength = typeof last === "string" ? last.length : 8;
+                setTimeout(function() {
+                    state.running = false;
+                    if (done) done();
+                }, Math.max(1900, Math.min(3300, 1450 + lastLength * 65)));
+                return;
+            }
+            var item = items[index++];
+            chapter4ShowTyping();
+            var length = typeof item === "string" ? item.length : 8;
+            // 每一条回复都单独保留“正在输入中”，短消息也不会瞬间跳过。
+            var delay = Math.max(1550, Math.min(4200, 1200 + length * 85));
+            setTimeout(function() {
+                var typing = document.getElementById("chapter4ChatTyping");
+                if (typing) typing.remove();
+                if (typeof item === "object" && item.image) chapter4AddChatMessage("other", item.image, true, item.time);
+                else if (typeof item === "object") chapter4AddChatMessage("other", item.text || "\u200b", false, item.time);
+                else chapter4AddChatMessage("other", item || "\u200b", false);
+                // 当前正文先显示一会儿，再为下一条单独显示“正在输入中”。
+                setTimeout(sendNext, Math.max(850, Math.min(1650, 650 + length * 45)));
+            }, delay);
+        }
+        // 最后一条发完后预留阅读时间，再出现玩家选项。
+        sendNext();
+    }
+
+    function chapter4LockChatInput(text) {
+        var input = document.getElementById("chatInputBox");
+        if (!input) return;
+        input.innerText = text || "请点击选项回复";
+        input.style.color = "#999";
+        input.style.cursor = "default";
+        input.contentEditable = "false";
+        input.onclick = function() { alert(text || "请点击选项回复"); };
+        input.onkeydown = null;
+    }
+
+    function chapter4AskReply(options, handler) {
+        chapter4LockChatInput("请点击选项回复");
+        var chatPage = document.getElementById("chatPage");
+        var detail = document.getElementById("chatDetailScreen");
+        if (!chatPage || !chatPage.classList.contains("active") || !detail || detail.style.display === "none") return;
+        var existing = document.querySelector(".option-modal");
+        if (existing) existing.remove();
+        showOptionsModal(options, "选择回复", function(choice) {
+            var messages = document.getElementById("chatMessages");
+            if (messages) messages.style.paddingBottom = "8px";
+            chapter4AddChatMessage("me", options[choice], false);
+            handler(choice);
+        });
+        var modal = document.querySelector(".option-modal");
+        if (modal) {
+            modal.classList.add("chapter4-chat-options");
+            modal.style.maxHeight = "28vh";
+            modal.style.padding = "10px 12px";
+            modal.querySelectorAll(".option-btn").forEach(function(button) {
+                button.style.padding = "9px 11px";
+                button.style.margin = "4px 0";
+                button.style.borderRadius = "12px";
+            });
+            var messages = document.getElementById("chatMessages");
+            if (messages) {
+                messages.style.paddingBottom = Math.min(modal.offsetHeight + 12, 190) + "px";
+                messages.scrollTop = messages.scrollHeight;
+            }
+        }
+    }
+
+    function resumeChapter4StoryChat() {
+        var data = chatData["张桂源"];
+        var state = data && data.chapter4StoryChat;
+        if (!state || !state.active) return;
+        if (state.abandon) { resumeChapter4AbandonChat(state); return; }
+        if (state.complete) {
+            chapter4LockChatInput("聊天已完成，请返回剧情页面继续");
+            return;
+        }
+        chapter4LockChatInput(state.running ? "对方正在输入..." : "请点击选项回复");
+        if (state.running) return;
+
+        if (state.stage === "opening") {
+            chapter4QueueOtherMessages([{ image: "sbs.jpg" }, "我也要吃棒棒糖"], function() {
+                state.stage = "surprise";
+                resumeChapter4StoryChat();
+            });
+        } else if (state.stage === "surprise") {
+            chapter4AskReply(["这就是你说的惊喜"], function() {
+                chapter4QueueOtherMessages(["怎么样？"], function() {
+                    state.stage = "rating";
+                    resumeChapter4StoryChat();
+                });
+            });
+        } else if (state.stage === "rating") {
+            chapter4AskReply(["不怎么样", "很帅"], function(choice) {
+                if (choice === 0) {
+                    chapter4QueueOtherMessages(["不怎么样？？", "骗人是小狗", "就只提前给你跳过", "好伤心啊"], function() {
+                        state.stage = "ask_friends";
+                        resumeChapter4StoryChat();
+                    });
+                } else {
+                    chapter4QueueOtherMessages(["我就知道"], function() {
+                        state.stage = "tidy";
+                        resumeChapter4StoryChat();
+                    });
+                }
+            });
+        } else if (state.stage === "ask_friends") {
+            chapter4AskReply(["左奇函他们呢？不是一起训练吗"], function() {
+                chapter4QueueOtherMessages(["我给他们看啥啊", "惩罚你重新评价", "快点"], function() {
+                    state.stage = "compliment";
+                    resumeChapter4StoryChat();
+                });
+            });
+        } else if (state.stage === "compliment") {
+            chapter4AskReply(["好好好你最帅了"], function() {
+                state.stage = "next_show";
+                resumeChapter4StoryChat();
+            });
+        } else if (state.stage === "next_show") {
+            chapter4AskReply(["下次还给我看好不好？"], function() {
+                chapter4QueueOtherMessages(["我可没说下次还给你看"], function() {
+                    state.stage = "threat";
+                    resumeChapter4StoryChat();
+                });
+            });
+        } else if (state.stage === "threat") {
+            chapter4AskReply(["哦那拉黑了", "那以后别打视频了"], function(choice) {
+                var replies = choice === 0 ? ["我错了我错了", { image: "wcl.jpg" }] : ["别啊", "我错了……"];
+                chapter4QueueOtherMessages(replies, function() {
+                    chapter4QueueOtherMessages(["只给你一个人看"], function() {
+                        state.stage = "who";
+                        resumeChapter4StoryChat();
+                    });
+                });
+            });
+        } else if (state.stage === "who") {
+            chapter4AskReply(["给谁？我是谁？"], function() {
+                chapter4QueueOtherMessages(["只给" + (player.nickname || player.name || "你") + "看"], function() {
+                    state.stage = "accept";
+                    resumeChapter4StoryChat();
+                });
+            });
+        } else if (state.stage === "accept") {
+            chapter4AskReply(["这还差不多"], function() { completeChapter4StoryChat(); });
+        } else if (state.stage === "tidy") {
+            chapter4AskReply(["你们跳的还蛮整齐的"], function() {
+                chapter4QueueOtherMessages(["？", "你还看其他人啊", "三心二意"], function() {
+                    state.stage = "confused";
+                    resumeChapter4StoryChat();
+                });
+            });
+        } else if (state.stage === "confused") {
+            chapter4AskReply(["？？"], function() {
+                chapter4QueueOtherMessages(["下次争取一下跳独舞", "我视频都只发给你一个人看的"], function() {
+                    state.stage = "tracking";
+                    resumeChapter4StoryChat();
+                });
+            });
+        } else if (state.stage === "tracking") {
+            chapter4AskReply(["那我在你身上加个自动追踪？"], function() {
+                chapter4QueueOtherMessages(["可以有"], function() { completeChapter4StoryChat(); });
+            });
+        }
+    }
+
+    function completeChapter4StoryChat() {
+        var state = chatData["张桂源"].chapter4StoryChat;
+        state.complete = true;
+        state.stage = "complete";
+        state.running = false;
+        chapter4ChatComplete = true;
+        chapter4LockChatInput("聊天已完成，请返回剧情页面继续");
+        updateChapter4Hint();
+        showMessageNotification(
+            "第四章剧情", "<div style='font-size:34px'>📖</div>", "第四章剧情",
+            "聊天完成，返回剧情页面继续",
+            function() { switchPage("story"); }
+        );
+    }
+
+    function chapter4GroupAvatarPath(name) {
+        var map = {
+            "张桂源":"zgyx.jpg","张函瑞":"zhrwx.jpg","左奇函":"zqhwx.jpg","陈浚铭":"cjmwx.jpg",
+            "陈奕恒":"cyhwx.jpg","杨博文":"ybwwx.jpg","王橹杰":"wljwx.jpg","陈思罕":"cshwx.jpg",
+            "官俊臣":"gjc.jpg","张奕然":"zyrwx.jpg","聂玮辰":"nwcwx.jpg","魏子宸":"wzcwx.jpg","杨涵博":"yhb.jpg"
+        };
+        return map[name] || "zgyx.jpg";
+    }
+
+    function chapter4GroupGridAvatarHtml(size) {
+        var px = Number(size) || 48;
+        var sources = ['zgyx.jpg','zhrwx.jpg','zqhwx.jpg','cjmwx.jpg','cyhwx.jpg','ybwwx.jpg','wljwx.jpg','cshwx.jpg','gjc.jpg'];
+        return '<div style="width:' + px + 'px;height:' + px + 'px;border-radius:10px;overflow:hidden;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:1px;background:#ddd;">' +
+            sources.map(function(src) { return '<img src="' + src + '" style="width:100%;height:100%;object-fit:cover;display:block;">'; }).join('') + '</div>';
+    }
+
+    function chapter4FormatGroupMessage(message) {
+        var text = String(message.text || "");
+        var playerWechatName = player.wechatName || player.nickname || player.name || "你";
+        var playerNameMarker = /x{2,3}（此处读取玩家(?:的)?微信名）/g;
+        text = text.replace(playerNameMarker, playerWechatName);
+
+        // 新版文档用“引用原消息：回复内容”记录引用关系，转换为原群聊的引用框样式。
+        var inlineQuoteMap = {
+            "引用左奇函啥时候回来：下午": { text: "下午", quote: "左奇函：啥时候回来" },
+            "引用陈奕恒太强了：啥时候约上": { text: "啥时候约上", quote: "陈奕恒：太强了" },
+            "引用啥时候约上：我也要来": { text: "我也要来", quote: "张桂源：啥时候约上" },
+            "引用来真的啊：什么真的？": { text: "什么真的？", quote: "陈奕恒：来真的啊" }
+        };
+        var inlineQuote = inlineQuoteMap[text];
+        var quoteText = message.quoteText || (inlineQuote && inlineQuote.quote) || "";
+        if (inlineQuote) text = inlineQuote.text;
+        if (quoteText) {
+            text += '<div style="margin-top:5px;padding-top:5px;border-top:1px solid #e8e8e8;font-size:12px;color:#999;white-space:normal;word-break:break-all;">' +
+                String(quoteText).replace(playerNameMarker, playerWechatName) + '</div>';
+        }
+        return text;
+    }
+
+    function chapter4NextGroupTime(data, explicitTime) {
+        if (explicitTime) data.chapter4DisplayTime = explicitTime;
+        if (!data.chapter4DisplayTime) data.chapter4DisplayTime = "11:06";
+        return data.chapter4DisplayTime;
+    }
+
+    function chapter4AddGroupMessage(message, unread) {
+        var data = chatData["everybody 棒棒"];
+        var isMe = message.from === "me";
+        var text = message.image ? '<img src="' + message.image + '" style="width:170px;border-radius:10px;max-width:100%;display:block;">' : chapter4FormatGroupMessage(message);
+        data.messages.push({
+            from: isMe ? "me" : message.from,
+            text: text,
+            time: chapter4NextGroupTime(data, message.time),
+            avatar: isMe ? "" : chapter4GroupAvatarPath(message.from),
+            date: "2023年10月22日",
+            read: unread ? false : true,
+            isImage: !!message.image,
+            chapter4Group: true
+        });
+        if (currentChatContact === "everybody 棒棒" && document.getElementById("chatDetailScreen").style.display !== "none") renderChatMessages();
+        renderChatList();
+    }
+
+    function chapter4ShowGroupTyping(sender) {
+        if (currentChatContact !== "everybody 棒棒" || document.getElementById("chatDetailScreen").style.display === "none") return;
+        var container = document.getElementById("chatMessages");
+        if (!container) return;
+        var old = document.getElementById("chapter4GroupTyping");
+        if (old) old.remove();
+        var row = document.createElement("div");
+        row.id = "chapter4GroupTyping";
+        row.className = "message-row";
+        row.innerHTML = '<div class="message-avatar"><img src="' + chapter4GroupAvatarPath(sender) + '" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">' + sender + '正在输入...</div>';
+        container.appendChild(row);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function chapter4QueueGroupMessages(messages, done) {
+        var data = chatData["everybody 棒棒"];
+        var state = data.chapter4Flow;
+        state.running = true;
+        var index = 0;
+        function next() {
+            if (index >= messages.length) {
+                var last = messages.length ? messages[messages.length - 1] : { text: "" };
+                var lastLength = String(last.text || "").length;
+                setTimeout(function() {
+                    state.running = false;
+                    if (done) done();
+                }, Math.max(1900, Math.min(3300, 1450 + lastLength * 65)));
+                return;
+            }
+            var message = messages[index++];
+            chapter4ShowGroupTyping(message.from);
+            var length = String(message.text || "").length;
+            var delay = Math.max(1550, Math.min(4200, 1200 + length * 85));
+            setTimeout(function() {
+                var typing = document.getElementById("chapter4GroupTyping");
+                if (typing) typing.remove();
+                chapter4AddGroupMessage(message, false);
+                // 先让这一条正文完整停留，再出现下一位/下一条的输入提示。
+                setTimeout(next, Math.max(850, Math.min(1650, 650 + length * 45)));
+            }, delay);
+        }
+        next();
+    }
+
+    function triggerChapter4GroupChat() {
+        if (chapter4GroupTriggered) return;
+        chapter4GroupTriggered = true;
+        var common = getChapter4TimedGroupCommonMessages();
+        chatData["everybody 棒棒"] = {
+            messages: [], newMsg: true,
+            chapter4Flow: { active: true, stage: "common", running: false, complete: false }
+        };
+        chapter4AddGroupMessage(common[0], true);
+        showMessageNotification(
+            "everybody 棒棒",
+            chapter4GroupGridAvatarHtml(48),
+            "everybody 棒棒", "张桂源：[图片]",
+            function() { switchPage("chat"); openChapter4GroupChat(); }
+        );
+        updateChapter4Hint();
+    }
+
+    function openChapter4GroupChat() {
+        currentChatContact = "everybody 棒棒";
+        var data = chatData["everybody 棒棒"];
+        if (!data) return;
+        data.messages.forEach(function(message) { message.read = true; });
+        data.newMsg = false;
+        document.getElementById("chatListScreen").style.display = "none";
+        document.getElementById("chatDetailScreen").style.display = "flex";
+        document.getElementById("chatContactName").innerText = "everybody 棒棒";
+        document.getElementById("chatBackBtn").onclick = function() {
+            document.getElementById("chatDetailScreen").style.display = "none";
+            document.getElementById("chatListScreen").style.display = "block";
+            renderChatList();
+        };
+        chapter4LockChatInput(data.chapter4Flow.complete ? "群聊已完成，请返回剧情页面继续" : "请等待群聊消息");
+        renderChatMessages();
+        renderChatList();
+        setTimeout(resumeChapter4GroupChat, 300);
+    }
+
+    function chapter4ShowGroupChoice() {
+        var data = chatData["everybody 棒棒"];
+        var state = data.chapter4Flow;
+        if (currentChatContact !== "everybody 棒棒" || document.getElementById("chatDetailScreen").style.display === "none") return;
+        var options = ["拍一张奖牌发送", "我也要奖励@张桂源"];
+        chapter4LockChatInput("请点击选项回复");
+        showOptionsModal(options, "选择回复", function(choice) {
+            var messagesBox = document.getElementById("chatMessages");
+            if (messagesBox) messagesBox.style.paddingBottom = "8px";
+            if (choice === 0) {
+                chapter4AddGroupMessage({ from: "me", text: "[图片]", image: "jp2.jpg" }, false);
+                state.stage = "branch1";
+            } else {
+                chapter4AddGroupMessage({ from: "me", text: "我也要奖励@张桂源" }, false);
+                state.stage = "branch2";
+            }
+            resumeChapter4GroupChat();
+        });
+        var modal = document.querySelector(".option-modal");
+        if (modal) {
+            modal.style.maxHeight = "28vh";
+            modal.style.padding = "10px 12px";
+            modal.querySelectorAll(".option-btn").forEach(function(button) { button.style.cssText += "padding:9px 11px;margin:4px 0;"; });
+            var messagesBox = document.getElementById("chatMessages");
+            if (messagesBox) {
+                messagesBox.style.paddingBottom = Math.min(modal.offsetHeight + 12, 190) + "px";
+                messagesBox.scrollTop = messagesBox.scrollHeight;
+            }
+        }
+    }
+
+    function resumeChapter4GroupChat() {
+        var data = chatData["everybody 棒棒"];
+        var state = data && data.chapter4Flow;
+        if (!state || state.complete || state.running) return;
+        if (state.stage === "abandon_common") {
+            chapter4QueueGroupMessages(getChapter4TimedAbandonGroupMessages().slice(1), function() { completeChapter4GroupChat(0); });
+        } else if (state.stage === "common") {
+            chapter4QueueGroupMessages(getChapter4TimedGroupCommonMessages().slice(1), function() {
+                state.stage = "choice";
+                chapter4ShowGroupChoice();
+            });
+        } else if (state.stage === "choice") {
+            chapter4ShowGroupChoice();
+        } else if (state.stage === "branch1" || state.stage === "branch2") {
+            var branch = state.stage === "branch1" ? 1 : 2;
+            var messages = branch === 1 ? getChapter4TimedGroupBranch1Messages() : getChapter4TimedGroupBranch2Messages();
+            state.stage = "playing_branch";
+            chapter4QueueGroupMessages(messages, function() { completeChapter4GroupChat(branch); });
+        }
+    }
+
+    function completeChapter4GroupChat(branch) {
+        var state = chatData["everybody 棒棒"].chapter4Flow;
+        state.complete = true;
+        state.running = false;
+        state.stage = "complete";
+        chapter4GroupComplete = true;
+        chapter4GroupBranch = branch;
+        chapter4LockChatInput("群聊已完成，请返回剧情页面继续");
+        updateChapter4Hint();
+        showMessageNotification(
+            "第四章剧情", "<div style='font-size:34px'>📖</div>", "第四章剧情",
+            "群聊完成，返回剧情页面继续",
+            function() { switchPage("story"); }
+        );
+    }
+
+    function chapter4GetSaveState() {
+        if (!chapter4SessionActive) return null;
+        var overlay = document.getElementById("chapter4StoryOverlay");
+        return {
+            active: true,
+            scene: chapter4Scene,
+            pageIndex: chapter4PageIndex,
+            typingPos: chapter4TypingPos,
+            backgroundImage: overlay ? overlay.style.backgroundImage : "",
+            chatTriggered: chapter4ChatTriggered,
+            chatComplete: chapter4ChatComplete,
+            storyChoiceShown: chapter4StoryChoiceShown,
+            groupTriggered: chapter4GroupTriggered,
+            groupComplete: chapter4GroupComplete,
+            groupBranch: chapter4GroupBranch,
+            abandonRoute: chapter4AbandonRoute,
+            abandonChatTriggered: chapter4AbandonChatTriggered,
+            abandonChatComplete: chapter4AbandonChatComplete
+        };
+    }
+
+    function chapter4PagesForSavedState(state) {
+        switch (state.scene) {
+            case 1: return buildChapter4Pages();
+            case 2: return buildChapter4Scene2Pages();
+            case 3: return buildChapter4CommonPages();
+            case 4: return buildChapter4RouteAPages(getChapter4RouteABeforeJs());
+            case 5: return buildChapter4RouteAPages(getChapter4RouteAJs());
+            case 7: return buildChapter4RouteAPages(getChapter4CompensationRoute1());
+            case 8: return buildChapter4RouteAPages(getChapter4CompensationRoute2());
+            case 9: return chapter4CreateParagraphPages(getChapter4PostCompensationCommon());
+            case 10:
+                if (state.abandonRoute) return buildChapter4AbandonMainPages();
+                var oldEnding = state.groupBranch === 1 ? getChapter4GroupEnding1() : getChapter4GroupEnding2();
+                oldEnding = oldEnding.slice();
+                if (oldEnding.indexOf("第四章预告：时间线为2024到2025年初中毕业那年，从第五章之后就会有大分歧了（不会只写甜的）") === -1) oldEnding.push("第四章预告：时间线为2024到2025年初中毕业那年，从第五章之后就会有大分歧了（不会只写甜的）");
+                return chapter4CreateParagraphPages(oldEnding);
+            case 11: return chapter4CreateParagraphPages(getChapter4AbandonClassroom());
+            case 12: return chapter4CreateParagraphPages(getChapter4AbandonRewardA());
+            case 13: return chapter4CreateParagraphPages(getChapter4AbandonRewardB());
+            case 14: return chapter4CreateParagraphPages(getChapter4AbandonBeforeGroup());
+            case 15: return chapter4CreateParagraphPages(getChapter4AbandonAfterGroup());
+            case 16: return chapter4CreateParagraphPages(getChapter4AbandonDelete());
+            case 17: return chapter4CreateParagraphPages(getChapter4AbandonKeep());
+            case 18:
+                var finalSource = getChapter4AbandonEnding().slice();
+                finalSource.push("第三章结束");
+                finalSource.push("第四章预告：时间线为2024到2025年初中毕业那年，从第五章之后就会有大分歧了（不会只写甜的）");
+                return chapter4CreateParagraphPages(finalSource);
+            default: return buildChapter4Pages();
+        }
+    }
+
+    function chapter4ResumeTypingAnimation() {
+        if (chapter4TypingTimer || chapter4TypingPos >= chapter4TypingText.length) return;
+        var textElement = document.getElementById("chapter4Text");
+        if (!textElement) return;
+        chapter4TypingTimer = setInterval(function() {
+            chapter4TypingPos++;
+            textElement.textContent = chapter4TypingText.slice(0, chapter4TypingPos);
+            if (chapter4TypingPos >= chapter4TypingText.length) {
+                clearInterval(chapter4TypingTimer);
+                chapter4TypingTimer = null;
+                updateChapter4Hint();
+                onChapter4PageFullyShown();
+            }
+        }, 34);
+    }
+
+    function restoreChapter4FromSave(state) {
+        if (!state || !state.active) return;
+        hideChapter4Story();
+        document.getElementById("chapterSelectPage").style.display = "none";
+        document.getElementById("storyDetailPage").style.display = "block";
+        openChapter4Story();
+        chapter4Scene = Number(state.scene) || 1;
+        chapter4ChatTriggered = !!state.chatTriggered;
+        chapter4ChatComplete = !!state.chatComplete;
+        chapter4GroupTriggered = !!state.groupTriggered;
+        chapter4GroupComplete = !!state.groupComplete;
+        chapter4GroupBranch = Number(state.groupBranch) || 0;
+        chapter4AbandonRoute = !!state.abandonRoute;
+        chapter4AbandonChatTriggered = !!state.abandonChatTriggered;
+        chapter4AbandonChatComplete = !!state.abandonChatComplete;
+        if (chatData["张桂源"] && chatData["张桂源"].chapter4StoryChat) chatData["张桂源"].chapter4StoryChat.running = false;
+        if (chatData["everybody 棒棒"] && chatData["everybody 棒棒"].chapter4Flow) chatData["everybody 棒棒"].chapter4Flow.running = false;
+        chapter4Pages = chapter4PagesForSavedState(state);
+        chapter4PageIndex = Math.max(0, Math.min(Number(state.pageIndex) || 0, chapter4Pages.length - 1));
+        chapter4StoryChoiceShown = false;
+        var overlay = document.getElementById("chapter4StoryOverlay");
+        if (overlay && state.backgroundImage) overlay.style.backgroundImage = state.backgroundImage;
+        showChapter4Page(chapter4PageIndex);
+        clearInterval(chapter4TypingTimer);
+        chapter4TypingTimer = null;
+        var savedTypingPos = Number(state.typingPos);
+        if (!Number.isFinite(savedTypingPos)) savedTypingPos = chapter4TypingText.length;
+        chapter4TypingPos = Math.max(0, Math.min(savedTypingPos, chapter4TypingText.length));
+        var textElement = document.getElementById("chapter4Text");
+        if (textElement) textElement.textContent = chapter4TypingText.slice(0, chapter4TypingPos);
+        restoreChapter4Story();
+    }
+
+    function hideChapter4Story() {
+        clearInterval(chapter4TypingTimer);
+        chapter4TypingTimer = null;
+        var overlay = document.getElementById("chapter4StoryOverlay");
+        if (overlay) overlay.remove();
+        document.querySelectorAll(".chapter4-story-choice-panel").forEach(function(panel) { panel.remove(); });
+    }
+
+    function suspendChapter4Story() {
+        clearInterval(chapter4TypingTimer);
+        chapter4TypingTimer = null;
+        var overlay = document.getElementById("chapter4StoryOverlay");
+        if (overlay) overlay.style.display = "none";
+        document.querySelectorAll(".chapter4-story-choice-panel").forEach(function(panel) { panel.remove(); });
+        if (chapter4Scene === 3 || chapter4Scene === 5 || chapter4Scene === 11 || chapter4Scene === 15) chapter4StoryChoiceShown = false;
+    }
+
+    function restoreChapter4Story() {
+        var overlay = document.getElementById("chapter4StoryOverlay");
+        if (overlay) {
+            overlay.style.display = "block";
+            document.getElementById("chapterSelectPage").style.display = "none";
+            document.getElementById("storyDetailPage").style.display = "block";
+            chapter4ResumeTypingAnimation();
+            updateChapter4Hint();
+            if (chapter4Scene === 3 && chapter4PageIndex === chapter4Pages.length - 1) {
+                setTimeout(showChapter4StoryChoice, 100);
+            } else if (chapter4Scene === 5 && chapter4PageIndex === chapter4Pages.length - 1) {
+                setTimeout(showChapter4CompensationChoice, 100);
+            } else if (chapter4Scene === 11 && chapter4PageIndex === chapter4Pages.length - 1) {
+                setTimeout(showChapter4AbandonRewardChoice, 100);
+            } else if (chapter4Scene === 15 && chapter4PageIndex === chapter4Pages.length - 1) {
+                setTimeout(showChapter4AbandonDeleteChoice, 100);
+            }
+        }
+    }
+
+    function closeChapter4Story() {
+        chapter4SessionActive = false;
+        hideChapter4Story();
+        document.getElementById("storyDetailPage").style.display = "none";
+        document.getElementById("chapterSelectPage").style.display = "block";
+        renderChapterList();
+    }
+
     // ================= 页面切换 =================
 function switchPage(pageId) {
     console.log('switchPage 被调用:', pageId);
+    if (chapter4SessionActive) {
+        if (pageId === "story") restoreChapter4Story();
+        else suspendChapter4Story();
+    } else {
+        hideChapter4Story();
+    }
     
     // 切换页面时关闭选项弹窗
     if (typeof closeOptionModal === 'function') {
@@ -11738,10 +13681,11 @@ function switchPage(pageId) {
         var chapterSelect = document.getElementById('chapterSelectPage');
         var storyDetail = document.getElementById('storyDetailPage');
         var storyMap = document.getElementById('storyMapPage');
-        if (chapterSelect) chapterSelect.style.display = 'block';
-        if (storyDetail) storyDetail.style.display = 'none';
+        if (chapterSelect) chapterSelect.style.display = chapter4SessionActive ? 'none' : 'block';
+        if (storyDetail) storyDetail.style.display = chapter4SessionActive ? 'block' : 'none';
         if (storyMap) storyMap.style.display = 'none';
         if (typeof renderChapterList === 'function') renderChapterList();
+        if (chapter4SessionActive) restoreChapter4Story();
     }
     if (pageId === 'publishMoment') {
     openPublishMomentPage();
@@ -12095,7 +14039,7 @@ function sendNextMessage() {
     var typingRow = document.createElement("div");
     typingRow.className = "message-row";
     typingRow.style.justifyContent = "flex-start";
-    typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+    typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
     container.appendChild(typingRow);
     container.scrollTop = container.scrollHeight;
 
@@ -12187,7 +14131,7 @@ sendNextMessage();
                     let typingRow = document.createElement("div");
                     typingRow.className = "message-row";
                     typingRow.style.justifyContent = "flex-start";
-                    typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                    typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                     container.appendChild(typingRow);
                     container.scrollTop = container.scrollHeight;
                     
@@ -12246,7 +14190,7 @@ sendNextMessage();
                 let typingRow = document.createElement("div");
                 typingRow.className = "message-row";
                 typingRow.style.justifyContent = "flex-start";
-                typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                 container.appendChild(typingRow);
                 container.scrollTop = container.scrollHeight;
                 
@@ -12270,7 +14214,7 @@ setTimeout(function() {
     let typingRow2 = document.createElement("div");
     typingRow2.className = "message-row";
     typingRow2.style.justifyContent = "flex-start";
-    typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+    typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
     container2.appendChild(typingRow2);
     container2.scrollTop = container2.scrollHeight;
     
@@ -12337,7 +14281,7 @@ setTimeout(function() {
                     let typingRow = document.createElement("div");
                     typingRow.className = "message-row";
                     typingRow.style.justifyContent = "flex-start";
-                    typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                    typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                     container.appendChild(typingRow);
                     container.scrollTop = container.scrollHeight;
                     
@@ -12360,7 +14304,7 @@ setTimeout(function() {
                             let typingRow2 = document.createElement("div");
                             typingRow2.className = "message-row";
                             typingRow2.style.justifyContent = "flex-start";
-                            typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                            typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                             container2.appendChild(typingRow2);
                             container2.scrollTop = container2.scrollHeight;
                             
@@ -12383,7 +14327,7 @@ setTimeout(function() {
                                     let typingRow3 = document.createElement("div");
                                     typingRow3.className = "message-row";
                                     typingRow3.style.justifyContent = "flex-start";
-                                    typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                                    typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                                     container3.appendChild(typingRow3);
                                     container3.scrollTop = container3.scrollHeight;
                                     
@@ -12438,7 +14382,7 @@ setTimeout(function() {
                     let typingRow = document.createElement("div");
                     typingRow.className = "message-row";
                     typingRow.style.justifyContent = "flex-start";
-                    typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                    typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                     container.appendChild(typingRow);
                     container.scrollTop = container.scrollHeight;
                     
@@ -12461,7 +14405,7 @@ setTimeout(function() {
                             let typingRow2 = document.createElement("div");
                             typingRow2.className = "message-row";
                             typingRow2.style.justifyContent = "flex-start";
-                            typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                            typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                             container2.appendChild(typingRow2);
                             container2.scrollTop = container2.scrollHeight;
                             
@@ -12508,7 +14452,7 @@ setTimeout(function() {
                                             let typingRow3 = document.createElement("div");
                                             typingRow3.className = "message-row";
                                             typingRow3.style.justifyContent = "flex-start";
-                                            typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                                            typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                                             container3.appendChild(typingRow3);
                                             container3.scrollTop = container3.scrollHeight;
                                             
@@ -12532,7 +14476,7 @@ setTimeout(function() {
                                                     var typingRow4 = document.createElement("div");
                                                     typingRow4.className = "message-row";
                                                     typingRow4.style.justifyContent = "flex-start";
-                                                    typingRow4.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                                                    typingRow4.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                                                     container4.appendChild(typingRow4);
                                                     container4.scrollTop = container4.scrollHeight;
                                                     
@@ -12905,7 +14849,7 @@ function showBranchBEnding() {
             
             modal.innerHTML = `
                 <div class="notification-avatar">
-                    <img src="zgyweixin.png" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
+                    <img src="zgyx.jpg" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
                 </div>
                 <div class="notification-content">
                     <div class="notification-name">张桂源</div>
@@ -13065,7 +15009,7 @@ function showBranchBEnding() {
                                 let typingRow = document.createElement("div");
                                 typingRow.className = "message-row";
                                 typingRow.style.justifyContent = "flex-start";
-                                typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                                typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                                 container.appendChild(typingRow);
                                 container.scrollTop = container.scrollHeight;
                                 
@@ -13094,7 +15038,7 @@ function showBranchBEnding() {
         let typingRow2 = document.createElement("div");
         typingRow2.className = "message-row";
         typingRow2.style.justifyContent = "flex-start";
-        typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+        typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
         container2.appendChild(typingRow2);
         container2.scrollTop = container2.scrollHeight;
         
@@ -13148,7 +15092,7 @@ function showBranchBEnding() {
                 let typingRow = document.createElement("div");
                 typingRow.className = "message-row";
                 typingRow.style.justifyContent = "flex-start";
-                typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                 container.appendChild(typingRow);
                 container.scrollTop = container.scrollHeight;
                 
@@ -13226,7 +15170,7 @@ document.getElementById("chatBackBtn").onclick = function() {
                     let typingRow = document.createElement("div");
                     typingRow.className = "message-row";
                     typingRow.style.justifyContent = "flex-start";
-                    typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                    typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                     container.appendChild(typingRow);
                     container.scrollTop = container.scrollHeight;
                     
@@ -13343,7 +15287,7 @@ document.getElementById("chatBackBtn").onclick = function() {
         let typingRow = document.createElement("div");
         typingRow.className = "message-row";
         typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+        typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
         container.appendChild(typingRow);
         container.scrollTop = container.scrollHeight;
         
@@ -13375,7 +15319,7 @@ document.getElementById("chatBackBtn").onclick = function() {
                                                             let typingRow4 = document.createElement("div");
                                                             typingRow4.className = "message-row";
                                                             typingRow4.style.justifyContent = "flex-start";
-                                                            typingRow4.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                                                            typingRow4.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                                                             container4.appendChild(typingRow4);
                                                             container4.scrollTop = container4.scrollHeight;
                                                             
@@ -13406,7 +15350,7 @@ document.getElementById("chatBackBtn").onclick = function() {
                                         let typingRow3 = document.createElement("div");
                                         typingRow3.className = "message-row";
                                         typingRow3.style.justifyContent = "flex-start";
-                                        typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                                        typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                                         container3.appendChild(typingRow3);
                                         container3.scrollTop = container3.scrollHeight;
                                         
@@ -13521,7 +15465,7 @@ function showRouteA_ChoiceNo() {
             var typingRow = document.createElement("div");
             typingRow.className = "message-row";
             typingRow.style.justifyContent = "flex-start";
-            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
             container.appendChild(typingRow);
             container.scrollTop = container.scrollHeight;
             
@@ -13694,7 +15638,7 @@ function showRouteA_ChoiceNo() {
                                                             let typingRow5 = document.createElement("div");
                                                             typingRow5.className = "message-row";
                                                             typingRow5.style.justifyContent = "flex-start";
-                                                            typingRow5.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                                                            typingRow5.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                                                             container5.appendChild(typingRow5);
                                                             container5.scrollTop = container5.scrollHeight;
                                                             
@@ -13725,7 +15669,7 @@ function showRouteA_ChoiceNo() {
                                         let typingRow4 = document.createElement("div");
                                         typingRow4.className = "message-row";
                                         typingRow4.style.justifyContent = "flex-start";
-                                        typingRow4.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                                        typingRow4.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                                         container4.appendChild(typingRow4);
                                         container4.scrollTop = container4.scrollHeight;
                                         
@@ -13756,7 +15700,7 @@ function showRouteA_ChoiceNo() {
                     let typingRow3 = document.createElement("div");
                     typingRow3.className = "message-row";
                     typingRow3.style.justifyContent = "flex-start";
-                    typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                    typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                     container3.appendChild(typingRow3);
                     container3.scrollTop = container3.scrollHeight;
                     
@@ -13853,7 +15797,7 @@ function showRouteA_ChoiceNo() {
                                     let typingRow5 = document.createElement("div");
                                     typingRow5.className = "message-row";
                                     typingRow5.style.justifyContent = "flex-start";
-                                    typingRow5.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                                    typingRow5.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                                     container5.appendChild(typingRow5);
                                     container5.scrollTop = container5.scrollHeight;
                                     
@@ -13884,7 +15828,7 @@ function showRouteA_ChoiceNo() {
                 let typingRow3 = document.createElement("div");
                 typingRow3.className = "message-row";
                 typingRow3.style.justifyContent = "flex-start";
-                typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                 container3.appendChild(typingRow3);
                 container3.scrollTop = container3.scrollHeight;
                 
@@ -13991,7 +15935,7 @@ function showRouteA_ChoiceNo() {
             var typingRow = document.createElement("div");
             typingRow.className = "message-row";
             typingRow.style.justifyContent = "flex-start";
-            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
             container.appendChild(typingRow);
             container.scrollTop = container.scrollHeight;
             
@@ -14191,7 +16135,7 @@ function startChapter2EndChat() {
     // 显示弹窗
     showMessageNotification(
         "张桂源",
-        '<img src="zgyweixin.png" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">',
+        '<img src="zgyx.jpg" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">',
         "张桂源",
         "到了没",
         function() {
@@ -14242,7 +16186,7 @@ function showEndChatOption1() {
             var typingRow = document.createElement("div");
             typingRow.className = "message-row";
             typingRow.style.justifyContent = "flex-start";
-            typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+            typingRow.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
             container.appendChild(typingRow);
             container.scrollTop = container.scrollHeight;
 
@@ -14305,7 +16249,7 @@ function showEndChatOption2() {
                 var typingRow = document.createElement("div");
                 typingRow.className = "message-row";
                 typingRow.style.justifyContent = "flex-start";
-                typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+                typingRow.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
                 container.appendChild(typingRow);
                 container.scrollTop = container.scrollHeight;
 
@@ -14369,7 +16313,7 @@ function showEndChatOption3() {
                 var typingRow = document.createElement("div");
                 typingRow.className = "message-row";
                 typingRow.style.justifyContent = "flex-start";
-                typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+                typingRow.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
                 container.appendChild(typingRow);
                 container.scrollTop = container.scrollHeight;
 
@@ -14433,7 +16377,7 @@ function showEndChatOption1() {
             let typingRow = document.createElement("div");
             typingRow.className = "message-row";
             typingRow.style.justifyContent = "flex-start";
-            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
             container.appendChild(typingRow);
             container.scrollTop = container.scrollHeight;
             
@@ -14501,7 +16445,7 @@ function showEndChatOption2() {
                 let typingRow = document.createElement("div");
                 typingRow.className = "message-row";
                 typingRow.style.justifyContent = "flex-start";
-                typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                 container.appendChild(typingRow);
                 container.scrollTop = container.scrollHeight;
                 
@@ -14568,7 +16512,7 @@ function showEndChatOption3() {
                 let typingRow = document.createElement("div");
                 typingRow.className = "message-row";
                 typingRow.style.justifyContent = "flex-start";
-                typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                 container.appendChild(typingRow);
                 container.scrollTop = container.scrollHeight;
                 
@@ -14653,7 +16597,7 @@ function showEndChatBranchA() {
             let typingRow = document.createElement("div");
             typingRow.className = "message-row";
             typingRow.style.justifyContent = "flex-start";
-            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
             container.appendChild(typingRow);
             container.scrollTop = container.scrollHeight;
             
@@ -14709,7 +16653,7 @@ function showEndChatBranchA2() {
             var typingRow = document.createElement("div");
             typingRow.className = "message-row";
             typingRow.style.justifyContent = "flex-start";
-            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
             container.appendChild(typingRow);
             container.scrollTop = container.scrollHeight;
             
@@ -14756,7 +16700,7 @@ function showEndChatBranchA2() {
                             var typingRow2 = document.createElement("div");
                             typingRow2.className = "message-row";
                             typingRow2.style.justifyContent = "flex-start";
-                            typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                            typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                             container2.appendChild(typingRow2);
                             container2.scrollTop = container2.scrollHeight;
                             
@@ -14847,7 +16791,7 @@ function showEndChatBranchB() {
             let typingRow = document.createElement("div");
             typingRow.className = "message-row";
             typingRow.style.justifyContent = "flex-start";
-            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
             container.appendChild(typingRow);
             container.scrollTop = container.scrollHeight;
             
@@ -14902,7 +16846,7 @@ function showEndChatBranchB2() {
             let typingRow = document.createElement("div");
             typingRow.className = "message-row";
             typingRow.style.justifyContent = "flex-start";
-            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+            typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
             container.appendChild(typingRow);
             container.scrollTop = container.scrollHeight;
             
@@ -14950,7 +16894,7 @@ function showEndChatBranchB2() {
                             let typingRow2 = document.createElement("div");
                             typingRow2.className = "message-row";
                             typingRow2.style.justifyContent = "flex-start";
-                            typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                            typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                             container2.appendChild(typingRow2);
                             container2.scrollTop = container2.scrollHeight;
                             
@@ -14974,7 +16918,7 @@ function showEndChatBranchB2() {
                                     let typingRow3 = document.createElement("div");
                                     typingRow3.className = "message-row";
                                     typingRow3.style.justifyContent = "flex-start";
-                                    typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                                    typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                                     container3.appendChild(typingRow3);
                                     container3.scrollTop = container3.scrollHeight;
                                     
@@ -15032,7 +16976,7 @@ function showEndChatBranchC() {
         let typingRow = document.createElement("div");
         typingRow.className = "message-row";
         typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+        typingRow.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
         container.appendChild(typingRow);
         container.scrollTop = container.scrollHeight;
         
@@ -15080,7 +17024,7 @@ function showEndChatBranchC() {
                         let typingRow2 = document.createElement("div");
                         typingRow2.className = "message-row";
                         typingRow2.style.justifyContent = "flex-start";
-                        typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                        typingRow2.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                         container2.appendChild(typingRow2);
                         container2.scrollTop = container2.scrollHeight;
                         
@@ -15104,7 +17048,7 @@ function showEndChatBranchC() {
                                 let typingRow3 = document.createElement("div");
                                 typingRow3.className = "message-row";
                                 typingRow3.style.justifyContent = "flex-start";
-                                typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
+                                typingRow3.innerHTML = `<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>`;
                                 container3.appendChild(typingRow3);
                                 container3.scrollTop = container3.scrollHeight;
                                 
@@ -15327,7 +17271,7 @@ function showFriendRequestsPopup() {
 
     modal1.innerHTML = `
         <div style="width:48px; height:48px; border-radius:50%; overflow:hidden; flex-shrink:0; background:#F0F0F0; display:flex; align-items:center; justify-content:center;">
-            <img src="zgyweixin.png" style="width:48px; height:48px; object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🏀'">
+            <img src="zgyx.jpg" style="width:48px; height:48px; object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🏀'">
         </div>
         <div style="flex:1;">
             <div style="font-weight:600; font-size:15px; color:#1A1A1A; margin-bottom:2px;">张桂源</div>
@@ -15405,7 +17349,7 @@ function showFriendRequestsPopup() {
 
         modal2.innerHTML = `
             <div style="width:48px; height:48px; border-radius:50%; overflow:hidden; flex-shrink:0; background:#F0F0F0; display:flex; align-items:center; justify-content:center;">
-                <img src="zgyweixin.png" style="width:48px; height:48px; object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🏀'">
+                <img src="zgyx.jpg" style="width:48px; height:48px; object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🏀'">
             </div>
             <div style="flex:1;">
                 <div style="font-weight:600; font-size:15px; color:#1A1A1A; margin-bottom:2px;">张桂源</div>
@@ -15485,7 +17429,7 @@ setTimeout(function() {
 
     modal3.innerHTML = `
         <div style="width:48px; height:48px; border-radius:50%; overflow:hidden; flex-shrink:0; background:#F0F0F0; display:flex; align-items:center; justify-content:center;">
-            <img src="zgyweixin.png" style="width:48px; height:48px; object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🏀'">
+            <img src="zgyx.jpg" style="width:48px; height:48px; object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🏀'">
         </div>
         <div style="flex:1;">
             <div style="font-weight:600; font-size:15px; color:#1A1A1A; margin-bottom:2px;">张桂源</div>
@@ -15581,7 +17525,7 @@ function triggerChapter3Message() {
     
     showMessageNotification(
         "张桂源",
-        '<img src="zgyweixin.png" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">',
+        '<img src="zgyx.jpg" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">',
         "张桂源",
         "周六晚上八点狼人杀缺个人，你来吗",
         function() {
@@ -15623,7 +17567,7 @@ function joinChapter3Group() {
     var historyMessages = [
         { from: "陈浚铭", text: "周六晚上狼人杀 谁来", time: "20:00", avatar: "cjmwx.jpg" },
         { from: "陈浚铭", text: "@所有人", time: "20:00", avatar: "cjmwx.jpg" },
-        { from: "张桂源", text: "你又想被虐了是吧", time: "20:01", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "你又想被虐了是吧", time: "20:01", avatar: "zgyx.jpg" },
         { from: "陈浚铭", text: "上次是意外，这次我认真的", time: "20:01", avatar: "cjmwx.jpg" },
         { from: "陈思罕", text: "1", time: "20:02", avatar: "cshwx.jpg" },
         { from: "左奇函", text: "1", time: "20:02", avatar: "zqhwx.jpg" },
@@ -15632,10 +17576,10 @@ function joinChapter3Group() {
         { from: "陈奕恒", text: "111111111", time: "20:03", avatar: "cyhwx.jpg" },
         { from: "聂玮辰", text: "来啊", time: "20:03", avatar: "nwcwx.jpg" },
         { from: "陈浚铭", text: "其他人呢？就这么几个人啊", time: "20:04", avatar: "cjmwx.jpg" },
-        { from: "张桂源", text: "锁手机了吧@杨博文", time: "20:04", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "锁手机了吧@杨博文", time: "20:04", avatar: "zgyx.jpg" },
         { from: "左奇函", text: "有可能", time: "20:04", avatar: "zqhwx.jpg" },
         { from: "张奕然", text: "补课，勿念", time: "20:05", avatar: "zyrwx.jpg" },
-        { from: "张桂源", text: "还在卷", time: "20:05", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "还在卷", time: "20:05", avatar: "zgyx.jpg" },
         { from: "魏子宸", text: "和小官涵博之前约好了", time: "20:06", avatar: "wzcwx.jpg" },
         { from: "李煜东", text: "我爸不让我晚上出门", time: "20:06", avatar: "lydwx.jpg" },
         { 
@@ -15652,24 +17596,24 @@ function joinChapter3Group() {
     avatar: "ybwwx.jpg" 
 },
         { from: "左奇函", text: "你直接带来写得了", time: "20:08", avatar: "zqhwx.jpg" },
-        { from: "张桂源", text: "顺便辅导一下陈浚铭", time: "20:08", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "顺便辅导一下陈浚铭", time: "20:08", avatar: "zgyx.jpg" },
         { from: "陈浚铭", text: "不是哥们谁还带作业去", time: "20:08", avatar: "cjmwx.jpg" },
         { from: "王橹杰", text: "那就玩9人局吧", time: "20:09", avatar: "wljwx.jpg" },
         { from: "左奇函", text: "想玩丘比特局@陈浚铭", time: "20:09", avatar: "zqhwx.jpg" },
         { from: "陈思罕", text: "那你拉个人", time: "20:10", avatar: "cshwx.jpg" },
         { from: "陈奕恒", text: "丘比特又是什么玩意？", time: "20:10", avatar: "cyhwx.jpg" },
         { from: "陈浚铭", text: "张桂圆你认识人多", time: "20:10", avatar: "cjmwx.jpg" },
-        { from: "张桂源", text: "我不认识", time: "20:11", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "我不认识", time: "20:11", avatar: "zgyx.jpg" },
         { from: "左奇函", text: "那你手机里那个置顶是谁啊", time: "20:11", avatar: "zqhwx.jpg" },
         { from: "聂玮辰", text: "？我去谁啊", time: "20:11", avatar: "nwcwx.jpg" },
         { from: "左奇函", text: "你问他呗", time: "20:12", avatar: "zqhwx.jpg" },
         { from: "聂玮辰", text: "@张桂源，谁啊", time: "20:12", avatar: "nwcwx.jpg" },
         { from: "王橹杰", text: "演都不演了这是", time: "20:12", avatar: "wljwx.jpg" },
         { from: "聂玮辰", text: "@左奇函，谁啊", time: "20:13", avatar: "nwcwx.jpg" },
-        { from: "张桂源", text: "……", time: "20:13", avatar: "zgyweixin.png" },
-        { from: "张桂源", text: "我问问", time: "20:13", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "……", time: "20:13", avatar: "zgyx.jpg" },
+        { from: "张桂源", text: "我问问", time: "20:13", avatar: "zgyx.jpg" },
         { from: "左奇函", text: "问问？几个字打了两分钟了吧", time: "20:14", avatar: "zqhwx.jpg" },
-        { from: "张桂源", text: "你话怎么这么多", time: "20:14", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "你话怎么这么多", time: "20:14", avatar: "zgyx.jpg" },
         { from: "陈奕恒", text: "不是，谁啊", time: "20:15", avatar: "cyhwx.jpg" },
         { 
     from: "左奇函", 
@@ -15678,9 +17622,9 @@ function joinChapter3Group() {
     avatar: "zqhwx.jpg" 
 },
         { from: "陈浚铭", text: "她来不来啊，你问这么久", time: "20:16", avatar: "cjmwx.jpg" },
-        { from: "张桂源", text: "来", time: "20:16", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "来", time: "20:16", avatar: "zgyx.jpg" },
         { from: "左奇函", text: "恭喜恭喜啊", time: "20:17", avatar: "zqhwx.jpg" },
-        { from: "张桂源", text: "恭喜什么", time: "20:17", avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "恭喜什么", time: "20:17", avatar: "zgyx.jpg" },
         { from: "左奇函", text: "恭喜组局成功 不然你说呢", time: "20:17", avatar: "zqhwx.jpg" },
         { from: "system", text: "您已加入群聊", time: "20:18", avatar: "📢", isSystem: true, isJoinMessage: true }
     ];
@@ -15985,7 +17929,7 @@ groupChatHello = function() {
     renderChatList();
     
     var replies = [
-        { from: "张桂源", text: "我朋友 " , time: getCurrentTime(), avatar: "zgyweixin.png" },
+        { from: "张桂源", text: "我朋友 " , time: getCurrentTime(), avatar: "zgyx.jpg" },
         { from: "左奇函", text: "终于进来了", time: getCurrentTime(), avatar: "zqhwx.jpg" },
         { from: "陈思罕", text: "欢迎欢迎", time: getCurrentTime(), avatar: "cshwx.jpg" },
         { from: "陈浚铭", text: "耶！齐了！", time: getCurrentTime(), avatar: "cjmwx.jpg" },
@@ -16001,11 +17945,11 @@ groupChatHello = function() {
         { from: "陈奕恒", text: "我不懂", time: getCurrentTime(), avatar: "cyhwx.jpg" },
         { from: "陈奕恒", text: "张桂源你朋友为啥用女生头像", time: getCurrentTime(), avatar: "cyhwx.jpg" },
         { from: "左奇函", text: "哎呀别问了等下张桂源害羞了", time: getCurrentTime(), avatar: "zqhwx.jpg" },
-        { from: "张桂源", text: "？", time: getCurrentTime(), avatar: "zgyweixin.png" },
-        { from: "张桂源", text: '<img src="bqb1.jpg" style="width:120px; border-radius:8px; max-width:100%; display:block;">', time: getCurrentTime(), avatar: "zgyweixin.png", isImage: true },
+        { from: "张桂源", text: "？", time: getCurrentTime(), avatar: "zgyx.jpg" },
+        { from: "张桂源", text: '<img src="bqb1.jpg" style="width:120px; border-radius:8px; max-width:100%; display:block;">', time: getCurrentTime(), avatar: "zgyx.jpg", isImage: true },
         { from: "左奇函", text: "哎我去这表情包谁啊感觉有点小帅", time: getCurrentTime(), avatar: "zqhwx.jpg" },
         { from: "左奇函", text: "你挺有眼光的", time: getCurrentTime(), avatar: "zqhwx.jpg" },
-        { from: "张桂源", text: "？？", time: getCurrentTime(), avatar: "zgyweixin.png" }
+        { from: "张桂源", text: "？？", time: getCurrentTime(), avatar: "zgyx.jpg" }
     ];
     
     sendGroupReplies(replies);
@@ -16030,11 +17974,11 @@ function groupChatLurk() {
         { from: "陈奕恒", text: "我不懂", time: getCurrentTime(), avatar: "cyhwx.jpg" },
         { from: "陈奕恒", text: "张桂源你朋友为啥用女生头像", time: getCurrentTime(), avatar: "cyhwx.jpg" },
         { from: "左奇函", text: "哎呀别问了等下张桂源害羞了", time: getCurrentTime(), avatar: "zqhwx.jpg" },
-        { from: "张桂源", text: "？", time: getCurrentTime(), avatar: "zgyweixin.png" },
-        { from: "张桂源", text: '<img src="bqb1.jpg" style="width:120px; border-radius:8px; max-width:100%; display:block;">', time: getCurrentTime(), avatar: "zgyweixin.png", isImage: true },
+        { from: "张桂源", text: "？", time: getCurrentTime(), avatar: "zgyx.jpg" },
+        { from: "张桂源", text: '<img src="bqb1.jpg" style="width:120px; border-radius:8px; max-width:100%; display:block;">', time: getCurrentTime(), avatar: "zgyx.jpg", isImage: true },
         { from: "左奇函", text: "哎我去这表情包谁啊感觉有点小帅", time: getCurrentTime(), avatar: "zqhwx.jpg" },
         { from: "左奇函", text: "你挺有眼光的", time: getCurrentTime(), avatar: "zqhwx.jpg" },
-        { from: "张桂源", text: "？？", time: getCurrentTime(), avatar: "zgyweixin.png" }
+        { from: "张桂源", text: "？？", time: getCurrentTime(), avatar: "zgyx.jpg" }
     ];
     
     sendGroupReplies(replies);
@@ -16042,7 +17986,7 @@ function groupChatLurk() {
 function sendGroupReplies(replies) {
     var idx = 0;
     var avatarMap = {
-        "张桂源": "zgyweixin.png",
+        "张桂源": "zgyx.jpg",
         "陈浚铭": "cjmwx.jpg",
         "左奇函": "zqhwx.jpg",
         "张函瑞": "zhrwx.jpg",
@@ -16129,7 +18073,7 @@ function sendChapter3Replies(replies, callback) {
         var typingRow = document.createElement("div");
         typingRow.className = "message-row";
         typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px; height:40px; border-radius:12px; object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
         container.appendChild(typingRow);
         container.scrollTop = container.scrollHeight;
         
@@ -18972,7 +20916,7 @@ function sendMultipleRepliesWithQuote(replies, date, userWechatName, userMessage
         var typingRow = document.createElement("div");
         typingRow.className = "message-row";
         typingRow.style.justifyContent = "flex-start";
-        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+        typingRow.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
         container.appendChild(typingRow);
         container.scrollTop = container.scrollHeight;
 
@@ -20454,8 +22398,93 @@ var werewolfFollowupPosts = [
     }
 ];
 
+// ================= 第四章完成后论坛（2023年10月22日 - 10月23日） =================
+var chapter4ForumPosts = [
+    {
+        id: 'chapter4_post1',
+        title: '【讨论贴】有人看张桂源学校运动会开幕式了吗',
+        author: '匿名用户',
+        content: '刷到ny初中运动会开幕式的视频了，张桂源站C位的时候真的挺亮眼的，动作利落不拖沓，而且表情管理在线，跟周围同学完全不是一个画风。<br><br>[视频链接]',
+        type: 'discuss', likes: 126, time: '2023年10月22日 12:34',
+        replies: [
+            { author: '进击的老爹汉堡', text: '看了看了！！我反复拉了五六遍进度条！！虽然就是学校那种很简单的编舞但他做出来就是不一样啊啊啊！！' },
+            { author: '小哭包TT', text: '确实，其实编舞挺简单的，但他做动作就是比别人干净，一看就是练过的，旁边同学动作明显松垮很多。' },
+            { author: '素萌萌的我呀', text: '我说话比较直……' },
+            { author: '桂源什么时候发自拍', text: '他穿那个白T恤好好看啊，好青春好干净啊' },
+            { author: '萌兔兔', text: '站c太有气势了吧！龙队！' },
+            { author: '小哭包TT', text: '怎么做到的跳舞那么用力结束那一秒立刻切回腼腆模式，他好反差我好爱。' }
+        ]
+    },
+    {
+        id: 'chapter4_post2',
+        title: '【交易贴】收张桂源篮球赛fo 有没有姐妹拍了！！！',
+        author: '匿名用户',
+        content: '有没有人拍了今天上午张桂源打篮球那场的fo！！求求了我想看完整版！！短视频不够看！！谁有全场的跪求发我！！可以用别的东西换或者直接出都行！！好急好想看！！',
+        type: 'discuss', likes: 94, time: '2023年10月22日 15:42',
+        replies: [
+            { author: '桂源的篮球鞋', text: '我也要！！同求！！刷到的全是十几秒的切片根本不够看！！我需要完整版反复品味！！' },
+            { author: '进击的老爹汉堡', text: '我有！！我朋友帮我拍的！！全场录完的那种！！但是画质一般手机拍的有点抖不嫌弃的话可以私我！！' },
+            { author: '桂源家的小羽毛', text: '楼上能不能也私我一份！！我可以用之前的fo换！！' },
+            { author: '小哭包TT', text: '可出，私' },
+            { author: '桂源什么时候发自拍', text: '我可以收！！价钱好商量！！有资源的姐妹看看我！！我真的很需要！！' },
+            { author: '四代永远在一起', text: '免，让宝宝们花钱的事情我做不到！！' },
+            { author: '进击的老爹汉堡', text: '求求了可花米，，，真的好想看' }
+        ]
+    },
+    {
+        id: 'chapter4_post3',
+        title: '【讨论贴】张桂源打篮球也太帅了吧 直接变主场了',
+        author: '匿名用户',
+        content: '刷到几个张桂源打篮球的片段，运球突破上篮那几下真的太帅了，动作特别利落，一点都不拖泥带水，而且感觉他在球场上很放松很自信，跟舞台上完全是两种感觉。底下一堆人围着他喊他名字，运动会直接变他个人主场了。<br><br>[视频片段]',
+        type: 'discuss', likes: 173, time: '2023年10月22日 16:28',
+        replies: [
+            { author: '进击的老爹汉堡', text: '平时肯定没少打' },
+            { author: '桂源的篮球鞋', text: '你们看到他进完球之后那个笑了吗，一边往回跑一边跟队友击掌' },
+            { author: '小哭包TT', text: '我朋友在现场跟我说，他每次拿球全场就开始喊他名字，不知道的还以为是明星来了，不过他在学校应该确实算半个明星了。' },
+            { author: '篮球爱好者老李', text: '这水平也就一般吧？运球重心太高了，突破的时候护球手也没做好，对面防守明显放水了。你们粉丝吹得也太过了。' },
+            { author: '最懂球的老王', text: '我也看了，投篮姿势还可以但脚步太乱了，遇到稍微强一点的防守根本过不去。学校比赛强度低而已，别吹什么篮球水平了。' },
+            { author: '进击的老爹汉堡', text: '？？？人家一个高中生打学校运动会比赛 你们一群中年大叔跑来指点什么江山啊？谁问他水平了？' },
+            { author: '桂源家的小羽毛', text: '笑死了，我们是夸他帅夸他打球好看，谁吹他职业水平了？懂王来了' },
+            { author: '小哭包TT', text: '这个帖子好像涌入了一些莫名其妙的人' },
+            { author: '桂源的睫毛精', text: '想聊战术去虎扑行吗' },
+            { author: '篮球爱好者老李', text: '我就客观评价一下，你们粉丝也太玻璃心了吧。' },
+            { author: '进击的老爹汉堡', text: '男的' }
+        ]
+    },
+    {
+        id: 'chapter4_post4',
+        title: '【讨论贴】有没有11班的同学能告诉我一下张桂源的联系方式啊……',
+        author: '匿名用户',
+        content: '问一下有没有ny初中11班的同学或者认识张桂源的人，能不能给个联系方式什么的？可以私聊我谢谢！！价格可议！！！骂我的一律视为嫉妒我有钱',
+        type: 'toxic', likes: 31, time: '2023年10月22日 21:05',
+        replies: [
+            { author: '桂源家的小羽毛', text: '做梦吧你' },
+            { author: '进击的老爹汉堡', text: '到底多大啊……' },
+            { author: '小哭包TT', text: '你有这功夫不如努力考去他们学校当学妹' },
+            { author: '草莓味的桂源', text: '我qq还有时代少年团的联系方式，你要不要？？' },
+            { author: '眼角痣', text: '就算知道也不会随便给别人啊，你有事吗。' },
+            { author: '素萌萌的我呀', text: '才几岁啊就想当嫂子了？？' }
+        ]
+    },
+    {
+        id: 'chapter4_post5',
+        title: '【讨论贴】张桂源运动会帅晕我…… 四代其他人最近没有回学校吗？',
+        author: '匿名用户',
+        content: '张桂源今天学校运动会好热闹，话说四代其他几个是不是也应该有学校活动？陈奕恒陈浚铭他们学校最近有没有什么动静？王橹杰杨博文张函瑞那些上学的不也快校庆了？有人有消息吗？',
+        type: 'discuss', likes: 88, time: '2023年10月23日 00:47',
+        replies: [
+            { author: '四代团粉头子', text: '我也想知道！！有没有其他人在其他学校校庆或者运动会也表演的！！一个张桂源不够吃啊！！' },
+            { author: '陈奕恒的睫毛', text: '陈奕恒和我一个学校！！好像下个月校庆，不知道他会不会上台，好期待啊啊啊。' },
+            { author: '进击的老爹汉堡', text: '我救命吧王橹杰只有看着一脸虚弱的校园fo' },
+            { author: '素萌萌的我呀', text: '除了张桂源其他人根本没热度吧，还问什么问，有fo早就出来了。' },
+            { author: '桂源家的小羽毛', text: '楼上有病吧，你数据看了吗就在这放屁。' },
+            { author: '眼角痣', text: '物料也不更，fo也没有要寡死了啊啊啊' }
+        ]
+    }
+];
+
 // ================= 合并所有帖子 =================
-var allForumPosts = chapter1Posts.concat(chapter2Posts, werewolfFollowupPosts);
+var allForumPosts = chapter1Posts.concat(chapter2Posts, werewolfFollowupPosts, chapter4ForumPosts);
 
 // ================= 论坛渲染 =================
 var forumIndex = 0;
@@ -20474,8 +22503,11 @@ function renderForum(showMore) {
     }
 
     var displayData = [];
-    if (completedChapters[1]) {
+    if (completedChapters[3]) {
         displayData = allForumPosts.slice();
+    } else if (completedChapters[1]) {
+        displayData = allForumPosts.slice();
+        displayData = displayData.filter(function(post) { return post.id.indexOf('chapter4_post') !== 0; });
     } else {
         displayData = chapter1Posts.slice();
     }
@@ -20498,7 +22530,7 @@ function renderForum(showMore) {
     for (var i = 0; i < displayData.length; i++) {
         var item = displayData[i];
         var randomTime = item._randomTime;
-        var isUnreadFollowup = item.id.indexOf('werewolf_post') === 0 &&
+        var isUnreadFollowup = (item.id.indexOf('werewolf_post') === 0 || item.id.indexOf('chapter4_post') === 0) &&
             localStorage.getItem('forum_read_' + item.id) !== 'true';
         
         html += '<div style="padding:14px 0;border-bottom:1px solid #EFEFEF;cursor:pointer;" onclick="showForumDetail(\'' + item.id + '\')">';
@@ -20519,7 +22551,7 @@ function renderForum(showMore) {
 }
 // ================= 显示论坛帖子详情 =================
 function showForumDetail(postId) {
-    if (postId && postId.indexOf('werewolf_post') === 0) {
+    if (postId && (postId.indexOf('werewolf_post') === 0 || postId.indexOf('chapter4_post') === 0)) {
         localStorage.setItem('forum_read_' + postId, 'true');
         var newBadge = document.getElementById('forumNewBadge_' + postId);
         if (newBadge) newBadge.remove();
@@ -21767,7 +23799,7 @@ window._zhangTriggered = true;
     var displayName = getContactDisplayName('张桂源');
     showMessageNotification(
         '张桂源',
-        '<img src="zgyweixin.png" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">',
+        '<img src="zgyx.jpg" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">',
         displayName,
         '想我没',
         function() {
@@ -21850,7 +23882,7 @@ function sendCustomMessage() {
             var typingRow = document.createElement('div');
             typingRow.className = 'message-row';
             typingRow.style.justifyContent = 'flex-start';
-            typingRow.innerHTML = '<div class="message-avatar"><img src="zgyweixin.png" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
+            typingRow.innerHTML = '<div class="message-avatar"><img src="zgyx.jpg" style="width:40px;height:40px;border-radius:12px;object-fit:cover;"></div><div class="typing-indicator">对方正在输入...</div>';
             container.appendChild(typingRow);
             container.scrollTop = container.scrollHeight;
 
@@ -22687,6 +24719,7 @@ function autoSaveGame() {
         completedChapters: completedChapters,
         // 聊天数据
         chatData: chatData,
+        chapter4State: chapter4GetSaveState(),
         // 朋友圈
         allMoments: allMoments || [],
         myMoments: myMoments || [],
@@ -22825,6 +24858,9 @@ function restoreAutoSave(data) {
     
     // 恢复聊天
     if (data.chatData) chatData = data.chatData;
+    if (data.chapter4State && data.chapter4State.active) {
+        setTimeout(function() { restoreChapter4FromSave(data.chapter4State); }, 0);
+    }
     
     // 恢复朋友圈
     if (data.allMoments) allMoments = data.allMoments;
@@ -23576,7 +25612,7 @@ function getPersonalityMap() {
     var defaultMap = {
         '张桂源': {
             name: '张桂源',
-            avatar: 'zgyweixin.png',
+            avatar: 'zgyx.jpg',
             systemPrompt: '你是张桂源，15岁，TF家族四代练习生，重庆人。你是典型的狗系男友，少年感很强，热血、执着、较真。占有欲极强，和玩家是青梅竹马从小一起长大，看到玩家和别人互动会吃醋但不会直接说，会暗戳戳地问"他是谁啊""你跟他很熟啊"，有时候又很容易害羞。说话有时会带点燃的感觉，比如"放心，有我在""这波必须拿下啊"。回朋友圈评论短句，话里有醋意，暗戳戳的。但是心思很细腻，能察觉出玩家的小情绪，能理解用户发的抽象文案，会认真回答玩家的所有问题，真诚热烈。口头禅不要每句都带，只有在合适的语境下才说，比如真的着急了会说"遭了遭了"，吃醋了会说"……行吧"，燃起来了会说"冲"。',
             displayName: '三点水的yuan'
         },
@@ -24484,7 +26520,7 @@ function generateReplyToPlayer2(m, originalAuthor, playerReply, playerName) {
     var personMap = {
         '张桂源': {
             name: '张桂源',
-            avatar: 'zgyweixin.png',
+            avatar: 'zgyx.jpg',
             systemPrompt: '你是张桂源，15岁，TF家族四代练习生，重庆人。你是男生，玩家是女生，你们是青梅竹马从小一起长大。你是典型的狗系男友，少年感很强，热血、执着、较真。占有欲极强，看到玩家和别人互动会吃醋但不会直接说，会暗戳戳地问"他是谁啊""你跟他很熟啊"，会阴阳一下但不会太过，有时候又很容易害羞。好胜心很强，说话有时会带点燃的感觉，比如"放心，有我在""这波必须拿下啊"。回朋友圈评论短句，话里有醋意，暗戳戳的。心思很细腻，能察觉出玩家的小情绪。你喜欢发emoji，比如😏、🤔等，但绝对不会每句都带。口头禅不要每句都带，只有在合适的语境下才说。玩家是女生，你绝对不可以说她帅。',
             displayName: '张桂源'
         },
@@ -25850,6 +27886,7 @@ function autoSaveToSlot4() {
         unlockedChapters: unlockedChapters,
         completedChapters: completedChapters,
         chatData: chatData,
+        chapter4State: chapter4GetSaveState(),
         
         // ===== 朋友圈 =====
         allMoments: allMoments || [],
@@ -25969,6 +28006,9 @@ function restoreGameData(data) {
     if (data.unlockedChapters) unlockedChapters = data.unlockedChapters;
     if (data.completedChapters) completedChapters = data.completedChapters;
     if (data.chatData) chatData = data.chatData;
+    if (data.chapter4State && data.chapter4State.active) {
+        setTimeout(function() { restoreChapter4FromSave(data.chapter4State); }, 0);
+    }
     if (data.allMoments) allMoments = data.allMoments;
     if (data.myMoments) myMoments = data.myMoments;
     if (data.momentsData) momentsData = data.momentsData;
@@ -28071,7 +30111,7 @@ function submitVote(votedName) {
 }
 function getVoteAvatarHTML(name, sz) {
     sz = sz || 32;
-    var imgMap = {'王橹杰':'wljwx.jpg','陈浚铭':'cjmwx.jpg','陈思罕':'cshwx.jpg','左奇函':'zqhwx.jpg','聂玮辰':'nwcwx.jpg','陈奕恒':'cyhwx.jpg','张桂源':'zgyweixin.png','杨博文':'ybwwx.jpg','张函瑞':'zhrwx.jpg'};
+    var imgMap = {'王橹杰':'wljwx.jpg','陈浚铭':'cjmwx.jpg','陈思罕':'cshwx.jpg','左奇函':'zqhwx.jpg','聂玮辰':'nwcwx.jpg','陈奕恒':'cyhwx.jpg','张桂源':'zgyx.jpg','杨博文':'ybwwx.jpg','张函瑞':'zhrwx.jpg'};
     if (name === '\u73A9\u5BB6') {
         var pa = localStorage.getItem('player_avatar');
         if (pa && pa.indexOf('data:image') === 0) return '<img src="' + pa + '" style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,0.4);">';
@@ -28305,7 +30345,7 @@ function setupWerewolfBranchCommon() {
     rightCol.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:12px;position:absolute;right:16px;top:50%;transform:translateY(-50%);';
     var rightAvatars = [
         { number: 6, name: '陈奕恒', img: 'cyhwx.jpg' },
-        { number: 7, name: '张桂源', img: 'zgyweixin.png' },
+        { number: 7, name: '张桂源', img: 'zgyx.jpg' },
         { number: 8, name: '玩家', img: 'player' },
         { number: 9, name: '杨博文', img: 'ybwwx.jpg' },
         { number: 10, name: '张函瑞', img: 'zhrwx.jpg' }
