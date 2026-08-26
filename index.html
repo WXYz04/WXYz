@@ -5267,14 +5267,21 @@ function ensureEnding2ZhangWeibo() {
 
 function ensureChapter6ZhangWeibo() {
     if (typeof allArtistWeibo === "undefined" || !completedChapters[5]) return;
-    if (allArtistWeibo.some(function(w) { return w && w.id === "chapter6_zhang_weibo"; })) return;
+    var existingChapter6Weibo = allArtistWeibo.find(function(w) { return w && w.id === "chapter6_zhang_weibo"; });
+    if (existingChapter6Weibo) {
+        existingChapter6Weibo.time = "2025年4月18日 20:39";
+        existingChapter6Weibo.likes = "10.4万";
+        allArtistWeibo.sort(function(a,b){return parseWeiboTimeValue(b.time)-parseWeiboTimeValue(a.time);});
+        try { localStorage.setItem("allArtistWeibo", JSON.stringify(allArtistWeibo)); } catch(e) {}
+        return;
+    }
     allArtistWeibo.push({
         id: "chapter6_zhang_weibo",
         author: "TF家族-张桂源",
         avatar: '<img src="zgywb.jpg" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">',
-        time: "2023年4月18日 20:39",
+        time: "2025年4月18日 20:39",
         content: '今天有朋友来找我，哈哈哈太高端的菜不会做，于是呢就做了一碗辛拉面😂也是得到了好评哈哈哈哈😎感觉挺简单的，没有什么难度，下次可以挑战更难的<br><br><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><img src="zm.jpg" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;"><img src="xlm.jpg" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;"></div>',
-        likes: "1.6万",
+        likes: "10.4万",
         commentCount: 1847,
         comments: [
             {level:"gold",user:"桂圆不圆",text:"什么朋友呀！！还能吃到你亲手煮的面！！",vip:"金粉"},
