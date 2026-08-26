@@ -23319,8 +23319,9 @@ function renderForum(showMore) {
     for (var i = 0; i < displayData.length; i++) {
         var item = displayData[i];
         var randomTime = item._randomTime;
+        var forumReadKey = 'forum_read_' + item.id + (item.id.indexOf('chapter6_post') === 0 ? '_release2' : '');
         var isUnreadFollowup = (item.id.indexOf('werewolf_post') === 0 || item.id.indexOf('chapter4_post') === 0 || item.id.indexOf('chapter6_post') === 0) &&
-            localStorage.getItem('forum_read_' + item.id) !== 'true';
+            localStorage.getItem(forumReadKey) !== 'true';
         
         html += '<div style="padding:14px 0;border-bottom:1px solid #EFEFEF;cursor:pointer;" onclick="showForumDetail(\'' + item.id + '\')">';
         html += '<div style="display:flex;align-items:flex-start;gap:7px;">';
@@ -23341,7 +23342,7 @@ function renderForum(showMore) {
 // ================= 显示论坛帖子详情 =================
 function showForumDetail(postId) {
     if (postId && (postId.indexOf('werewolf_post') === 0 || postId.indexOf('chapter4_post') === 0 || postId.indexOf('chapter6_post') === 0)) {
-        localStorage.setItem('forum_read_' + postId, 'true');
+        localStorage.setItem('forum_read_' + postId + (postId.indexOf('chapter6_post') === 0 ? '_release2' : ''), 'true');
         var newBadge = document.getElementById('forumNewBadge_' + postId);
         if (newBadge) newBadge.remove();
     }
