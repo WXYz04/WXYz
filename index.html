@@ -13060,7 +13060,14 @@ b“不想要这个吗？那你想要什么？”
         });
     }
     function chapter4EnforceForcedContactDeletion() {
-        var keep = { "张桂源": true, "WXYz": true, "我玩狼人杀不骗人": true, "everybody 棒棒": true };
+        var keep = {
+            "张桂源": true,
+            "WXYz": true,
+            "我玩狼人杀不骗人": true,
+            "everybody 棒棒": true,
+            "20100319": true,
+            "zero": true
+        };
         Object.keys(chatData || {}).forEach(function(key) {
             if (!keep[key]) delete chatData[key];
         });
